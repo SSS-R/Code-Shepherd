@@ -1,8 +1,11 @@
 # Dependencies
 node_modules/
+.python-version
+.venv/
 
 # Build output
 dist/
+build/
 
 # Database
 *.db
@@ -16,6 +19,7 @@ dist/
 logs/
 *.log
 npm-debug.log*
+pip-debug.log*
 
 # OS
 .DS_Store
@@ -27,3 +31,7 @@ Thumbs.db
 
 # Temporal
 .temporal/
+
+# Testing
+coverage/
+.pytest_cache/

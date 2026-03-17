@@ -1,61 +1,177 @@
-# AgentOps Monorepo
+# AgentOps — The Control Plane for AI Coding Agents
 
-A monorepo for AgentOps project using npm workspaces and TypeScript.
+> **Mobile-first command surface to monitor agents, approve risky actions, recover interrupted workflows, and maintain searchable audit trails.**
 
-## Structure
+[![Phase](https://img.shields.io/badge/Phase-0%20Scaffold-blue)](AgentOPS.md)
+[![Status](https://img.shields.io/badge/status-pre--launch-orange)](AgentOPS.md)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+---
+
+## The Problem
+
+Developers now run multiple AI coding agents simultaneously (Claude Code, Google Antigravity, custom agents) but managing them happens in **isolated silos**. This creates the **Agent Visibility Gap**:
+
+- 📱 **Silent Stalls** — Agents get stuck waiting for approval, developers don't know until they check manually
+- 🔍 **No Single View** — No visibility into what 3+ agents are doing across different IDEs
+- 📋 **No Audit Trail** — Security teams cannot review what AI agents generated, approved, or executed
+- 🏠 **Desk-Bound** — Developers must sit at their computer to interact with agents
+- 💥 **State Loss** — Server crashes destroy long-running agent workflows
+
+---
+
+## The Solution
+
+A **mobile-first Progressive Web App (PWA)** connecting to any MCP-compatible AI coding agent through a **durable execution relay server**.
+
+### Core Value Propositions
+
+| Value | Description |
+|-------|-------------|
+| 📱 **Mobile Command Center** | Monitor all your agents from your phone. Live status across every tool. |
+| 🔔 **Approval Workflow** | Push notification → Approval-Ready Summary → one-tap approve or reject |
+| 🏗️ **Durable Execution** | Temporal.io — workflows persist through crashes and network drops |
+| 🛡️ **Layered Policy Enforcement** | Trusted registry, schema validation, risk scoring, approval gates |
+| 📊 **Execution Timeline** | Searchable log of tool activity, approvals, outputs, system events |
+
+---
+
+## The Killer Loop
+
+```
+Agent starts work
+       ↓
+Agent hits a risky or uncertain action
+       ↓
+Push notification fires to developer's phone
+       ↓
+Developer sees Approval-Ready Summary
+       ↓
+Developer approves or rejects — from anywhere
+       ↓
+Workflow resumes (or halts) — durably, with no state loss
+       ↓
+Action logged to immutable audit trail
+```
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  USER'S PHONE (PWA)                          │
+│  ┌──────────┐  ┌──────────┐  ┌──────────────────────────┐  │
+│  │Dashboard │  │ Approval │  │   Execution Timeline     │  │
+│  └────┬─────┘  └────┬─────┘  └───────────┬──────────────┘  │
+└─────────┼─────────────┼───────────────────┼─────────────────┘
+          │             │                   │  HTTPS / WSS
+          ▼             ▼                   ▼
+┌──────────────────────────────────────────────────────────────┐
+│                 AGENTOPS RELAY SERVER                         │
+│         (Node.js + Express + Temporal.io Workers)             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │   Agent     │  │  Approval   │  │   Immutable Audit   │  │
+│  │  Registry   │  │    Queue    │  │        Log          │  │
+│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘  │
+│  ┌──────┴────────────────┴────────────────────┴──────────┐   │
+│  │          Temporal.io — Durable Execution Engine         │   │
+│  └──────────────────────────┬─────────────────────────────┘   │
+└─────────────────────────────┼──────────────────────────────────┘
+                              │  MCP / HTTP / WebSocket
+              ┌───────────────┼───────────────┐
+              ▼               ▼               ▼
+       ┌──────────┐   ┌──────────┐   ┌──────────────┐
+       │  Claude  │   │ Google   │   │   Custom     │
+       │   Code   │   │Antigrav- │   │   Agents     │
+       │(VS Code) │   │  ity     │   │ (OpenClaw)   │
+       └──────────┘   └──────────┘   └──────────────┘
+```
+
+---
+
+## Monorepo Structure
 
 ```
 agentops/
-├── package.json          # Root workspace config
-├── tsconfig.json         # Shared TypeScript config
-├── README.md             # This file
-└── packages/
-    ├── relay/            # Express.js server
-    │   ├── package.json
-    │   ├── tsconfig.json
-    │   └── src/
-    ├── ui/               # React PWA
-    │   ├── package.json
-    │   ├── tsconfig.json
-    │   └── src/
-    ├── sdk/              # Agent-side npm package
-    │   ├── package.json
-    │   ├── tsconfig.json
-    │   └── src/
-    └── shared/           # Shared TypeScript types
-        ├── package.json
-        ├── tsconfig.json
-        └── src/
+├── packages/
+│   ├── relay/          # Express.js + Temporal.io server
+│   ├── ui/             # React PWA (mobile-first)
+│   ├── sdk/            # Agent-side npm package
+│   └── shared/         # Shared TypeScript types
+├── AgentOPS.md         # Full product roadmap
+├── ARCHITECTURE.md     # System architecture details
+├── PROJECT_MEMORY.md   # Project context & decisions
+└── TASKS.md            # Task board
 ```
 
-## Packages
-
-| Package | Description |
-|---------|-------------|
-| `@agentops/relay` | Express.js server for agent communication |
-| `@agentops/ui` | React PWA for user interface |
-| `@agentops/sdk` | Agent-side npm package |
-| `@agentops/shared` | Shared TypeScript types and utilities |
+---
 
 ## Getting Started
 
+### Prerequisites
+
+- Node.js 18+
+- npm 9+
+- Python 3.12+ (for backend scripts)
+- Temporal.io (for durable execution)
+
+### Install Dependencies
+
 ```bash
-# Install all dependencies
+# Root workspace
 npm install
 
-# Build all packages
-npm run build
+# Relay server (includes Temporal.io)
+cd packages/relay && npm install
 
-# Run dev mode for all packages
+# UI (React PWA)
+cd packages/ui && npm install
+```
+
+### Run Development
+
+```bash
+# All packages (root)
 npm run dev
+
+# Individual packages
+cd packages/relay && npm run dev
+cd packages/ui && npm run dev
 ```
 
-## npm Workspaces
+---
 
-This monorepo uses npm workspaces. Each package is automatically linked to the root `node_modules`.
+## Roadmap
 
-```json
-{
-  "workspaces": ["packages/*"]
-}
-```
+| Phase | Timeline | Goal |
+|-------|----------|------|
+| **Phase 0** | Weeks 1-3 | Prove: "I can leave my desk and still control my agents." |
+| **Phase 1** | Weeks 4-6 | Prove: "I can trust what I'm approving." |
+| **Phase 2** | Weeks 7-10 | Prove: "I can run multiple agents cleanly." |
+| **Phase 3** | Weeks 11+ | Team features, RBAC, compliance dashboard |
+
+**Current Status:** 🔄 Phase 0 — Monorepo Scaffold & Relay Server
+
+---
+
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [AgentOPS.md](AgentOPS.md) | Full product roadmap, GTM strategy, risks |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture details |
+| [DEPENDENCIES.md](DEPENDENCIES.md) | Dependency documentation |
+| [CODEBASE_MAP.md](CODEBASE_MAP.md) | Codebase orientation |
+| [PROJECT_MEMORY.md](PROJECT_MEMORY.md) | Project context & decisions |
+| [TASKS.md](TASKS.md) | Task board |
+
+---
+
+## License
+
+MIT — See [LICENSE](LICENSE) for details.
+
+---
+
+*"The control plane for AI coding agents."*
