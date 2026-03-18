@@ -96,3 +96,6 @@ packages/shared/dist/
 
 # Root node_modules (for workspaces)
 node_modules/
+
+
+temporal.exe
