@@ -24,40 +24,71 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="text-center py-8">
-        <div className="text-gray-500">Loading agents...</div>
+      <div className="flex items-center justify-center py-16">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-gray-900">Registered Agents</h2>
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-white">
+          Registered Agents
+        </h2>
+        <div className="text-sm text-slate-500 dark:text-slate-400">
+          {agents.length} {agents.length === 1 ? 'agent' : 'agents'}
+        </div>
+      </div>
       
       {agents.length === 0 ? (
-        <div className="bg-white border rounded-lg p-8 text-center">
-          <div className="text-4xl mb-2">🤖</div>
-          <p className="text-gray-500">No agents registered yet</p>
-          <p className="text-xs text-gray-400 mt-1">Agents will appear here when they register</p>
+        <div className="glass rounded-2xl p-12 text-center animate-slide-up">
+          <div className="text-6xl mb-4">🤖</div>
+          <p className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2">
+            No agents registered yet
+          </p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Agents will appear here when they register with the relay server
+          </p>
         </div>
       ) : (
-        <div className="bg-white border rounded-lg divide-y">
-          {agents.map(agent => (
-            <div key={agent.id} className="p-4">
+        <div className="space-y-3">
+          {agents.map((agent, index) => (
+            <div
+              key={agent.id}
+              className="glass rounded-xl p-5 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg animate-slide-up"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
               <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-gray-900">{agent.name}</div>
-                  <div className="text-xs text-gray-500">ID: {agent.id}</div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className={`w-2 h-2 rounded-full ${
+                      agent.status === 'online' ? 'bg-success' : 'bg-offline'
+                    }`} />
+                    <h3 className="font-semibold text-slate-800 dark:text-white">
+                      {agent.name}
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                    ID: {agent.id}
+                  </p>
                   {agent.capabilities && agent.capabilities.length > 0 && (
-                    <div className="text-xs text-gray-400 mt-1">
-                      {agent.capabilities.join(', ')}
+                    <div className="flex flex-wrap gap-1.5">
+                      {agent.capabilities.map((cap: string, i: number) => (
+                        <span
+                          key={i}
+                          className="px-2 py-0.5 text-xs font-medium rounded-full bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light"
+                        >
+                          {cap}
+                        </span>
+                      ))}
                     </div>
                   )}
                 </div>
-                <div className={`px-2 py-1 rounded text-xs font-medium ${
-                  agent.status === 'online' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-gray-100 text-gray-800'
+                <div className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide ${
+                  agent.status === 'online'
+                    ? 'bg-success/10 text-success dark:bg-success/20 dark:text-success-light'
+                    : 'bg-offline/10 text-offline dark:bg-offline/20 dark:text-offline-light'
                 }`}>
                   {agent.status}
                 </div>

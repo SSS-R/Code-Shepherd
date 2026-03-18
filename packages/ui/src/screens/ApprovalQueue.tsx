@@ -42,7 +42,6 @@ export default function ApprovalQueue() {
       })
 
       if (res.ok) {
-        // Remove from list
         setApprovals(approvals.filter(a => a.id !== id))
       }
     } catch (error) {
@@ -50,52 +49,76 @@ export default function ApprovalQueue() {
     }
   }
 
+  const getRiskColor = (level: string): string => {
+    switch (level) {
+      case 'critical': return 'bg-danger/10 text-danger border-danger/20 dark:bg-danger/20 dark:text-danger-light dark:border-danger/30'
+      case 'high': return 'bg-orange-500/10 text-orange-600 border-orange-500/20 dark:bg-orange-500/20 dark:text-orange-400 dark:border-orange-500/30'
+      case 'medium': return 'bg-warning/10 text-warning border-warning/20 dark:bg-warning/20 dark:text-warning-light dark:border-warning/30'
+      default: return 'bg-primary/10 text-primary border-primary/20 dark:bg-primary/20 dark:text-primary-light dark:border-primary/30'
+    }
+  }
+
   if (loading) {
     return (
-      <div className="text-center py-8">
-        <div className="text-gray-500">Loading approvals...</div>
+      <div className="flex items-center justify-center py-16">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-gray-900">Approval Queue</h2>
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-white">
+          Approval Queue
+        </h2>
+        <div className="text-sm text-slate-500 dark:text-slate-400">
+          {approvals.length} pending
+        </div>
+      </div>
       
       {approvals.length === 0 ? (
-        <div className="bg-white border rounded-lg p-8 text-center">
-          <div className="text-4xl mb-2">✅</div>
-          <p className="text-gray-500">No pending approvals</p>
-          <p className="text-xs text-gray-400 mt-1">You're all caught up!</p>
+        <div className="glass rounded-2xl p-12 text-center animate-slide-up">
+          <div className="text-6xl mb-4">✅</div>
+          <p className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2">
+            No pending approvals
+          </p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            You're all caught up! New approvals will appear here.
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
-          {approvals.map(approval => (
-            <div key={approval.id} className="bg-white border rounded-lg p-4">
+          {approvals.map((approval, index) => (
+            <div
+              key={approval.id}
+              className="glass rounded-xl p-5 animate-slide-up"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
               <div className="flex items-start justify-between mb-3">
-                <div>
-                  <div className="font-medium text-gray-900">{approval.action_type}</div>
-                  <div className="text-xs text-gray-500">Agent: {approval.agent_id}</div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-slate-800 dark:text-white mb-1">
+                    {approval.action_type}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Agent: {approval.agent_id}
+                  </p>
                 </div>
-                <div className={`px-2 py-1 rounded text-xs font-medium ${
-                  approval.risk_level === 'critical' ? 'bg-red-100 text-red-800' :
-                  approval.risk_level === 'high' ? 'bg-orange-100 text-orange-800' :
-                  approval.risk_level === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-blue-100 text-blue-800'
-                }`}>
+                <div className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide border ${getRiskColor(approval.risk_level)}`}>
                   {approval.risk_level}
                 </div>
               </div>
               
               {approval.risk_reason && (
-                <div className="text-xs text-gray-600 mb-3 bg-gray-50 p-2 rounded">
+                <div className="text-xs text-slate-600 dark:text-slate-300 mb-3 glass p-3 rounded-lg">
+                  <p className="font-semibold mb-1">Risk Assessment:</p>
                   {approval.risk_reason}
                 </div>
               )}
               
               {approval.action_details && Object.keys(approval.action_details).length > 0 && (
-                <div className="text-xs text-gray-500 mb-3">
-                  <pre className="bg-gray-50 p-2 rounded overflow-auto">
+                <div className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                  <pre className="glass p-3 rounded-lg overflow-auto text-xs">
                     {JSON.stringify(approval.action_details, null, 2)}
                   </pre>
                 </div>
@@ -104,15 +127,15 @@ export default function ApprovalQueue() {
               <div className="flex gap-2">
                 <button
                   onClick={() => handleDecision(approval.id, 'approved')}
-                  className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-green-700"
+                  className="flex-1 bg-success hover:bg-success/90 text-white py-3 px-4 rounded-xl text-sm font-bold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  Approve
+                  ✓ Approve
                 </button>
                 <button
                   onClick={() => handleDecision(approval.id, 'rejected')}
-                  className="flex-1 bg-red-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-red-700"
+                  className="flex-1 bg-danger hover:bg-danger/90 text-white py-3 px-4 rounded-xl text-sm font-bold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  Reject
+                  ✕ Reject
                 </button>
               </div>
             </div>
