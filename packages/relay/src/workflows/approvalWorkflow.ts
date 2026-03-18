@@ -7,8 +7,9 @@
 
 import { 
   proxyActivities, 
-  sleep, 
-  signal 
+  sleep,
+  defineSignal,
+  setHandler
 } from '@temporalio/workflow';
 import type * as activities from '../activities';
 
@@ -20,7 +21,7 @@ export interface ApprovalState {
   approvalId: string;
   agentId: string;
   action_type: string;
-  action_details: any;
+  action_details: Record<string, unknown>;
   risk_level: string;
   status: 'pending' | 'approved' | 'rejected' | 'timeout';
   decidedBy?: string;
@@ -32,6 +33,9 @@ export interface DecisionSignal {
   decision_reason: string;
   decidedBy: string;
 }
+
+// Define decision signal
+export const decisionSignal = defineSignal<DecisionSignal>('decision');
 
 /**
  * Approval Request Workflow
@@ -47,8 +51,8 @@ export async function approvalRequestWorkflow(
   let decision_reason = '';
   let decidedBy = '';
 
-  // Define decision signal handler
-  const decisionSignal = signal<DecisionSignal>('decision', (payload) => {
+  // Set up decision signal handler
+  setHandler(decisionSignal, (payload: DecisionSignal) => {
     decisionReceived = true;
     decision = payload.decision;
     decision_reason = payload.decision_reason;
@@ -56,10 +60,7 @@ export async function approvalRequestWorkflow(
   });
 
   // Wait for decision or timeout (24 hours)
-  await Promise.race([
-    sleep(86400000), // 24 hours
-    decisionSignal()
-  ]);
+  await sleep(86400000); // 24 hours
 
   // If no decision received, mark as timeout
   if (!decisionReceived) {

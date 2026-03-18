@@ -7,9 +7,9 @@
 
 import { 
   proxyActivities, 
-  proxyLocalActivities,
-  sleep, 
-  signal 
+  sleep,
+  defineSignal,
+  setHandler
 } from '@temporalio/workflow';
 import type * as activities from '../activities';
 
@@ -29,6 +29,9 @@ export interface HeartbeatSignal {
   timestamp: string;
 }
 
+// Define heartbeat signal
+export const heartbeatSignal = defineSignal<HeartbeatSignal>('heartbeat');
+
 /**
  * Agent Session Workflow
  * 
@@ -41,8 +44,8 @@ export async function agentSessionWorkflow(
 ): Promise<void> {
   let heartbeatReceived = false;
 
-  // Define heartbeat signal handler
-  const heartbeat = signal<HeartbeatSignal>('heartbeat', (payload) => {
+  // Set up heartbeat signal handler
+  setHandler(heartbeatSignal, (payload: HeartbeatSignal) => {
     heartbeatReceived = true;
     state.lastHeartbeat = payload.timestamp;
     state.heartbeatCount += 1;
@@ -53,10 +56,7 @@ export async function agentSessionWorkflow(
     heartbeatReceived = false;
 
     // Wait up to 90 seconds for a heartbeat
-    await Promise.race([
-      sleep(90000), // 90 seconds
-      heartbeat()
-    ]);
+    await sleep(90000); // 90 seconds
 
     // If no heartbeat received, mark agent offline
     if (!heartbeatReceived) {

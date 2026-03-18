@@ -53,7 +53,14 @@ export function createApprovalRoutes(db: Database) {
    */
   router.post('/', (req: Request, res: Response) => {
     try {
-      const { id, agent_id, action_type, action_details, risk_level, risk_reason } = req.body;
+      const { id, agent_id, action_type, action_details, risk_level, risk_reason } = req.body as {
+        id: string;
+        agent_id: string;
+        action_type: string;
+        action_details?: Record<string, unknown>;
+        risk_level?: string;
+        risk_reason?: string;
+      };
 
       if (!id || !agent_id || !action_type) {
         return res.status(400).json({ error: 'id, agent_id, and action_type are required' });
@@ -84,7 +91,7 @@ export function createApprovalRoutes(db: Database) {
         status: 'pending',
         message: 'Approval request created'
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Create approval error:', error);
       res.status(500).json({ error: 'Failed to create approval request' });
     }
@@ -107,7 +114,7 @@ export function createApprovalRoutes(db: Database) {
       }));
 
       res.json(approvals);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('List pending approvals error:', error);
       res.status(500).json({ error: 'Failed to list pending approvals' });
     }
@@ -119,9 +126,9 @@ export function createApprovalRoutes(db: Database) {
    */
   router.get('/', (req: Request, res: Response) => {
     try {
-      const { status } = req.query;
+      const { status } = req.query as { status?: string };
       let query = 'SELECT * FROM approvals';
-      let params: any[] = [];
+      const params: unknown[] = [];
 
       if (status) {
         query += ' WHERE status = ?';
@@ -137,7 +144,7 @@ export function createApprovalRoutes(db: Database) {
       }));
 
       res.json(approvals);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('List approvals error:', error);
       res.status(500).json({ error: 'Failed to list approvals' });
     }
@@ -149,7 +156,7 @@ export function createApprovalRoutes(db: Database) {
    */
   router.get('/:id', (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
       const stmt = db.prepare('SELECT * FROM approvals WHERE id = ?');
       const approval = stmt.get(id) as any;
 
@@ -161,7 +168,7 @@ export function createApprovalRoutes(db: Database) {
         ...approval,
         action_details: JSON.parse(approval.action_details || '{}')
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Get approval error:', error);
       res.status(500).json({ error: 'Failed to get approval' });
     }
@@ -173,8 +180,8 @@ export function createApprovalRoutes(db: Database) {
    */
   router.patch('/:id', (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
-      const { decision, decision_reason } = req.body;
+      const { id } = req.params as { id: string };
+      const { decision, decision_reason } = req.body as { decision: string; decision_reason: string };
 
       if (!decision || !['approved', 'rejected'].includes(decision)) {
         return res.status(400).json({ error: 'decision must be "approved" or "rejected"' });
@@ -207,7 +214,7 @@ export function createApprovalRoutes(db: Database) {
         decision_reason,
         message: `Approval ${decision}`
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Decide approval error:', error);
       res.status(500).json({ error: 'Failed to decide approval' });
     }
@@ -219,7 +226,7 @@ export function createApprovalRoutes(db: Database) {
    */
   router.get('/audit-logs', (req: Request, res: Response) => {
     try {
-      const { limit = 100 } = req.query;
+      const { limit = 100 } = req.query as { limit?: string };
       const stmt = db.prepare(`
         SELECT * FROM audit_logs 
         ORDER BY timestamp DESC 
@@ -231,7 +238,7 @@ export function createApprovalRoutes(db: Database) {
       }));
 
       res.json(logs);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('List audit logs error:', error);
       res.status(500).json({ error: 'Failed to list audit logs' });
     }

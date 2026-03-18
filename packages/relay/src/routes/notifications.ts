@@ -10,6 +10,7 @@
 import { Request, Response } from 'express';
 import Database from 'better-sqlite3';
 import webPush from 'web-push';
+import type { Subscription, WebPushPayload } from 'web-push';
 
 export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: string; privateKey: string }) {
   const router = require('express').Router();
@@ -38,7 +39,7 @@ export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: s
    */
   router.post('/subscribe', (req: Request, res: Response) => {
     try {
-      const { endpoint, keys } = req.body;
+      const { endpoint, keys } = req.body as { endpoint: string; keys: { p256dh: string; auth: string } };
 
       if (!endpoint || !keys || !keys.p256dh || !keys.auth) {
         return res.status(400).json({ error: 'endpoint and keys (p256dh, auth) are required' });
@@ -56,7 +57,7 @@ export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: s
         message: 'Subscribed to push notifications',
         vapidPublicKey: vapidKeys.publicKey
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Subscribe error:', error);
       res.status(500).json({ error: 'Failed to subscribe to notifications' });
     }
@@ -68,7 +69,7 @@ export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: s
    */
   router.delete('/subscribe', (req: Request, res: Response) => {
     try {
-      const { endpoint } = req.body;
+      const { endpoint } = req.body as { endpoint: string };
 
       if (!endpoint) {
         return res.status(400).json({ error: 'endpoint is required' });
@@ -85,7 +86,7 @@ export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: s
       }
 
       res.json({ message: 'Unsubscribed from push notifications' });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Unsubscribe error:', error);
       res.status(500).json({ error: 'Failed to unsubscribe from notifications' });
     }
@@ -97,13 +98,13 @@ export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: s
    */
   router.post('/test', async (req: Request, res: Response) => {
     try {
-      const { title = 'Test Notification', body = 'This is a test notification' } = req.body;
+      const { title = 'Test Notification', body = 'This is a test notification' } = req.body as { title?: string; body?: string };
 
       const stmt = db.prepare('SELECT * FROM push_subscriptions');
-      const subscriptions = stmt.all();
+      const subscriptions = stmt.all() as Array<{ endpoint: string; p256dh: string; auth: string }>;
 
       const results = await Promise.allSettled(
-        subscriptions.map((sub: any) =>
+        subscriptions.map((sub: { endpoint: string; p256dh: string; auth: string }) =>
           webPush.sendNotification(
             {
               endpoint: sub.endpoint,
@@ -129,7 +130,7 @@ export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: s
         success,
         failed
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Test notification error:', error);
       res.status(500).json({ error: 'Failed to send test notification' });
     }
@@ -145,7 +146,7 @@ export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: s
       const subscriptions = stmt.all();
 
       res.json(subscriptions);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('List subscriptions error:', error);
       res.status(500).json({ error: 'Failed to list subscriptions' });
     }
@@ -162,7 +163,7 @@ export async function sendPushNotification(
   vapidKeys: { publicKey: string; privateKey: string },
   title: string,
   body: string,
-  data?: any
+  data?: Record<string, unknown>
 ): Promise<{ success: number; failed: number }> {
   webPush.setVapidDetails(
     'mailto:admin@agentops.dev',
@@ -171,10 +172,10 @@ export async function sendPushNotification(
   );
 
   const stmt = db.prepare('SELECT * FROM push_subscriptions');
-  const subscriptions = stmt.all();
+  const subscriptions = stmt.all() as Array<{ endpoint: string; p256dh: string; auth: string }>;
 
   const results = await Promise.allSettled(
-    subscriptions.map((sub: any) =>
+    subscriptions.map((sub: { endpoint: string; p256dh: string; auth: string }) =>
       webPush.sendNotification(
         {
           endpoint: sub.endpoint,

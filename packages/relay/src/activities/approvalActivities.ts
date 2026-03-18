@@ -47,7 +47,7 @@ export async function updateApprovalStatus(
  */
 export async function createAuditLog(
   event_type: string,
-  event_details: any,
+  event_details: Record<string, unknown>,
   agent_id?: string,
   approval_id?: string
 ): Promise<void> {
