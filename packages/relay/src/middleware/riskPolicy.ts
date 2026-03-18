@@ -81,10 +81,8 @@ export function evaluateRisk(action_type: string, action_details: any): RiskAsse
     for (const pattern of RISK_PATTERNS.high) {
       if (pattern.test(actionString)) {
         risk_factors.push(`High risk pattern matched: ${pattern.source}`);
-        if (risk_level === 'low' || risk_level === 'medium') {
-          risk_level = 'high';
-          requires_approval = true;
-        }
+        risk_level = 'high';
+        requires_approval = true;
       }
     }
   }

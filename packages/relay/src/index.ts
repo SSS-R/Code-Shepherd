@@ -5,11 +5,12 @@
 
 import express, { Request, Response } from 'express';
 import Database from 'better-sqlite3';
-import { Connection, Worker } from '@temporalio';
+import { NativeConnection, Worker } from '@temporalio/worker';
 import { createAgentRoutes } from './routes/agents';
 import { createApprovalRoutes } from './routes/approvals';
 import { createNotificationRoutes } from './routes/notifications';
 import { getVapidKeys } from './utils/vapidKeys';
+import * as activities from './activities';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -33,7 +34,7 @@ let temporalWorker: Worker | null = null;
 
 async function initializeTemporal() {
   try {
-    const connection = await Connection.connect({
+    const connection = await NativeConnection.connect({
       address: 'localhost:7233'
     });
     
@@ -42,7 +43,7 @@ async function initializeTemporal() {
       namespace: 'default',
       taskQueue: 'agentops-queue',
       workflowsPath: require.resolve('./workflows'),
-      activitiesPath: require.resolve('./activities')
+      activities
     });
     
     console.log('Temporal worker connected');

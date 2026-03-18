@@ -9,7 +9,7 @@
  */
 
 import { Request, Response } from 'express';
-import Database from 'better-sqlite3';
+import type { Database } from 'better-sqlite3';
 import { sendPushNotification } from './notifications';
 import { getVapidKeys } from '../utils/vapidKeys';
 
@@ -51,7 +51,7 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
    * POST /approvals
    * Request approval for an action (agent-initiated)
    */
-  router.post('/', (req: Request, res: Response): Response => {
+  router.post('/', (req: Request, res: Response) => {
     try {
       const { id, agent_id, action_type, action_details, risk_level, risk_reason } = req.body as {
         id: string;
@@ -101,7 +101,7 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
    * GET /approvals/pending
    * List all pending approvals
    */
-  router.get('/pending', (req: Request, res: Response): Response => {
+  router.get('/pending', (req: Request, res: Response) => {
     try {
       const stmt = db.prepare(`
         SELECT * FROM approvals 
@@ -124,7 +124,7 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
    * GET /approvals
    * List all approvals (with optional status filter)
    */
-  router.get('/', (req: Request, res: Response): Response => {
+  router.get('/', (req: Request, res: Response) => {
     try {
       const { status } = req.query as { status?: string };
       const params: unknown[] = [];
@@ -155,7 +155,7 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
    * GET /approvals/:id
    * Get a specific approval
    */
-  router.get('/:id', (req: Request, res: Response): Response => {
+  router.get('/:id', (req: Request, res: Response) => {
     try {
       const { id } = req.params as { id: string };
       const stmt = db.prepare('SELECT * FROM approvals WHERE id = ?');
@@ -179,7 +179,7 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
    * PATCH /approvals/:id
    * Approve or reject an approval (human decision)
    */
-  router.patch('/:id', (req: Request, res: Response): Response => {
+  router.patch('/:id', (req: Request, res: Response) => {
     try {
       const { id } = req.params as { id: string };
       const { decision, decision_reason } = req.body as { decision: string; decision_reason: string };
@@ -225,7 +225,7 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
    * GET /audit-logs
    * List audit logs (append-only log of all actions)
    */
-  router.get('/audit-logs', (req: Request, res: Response): Response => {
+  router.get('/audit-logs', (req: Request, res: Response) => {
     try {
       const { limit = 100 } = req.query as { limit?: string };
       const stmt = db.prepare(`

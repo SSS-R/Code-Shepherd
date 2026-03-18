@@ -8,7 +8,7 @@
  */
 
 import { Request, Response } from 'express';
-import Database from 'better-sqlite3';
+import type { Database } from 'better-sqlite3';
 import webPush from 'web-push';
 
 export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: string; privateKey: string }): ReturnType<typeof require>['Router'] {
@@ -36,7 +36,7 @@ export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: s
    * POST /notifications/subscribe
    * Subscribe to push notifications
    */
-  router.post('/subscribe', (req: Request, res: Response): Response => {
+  router.post('/subscribe', (req: Request, res: Response) => {
     try {
       const { endpoint, keys } = req.body as { endpoint: string; keys: { p256dh: string; auth: string } };
 
@@ -66,7 +66,7 @@ export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: s
    * DELETE /notifications/subscribe
    * Unsubscribe from push notifications
    */
-  router.delete('/subscribe', (req: Request, res: Response): Response => {
+  router.delete('/subscribe', (req: Request, res: Response) => {
     try {
       const { endpoint } = req.body as { endpoint: string };
 
@@ -95,7 +95,7 @@ export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: s
    * POST /notifications/test
    * Send test notification to all subscribers
    */
-  router.post('/test', async (req: Request, res: Response): Promise<Response> => {
+  router.post('/test', async (req: Request, res: Response) => {
     try {
       const { title = 'Test Notification', body = 'This is a test notification' } = req.body as { title?: string; body?: string };
 
@@ -103,7 +103,7 @@ export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: s
       const subscriptions = stmt.all() as Array<{ endpoint: string; p256dh: string; auth: string }>;
 
       const results = await Promise.allSettled(
-        subscriptions.map((sub: { endpoint: string; p256dh: string; auth: string }): Promise<webPush.PushResult> =>
+        subscriptions.map((sub: { endpoint: string; p256dh: string; auth: string }): Promise<webPush.SendResult> =>
           webPush.sendNotification(
             {
               endpoint: sub.endpoint,
@@ -121,8 +121,8 @@ export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: s
         )
       );
 
-      const success: number = results.filter((r: PromiseFulfilledResult<webPush.PushResult>): r is PromiseFulfilledResult<webPush.PushResult> => r.status === 'fulfilled').length;
-      const failed: number = results.filter((r: PromiseRejectedResult): r is PromiseRejectedResult => r.status === 'rejected').length;
+      const success: number = results.filter((r): r is PromiseFulfilledResult<webPush.SendResult> => r.status === 'fulfilled').length;
+      const failed: number = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected').length;
 
       return res.json({
         message: `Test notification sent to ${success} subscribers`,
@@ -139,7 +139,7 @@ export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: s
    * GET /notifications/subscriptions
    * List all push subscriptions
    */
-  router.get('/subscriptions', (req: Request, res: Response): Response => {
+  router.get('/subscriptions', (req: Request, res: Response) => {
     try {
       const stmt = db.prepare('SELECT id, endpoint, created_at FROM push_subscriptions');
       const subscriptions = stmt.all();
@@ -174,7 +174,7 @@ export async function sendPushNotification(
   const subscriptions = stmt.all() as Array<{ endpoint: string; p256dh: string; auth: string }>;
 
   const results = await Promise.allSettled(
-    subscriptions.map((sub: { endpoint: string; p256dh: string; auth: string }): Promise<webPush.PushResult> =>
+    subscriptions.map((sub: { endpoint: string; p256dh: string; auth: string }): Promise<webPush.SendResult> =>
       webPush.sendNotification(
         {
           endpoint: sub.endpoint,
@@ -193,8 +193,8 @@ export async function sendPushNotification(
     )
   );
 
-  const success: number = results.filter((r: PromiseFulfilledResult<webPush.PushResult>): r is PromiseFulfilledResult<webPush.PushResult> => r.status === 'fulfilled').length;
-  const failed: number = results.filter((r: PromiseRejectedResult): r is PromiseRejectedResult => r.status === 'rejected').length;
+  const success: number = results.filter((r): r is PromiseFulfilledResult<webPush.SendResult> => r.status === 'fulfilled').length;
+  const failed: number = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected').length;
 
   return { success, failed };
 }

@@ -8,7 +8,7 @@
  */
 
 import { Request, Response } from 'express';
-import Database from 'better-sqlite3';
+import type { Database } from 'better-sqlite3';
 
 export function createAgentRoutes(db: Database) {
   const router = require('express').Router();
@@ -45,7 +45,7 @@ export function createAgentRoutes(db: Database) {
 
       const result = stmt.run(id, name, JSON.stringify(capabilities || []));
 
-      res.status(201).json({
+      return res.status(201).json({
         id,
         name,
         capabilities: capabilities || [],
@@ -54,7 +54,7 @@ export function createAgentRoutes(db: Database) {
       });
     } catch (error: any) {
       console.error('Agent registration error:', error);
-      res.status(500).json({ error: 'Failed to register agent' });
+      return res.status(500).json({ error: 'Failed to register agent' });
     }
   });
 
@@ -79,14 +79,14 @@ export function createAgentRoutes(db: Database) {
         return res.status(404).json({ error: 'Agent not found' });
       }
 
-      res.json({
+      return res.json({
         id,
         status: 'online',
         message: 'Heartbeat received'
       });
     } catch (error: any) {
       console.error('Heartbeat error:', error);
-      res.status(500).json({ error: 'Failed to process heartbeat' });
+      return res.status(500).json({ error: 'Failed to process heartbeat' });
     }
   });
 
@@ -102,10 +102,10 @@ export function createAgentRoutes(db: Database) {
         capabilities: JSON.parse(agent.capabilities || '[]')
       }));
 
-      res.json(agents);
+      return res.json(agents);
     } catch (error: any) {
       console.error('List agents error:', error);
-      res.status(500).json({ error: 'Failed to list agents' });
+      return res.status(500).json({ error: 'Failed to list agents' });
     }
   });
 
@@ -123,13 +123,13 @@ export function createAgentRoutes(db: Database) {
         return res.status(404).json({ error: 'Agent not found' });
       }
 
-      res.json({
+      return res.json({
         ...agent,
         capabilities: JSON.parse(agent.capabilities || '[]')
       });
     } catch (error: any) {
       console.error('Get agent error:', error);
-      res.status(500).json({ error: 'Failed to get agent' });
+      return res.status(500).json({ error: 'Failed to get agent' });
     }
   });
 

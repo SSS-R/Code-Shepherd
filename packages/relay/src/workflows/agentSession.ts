@@ -11,7 +11,7 @@ import {
   defineSignal,
   setHandler
 } from '@temporalio/workflow';
-import type * as activities from '../activities';
+import type * as activities from '../activities/index';
 
 const { markAgentOffline } = proxyActivities<typeof activities>({
   startToCloseTimeout: '1 minute'
@@ -30,7 +30,7 @@ export interface HeartbeatSignalPayload {
 }
 
 // Define heartbeat signal
-export const heartbeatSignal = defineSignal<HeartbeatSignalPayload>('heartbeat');
+export const heartbeatSignal = defineSignal<[HeartbeatSignalPayload]>('heartbeat');
 
 /**
  * Agent Session Workflow

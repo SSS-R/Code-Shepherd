@@ -11,7 +11,7 @@ import {
   defineSignal,
   setHandler
 } from '@temporalio/workflow';
-import type * as activities from '../activities';
+import type * as activities from '../activities/index';
 
 const { updateApprovalStatus } = proxyActivities<typeof activities>({
   startToCloseTimeout: '1 minute'
@@ -35,7 +35,7 @@ export interface DecisionSignalPayload {
 }
 
 // Define decision signal
-export const decisionSignal = defineSignal<DecisionSignalPayload>('decision');
+export const decisionSignal = defineSignal<[DecisionSignalPayload]>('decision');
 
 /**
  * Approval Request Workflow

@@ -1,6 +1,7 @@
 {
   "name": "@agentops/ui",
   "version": "1.0.0",
+  "type": "module",
   "description": "React PWA for AgentOps",
   "scripts": {
     "build": "vite build",
@@ -13,6 +14,8 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
+    "@tailwindcss/vite": "^4.2.2",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
     "@vitejs/plugin-react": "^4.2.1",
@@ -21,5 +24,8 @@
     "tailwindcss": "^4.2.2",
     "typescript": "^5.3.3",
     "vite": "^5.0.11"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-win32-x64-msvc": "^4.59.0"
   }
 }
