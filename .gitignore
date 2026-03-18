@@ -1,37 +1,64 @@
 # Dependencies
 node_modules/
-.python-version
-.venv/
+.pnp
+.pnp.js
 
-# Build output
+# Build outputs
 dist/
 build/
+*.tsbuildinfo
+
+# Python Virtual Environment
+.python-version
+.venv/
+venv/
+ENV/
+env/
 
 # Database
 *.db
 *.sqlite
+*.sqlite3
 
-# Environment
+# Environment variables
 .env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Logs
 logs/
 *.log
 npm-debug.log*
-pip-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db
+*.swp
+*.swo
+*~
 
 # IDE
 .vscode/
 .idea/
+*.iml
 
 # Temporal
 .temporal/
 
 # Testing
 coverage/
+.nyc_output/
 .pytest_cache/
+
+# PWA
+*.webmanifest
+
+# Temporary files
+tmp/
+temp/

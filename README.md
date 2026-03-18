@@ -2,7 +2,7 @@
 
 > **Mobile-first command surface to monitor agents, approve risky actions, recover interrupted workflows, and maintain searchable audit trails.**
 
-[![Phase](https://img.shields.io/badge/Phase-0%20Scaffold-blue)](AgentOPS.md)
+[![Phase](https://img.shields.io/badge/Phase-0%20Complete-green)](AgentOPS.md)
 [![Status](https://img.shields.io/badge/status-pre--launch-orange)](AgentOPS.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -54,6 +54,8 @@ Workflow resumes (or halts) — durably, with no state loss
 Action logged to immutable audit trail
 ```
 
+**Every feature in this repo serves this loop.**
+
 ---
 
 ## Architecture
@@ -96,13 +98,34 @@ Action logged to immutable audit trail
 agentops/
 ├── packages/
 │   ├── relay/          # Express.js + Temporal.io server
+│   │   ├── src/
+│   │   │   ├── routes/        # API routes (agents, approvals, notifications)
+│   │   │   ├── workflows/     # Temporal workflows
+│   │   │   ├── activities/    # Temporal activities
+│   │   │   ├── middleware/    # Risk policy engine
+│   │   │   └── utils/         # VAPID keys, etc.
+│   │   ├── package.json
+│   │   └── tsconfig.json
 │   ├── ui/             # React PWA (mobile-first)
+│   │   ├── src/
+│   │   │   ├── screens/       # Dashboard, ApprovalQueue
+│   │   │   ├── utils/         # Push notifications
+│   │   │   └── service-worker.js
+│   │   ├── package.json
+│   │   └── vite.config.ts
 │   ├── sdk/            # Agent-side npm package
+│   │   └── (coming soon)
 │   └── shared/         # Shared TypeScript types
+│       └── (coming soon)
 ├── AgentOPS.md         # Full product roadmap
 ├── ARCHITECTURE.md     # System architecture details
 ├── PROJECT_MEMORY.md   # Project context & decisions
-└── TASKS.md            # Task board
+├── TASKS.md            # Task board
+├── CODEBASE_MAP.md     # Codebase orientation
+├── DEPENDENCIES.md     # Dependency documentation
+├── .gitignore
+├── .env.example
+└── requirements.txt    # Python dependencies (placeholder)
 ```
 
 ---
@@ -122,7 +145,7 @@ agentops/
 # Root workspace
 npm install
 
-# Relay server (includes Temporal.io)
+# Relay server (includes Temporal.io, web-push, etc.)
 cd packages/relay && npm install
 
 # UI (React PWA)
@@ -132,26 +155,92 @@ cd packages/ui && npm install
 ### Run Development
 
 ```bash
-# All packages (root)
-npm run dev
-
-# Individual packages
+# Relay server (port 3000)
 cd packages/relay && npm run dev
+
+# UI PWA (port 5173)
 cd packages/ui && npm run dev
 ```
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and configure:
+
+```bash
+# Server Configuration
+PORT=3000
+
+# Temporal.io Configuration
+TEMPORAL_ADDRESS=localhost:7233
+TEMPORAL_NAMESPACE=default
+TEMPORAL_TASK_QUEUE=agentops-queue
+
+# Web Push Configuration (VAPID Keys)
+VAPID_PUBLIC_KEY=your_vapid_public_key_here
+VAPID_PRIVATE_KEY=your_vapid_private_key_here
+```
+
+---
+
+## Phase 0 Status ✅
+
+| Component | Status |
+|-----------|--------|
+| Monorepo scaffold | ✅ Complete |
+| Relay Server + Temporal | ✅ Complete |
+| Agent Registry API | ✅ Complete |
+| Approval Queue API | ✅ Complete |
+| Risk Policy Engine | ✅ Complete (OWASP MCP Top 10) |
+| Push Notifications | ✅ Complete (Web Push) |
+| Mobile Dashboard PWA | ✅ Complete |
+| Audit Log | ✅ Complete (append-only) |
+
+**Phase 0 Goal:** *"Prove: I can leave my desk and still control my agents."*
+
+**Status:** ✅ **PROVEN** — The Killer Loop is fully functional.
+
+---
+
+## API Endpoints
+
+### Agent Registry
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/agents/register` | POST | Register new agent |
+| `/agents/:id/heartbeat` | POST | Send heartbeat |
+| `/agents` | GET | List all agents |
+| `/agents/:id` | GET | Get agent status |
+
+### Approval Queue
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/approvals` | POST | Request approval |
+| `/approvals/pending` | GET | List pending approvals |
+| `/approvals` | GET | List all approvals |
+| `/approvals/:id` | PATCH | Approve/reject |
+| `/approvals/audit-logs` | GET | List audit logs |
+
+### Push Notifications
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/notifications/subscribe` | POST | Subscribe to push |
+| `/notifications/subscribe` | DELETE | Unsubscribe |
+| `/notifications/test` | POST | Send test notification |
+| `/notifications/subscriptions` | GET | List subscriptions |
 
 ---
 
 ## Roadmap
 
-| Phase | Timeline | Goal |
-|-------|----------|------|
-| **Phase 0** | Weeks 1-3 | Prove: "I can leave my desk and still control my agents." |
-| **Phase 1** | Weeks 4-6 | Prove: "I can trust what I'm approving." |
-| **Phase 2** | Weeks 7-10 | Prove: "I can run multiple agents cleanly." |
-| **Phase 3** | Weeks 11+ | Team features, RBAC, compliance dashboard |
-
-**Current Status:** 🔄 Phase 0 — Monorepo Scaffold & Relay Server
+| Phase | Timeline | Goal | Status |
+|-------|----------|------|--------|
+| **Phase 0** | Weeks 1-3 | Prove: "I can leave my desk and still control my agents." | ✅ Complete |
+| **Phase 1** | Weeks 4-6 | Prove: "I can trust what I'm approving." | ⏳ Next |
+| **Phase 2** | Weeks 7-10 | Prove: "I can run multiple agents cleanly." | ⏳ Queued |
+| **Phase 3** | Weeks 11+ | Team features, RBAC, compliance | ⏳ Future |
 
 ---
 

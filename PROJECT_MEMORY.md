@@ -2,7 +2,7 @@
 
 **Created:** 2026-03-17  
 **Type:** Monorepo — Agent Orchestration Platform  
-**Status:** Phase 0 — Scaffold  
+**Status:** Phase 0 ✅ Complete  
 **Version:** 2.0 (Pre-Launch)
 
 ---
@@ -22,7 +22,7 @@ AgentOps gives developers a mobile-first command surface to:
 ## The Killer Loop
 
 ```
-Agent starts work → Hits risky action → Push notification → 
+Agent hits risky action → Push notification → 
 Developer approves from phone → Workflow resumes → Logged to audit trail
 ```
 
@@ -34,8 +34,8 @@ Developer approves from phone → Workflow resumes → Logged to audit trail
 
 | Package | Stack | Purpose |
 |---------|-------|---------|
-| **relay** | Express.js + TypeScript + Temporal.io + SQLite | Durable execution relay server |
-| **ui** | React 18 + Vite + TypeScript + PWA | Mobile-first dashboard |
+| **relay** | Express.js + TypeScript + Temporal.io + SQLite + web-push | Durable execution relay server |
+| **ui** | React 18 + Vite + TypeScript + Tailwind CSS + PWA | Mobile-first dashboard |
 | **sdk** | TypeScript (npm package) | Agent-side registration & heartbeats |
 | **shared** | TypeScript types | Shared types across packages |
 
@@ -50,52 +50,66 @@ Developer approves from phone → Workflow resumes → Logged to audit trail
 | **Centralized Relay** | Node.js + Express | Agents run behind NATs. Relay solves connectivity + policy enforcement. |
 | **MCP Protocol** | Model Context Protocol | Vendor-neutral. Supports Claude, Antigravity, Cline, custom agents. |
 | **SQLite → PostgreSQL** | Progressive | Zero-config for solo users. Postgres for teams. |
+| **Risk Policy Engine** | OWASP MCP Top 10 | Layered security: trusted registry, schema validation, risk scoring, approval gates. |
 
 ---
 
-## Current Status
+## Phase 0 Status ✅
 
-| Component | Status | Phase |
+| Component | Status | Files |
 |-----------|--------|-------|
-| Monorepo scaffold | ✅ Complete | Phase 0 |
-| Relay Server + Temporal | 🔄 In Progress | Phase 0 |
-| Agent Registry + Heartbeat | ⏳ Queued | Phase 0 |
-| Approval Queue + Risk Policy | ⏳ Queued | Phase 0 |
-| Push Notifications | ⏳ Queued | Phase 0 |
-| Mobile Dashboard | ⏳ Queued | Phase 0 |
-| Approval-Ready Summaries | ⏳ Queued | Phase 1 |
-| Kanban Board + Worktrees | ⏳ Queued | Phase 2 |
+| Monorepo scaffold | ✅ Complete | All packages configured |
+| Relay Server + Temporal | ✅ Complete | `packages/relay/src/` |
+| Agent Registry API | ✅ Complete | `routes/agents.ts` |
+| Approval Queue API | ✅ Complete | `routes/approvals.ts` |
+| Risk Policy Engine | ✅ Complete | `middleware/riskPolicy.ts` |
+| Push Notifications | ✅ Complete | `routes/notifications.ts`, `utils/vapidKeys.ts` |
+| Mobile Dashboard PWA | ✅ Complete | `packages/ui/src/` |
+| Audit Log | ✅ Complete | SQLite `audit_logs` table |
 
 ---
 
 ## Known Issues
 
 - [ ] Temporal server not running (expected in dev)
-- [ ] No tests written yet
-- [ ] No CI/CD configured
+- [ ] No unit tests yet
+- [ ] VAPID keys need to be generated on first run
+- [ ] PWA manifest/icons not created
 - [ ] iOS PWA install friction (secondary target for v1)
 
 ---
 
 ## Next Priorities
 
-1. ✅ Complete Temporal scaffold (ch_1773783530054)
-2. ⏳ Implement agent registration API
-3. ⏳ Create UI scaffold with basic dashboard
-4. ⏳ Add approval queue API
-5. ⏳ Implement risk policy engine
+### Phase 1: Make It Trustworthy (Weeks 4-6)
+
+1. ⏳ Approval-Ready Summaries — Replace raw logs with structured artifact cards
+2. ⏳ Diff Preview — Inline code diff with syntax highlighting
+3. ⏳ Approval Reason Capture — Log rejection reasons for training signal
+4. ⏳ Session Replay (lite) — Replay key decision points
+5. ⏳ Resumable Workflows UI — Explicit UI to see interrupted sessions
 
 ---
 
 ## Key Metrics (Phase 0 Targets)
 
-| Metric | Target |
-|--------|--------|
-| Registered users | 60 |
-| Active agents connected | 100 |
-| Approval response time (median) | < 3 min |
-| Push delivery rate (Android + Desktop) | > 95% |
-| Workflow recovery success rate | > 98% |
+| Metric | Target | Current |
+|--------|--------|---------|
+| Registered users | 60 | 0 (pre-launch) |
+| Active agents connected | 100 | 0 (pre-launch) |
+| Approval response time (median) | < 3 min | N/A |
+| Push delivery rate (Android + Desktop) | > 95% | N/A |
+| Workflow recovery success rate | > 98% | N/A |
+
+---
+
+## Git History
+
+| Commit | Description |
+|--------|-------------|
+| `25ddcd9` | Phase 0 complete - Agent Registry, Approval Queue, Push Notifications, Mobile PWA |
+| `4e84656` | docs: Update all markdown files based on AgentOPS.md roadmap |
+| `a0b7ff0` | chore: Initialize monorepo with all bootstrap files (7/7) |
 
 ---
 
