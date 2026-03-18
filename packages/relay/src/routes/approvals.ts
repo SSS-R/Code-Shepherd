@@ -239,19 +239,3 @@ export function createApprovalRoutes(db: Database) {
 
   return router;
 }
- LIMIT ?
-      `);
-      const logs = stmt.all(Number(limit)).map((log: any) => ({
-        ...log,
-        event_details: JSON.parse(log.event_details || '{}')
-      }));
-
-      res.json(logs);
-    } catch (error: any) {
-      console.error('List audit logs error:', error);
-      res.status(500).json({ error: 'Failed to list audit logs' });
-    }
-  });
-
-  return router;
-}
