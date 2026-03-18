@@ -28,14 +28,14 @@ export interface ApprovalState {
   decision_reason?: string;
 }
 
-export interface DecisionSignal {
+export interface DecisionSignalPayload {
   decision: 'approved' | 'rejected';
   decision_reason: string;
   decidedBy: string;
 }
 
 // Define decision signal
-export const decisionSignal = defineSignal<DecisionSignal>('decision');
+export const decisionSignal = defineSignal<DecisionSignalPayload>('decision');
 
 /**
  * Approval Request Workflow
@@ -51,8 +51,8 @@ export async function approvalRequestWorkflow(
   let decision_reason = '';
   let decidedBy = '';
 
-  // Set up decision signal handler
-  setHandler(decisionSignal, (payload: DecisionSignal) => {
+  // Set up decision signal handler within workflow body
+  setHandler(decisionSignal, (payload: DecisionSignalPayload): void => {
     decisionReceived = true;
     decision = payload.decision;
     decision_reason = payload.decision_reason;

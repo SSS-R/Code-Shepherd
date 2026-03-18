@@ -13,7 +13,7 @@ import Database from 'better-sqlite3';
 import { sendPushNotification } from './notifications';
 import { getVapidKeys } from '../utils/vapidKeys';
 
-export function createApprovalRoutes(db: Database) {
+export function createApprovalRoutes(db: Database): ReturnType<typeof require>['Router'] {
   const vapidKeys = getVapidKeys();
   const router = require('express').Router();
 
@@ -51,7 +51,7 @@ export function createApprovalRoutes(db: Database) {
    * POST /approvals
    * Request approval for an action (agent-initiated)
    */
-  router.post('/', (req: Request, res: Response) => {
+  router.post('/', (req: Request, res: Response): Response => {
     try {
       const { id, agent_id, action_type, action_details, risk_level, risk_reason } = req.body as {
         id: string;
@@ -81,7 +81,7 @@ export function createApprovalRoutes(db: Database) {
       `);
       auditStmt.run(JSON.stringify({ action_type, action_details }), agent_id, id);
 
-      res.status(201).json({
+      return res.status(201).json({
         id,
         agent_id,
         action_type,
@@ -93,7 +93,7 @@ export function createApprovalRoutes(db: Database) {
       });
     } catch (error: unknown) {
       console.error('Create approval error:', error);
-      res.status(500).json({ error: 'Failed to create approval request' });
+      return res.status(500).json({ error: 'Failed to create approval request' });
     }
   });
 
@@ -101,22 +101,22 @@ export function createApprovalRoutes(db: Database) {
    * GET /approvals/pending
    * List all pending approvals
    */
-  router.get('/pending', (req: Request, res: Response) => {
+  router.get('/pending', (req: Request, res: Response): Response => {
     try {
       const stmt = db.prepare(`
         SELECT * FROM approvals 
         WHERE status = 'pending' 
         ORDER BY requested_at ASC
       `);
-      const approvals = stmt.all().map((approval: any) => ({
+      const approvals = stmt.all().map((approval: any): any => ({
         ...approval,
         action_details: JSON.parse(approval.action_details || '{}')
       }));
 
-      res.json(approvals);
+      return res.json(approvals);
     } catch (error: unknown) {
       console.error('List pending approvals error:', error);
-      res.status(500).json({ error: 'Failed to list pending approvals' });
+      return res.status(500).json({ error: 'Failed to list pending approvals' });
     }
   });
 
@@ -124,11 +124,12 @@ export function createApprovalRoutes(db: Database) {
    * GET /approvals
    * List all approvals (with optional status filter)
    */
-  router.get('/', (req: Request, res: Response) => {
+  router.get('/', (req: Request, res: Response): Response => {
     try {
       const { status } = req.query as { status?: string };
-      let query = 'SELECT * FROM approvals';
       const params: unknown[] = [];
+
+      let query = 'SELECT * FROM approvals';
 
       if (status) {
         query += ' WHERE status = ?';
@@ -138,15 +139,15 @@ export function createApprovalRoutes(db: Database) {
       query += ' ORDER BY requested_at DESC';
 
       const stmt = db.prepare(query);
-      const approvals = stmt.all(...params).map((approval: any) => ({
+      const approvals = stmt.all(...params).map((approval: any): any => ({
         ...approval,
         action_details: JSON.parse(approval.action_details || '{}')
       }));
 
-      res.json(approvals);
+      return res.json(approvals);
     } catch (error: unknown) {
       console.error('List approvals error:', error);
-      res.status(500).json({ error: 'Failed to list approvals' });
+      return res.status(500).json({ error: 'Failed to list approvals' });
     }
   });
 
@@ -154,7 +155,7 @@ export function createApprovalRoutes(db: Database) {
    * GET /approvals/:id
    * Get a specific approval
    */
-  router.get('/:id', (req: Request, res: Response) => {
+  router.get('/:id', (req: Request, res: Response): Response => {
     try {
       const { id } = req.params as { id: string };
       const stmt = db.prepare('SELECT * FROM approvals WHERE id = ?');
@@ -164,13 +165,13 @@ export function createApprovalRoutes(db: Database) {
         return res.status(404).json({ error: 'Approval not found' });
       }
 
-      res.json({
+      return res.json({
         ...approval,
         action_details: JSON.parse(approval.action_details || '{}')
       });
     } catch (error: unknown) {
       console.error('Get approval error:', error);
-      res.status(500).json({ error: 'Failed to get approval' });
+      return res.status(500).json({ error: 'Failed to get approval' });
     }
   });
 
@@ -178,7 +179,7 @@ export function createApprovalRoutes(db: Database) {
    * PATCH /approvals/:id
    * Approve or reject an approval (human decision)
    */
-  router.patch('/:id', (req: Request, res: Response) => {
+  router.patch('/:id', (req: Request, res: Response): Response => {
     try {
       const { id } = req.params as { id: string };
       const { decision, decision_reason } = req.body as { decision: string; decision_reason: string };
@@ -207,7 +208,7 @@ export function createApprovalRoutes(db: Database) {
       `);
       auditStmt.run(JSON.stringify({ decision, decision_reason }), id);
 
-      res.json({
+      return res.json({
         id,
         status: decision === 'approved' ? 'approved' : 'rejected',
         decision,
@@ -216,7 +217,7 @@ export function createApprovalRoutes(db: Database) {
       });
     } catch (error: unknown) {
       console.error('Decide approval error:', error);
-      res.status(500).json({ error: 'Failed to decide approval' });
+      return res.status(500).json({ error: 'Failed to decide approval' });
     }
   });
 
@@ -224,7 +225,7 @@ export function createApprovalRoutes(db: Database) {
    * GET /audit-logs
    * List audit logs (append-only log of all actions)
    */
-  router.get('/audit-logs', (req: Request, res: Response) => {
+  router.get('/audit-logs', (req: Request, res: Response): Response => {
     try {
       const { limit = 100 } = req.query as { limit?: string };
       const stmt = db.prepare(`
@@ -232,15 +233,15 @@ export function createApprovalRoutes(db: Database) {
         ORDER BY timestamp DESC 
         LIMIT ?
       `);
-      const logs = stmt.all(Number(limit)).map((log: any) => ({
+      const logs = stmt.all(Number(limit)).map((log: any): any => ({
         ...log,
         event_details: JSON.parse(log.event_details || '{}')
       }));
 
-      res.json(logs);
+      return res.json(logs);
     } catch (error: unknown) {
       console.error('List audit logs error:', error);
-      res.status(500).json({ error: 'Failed to list audit logs' });
+      return res.status(500).json({ error: 'Failed to list audit logs' });
     }
   });
 

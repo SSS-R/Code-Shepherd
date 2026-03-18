@@ -25,12 +25,12 @@ export interface AgentSessionState {
   heartbeatCount: number;
 }
 
-export interface HeartbeatSignal {
+export interface HeartbeatSignalPayload {
   timestamp: string;
 }
 
 // Define heartbeat signal
-export const heartbeatSignal = defineSignal<HeartbeatSignal>('heartbeat');
+export const heartbeatSignal = defineSignal<HeartbeatSignalPayload>('heartbeat');
 
 /**
  * Agent Session Workflow
@@ -44,8 +44,8 @@ export async function agentSessionWorkflow(
 ): Promise<void> {
   let heartbeatReceived = false;
 
-  // Set up heartbeat signal handler
-  setHandler(heartbeatSignal, (payload: HeartbeatSignal) => {
+  // Set up heartbeat signal handler within workflow body
+  setHandler(heartbeatSignal, (payload: HeartbeatSignalPayload): void => {
     heartbeatReceived = true;
     state.lastHeartbeat = payload.timestamp;
     state.heartbeatCount += 1;
