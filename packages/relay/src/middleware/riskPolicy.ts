@@ -12,6 +12,15 @@ export interface RiskAssessment {
   risk_factors: string[];
 }
 
+interface ActionDetails {
+  path?: string;
+  command?: string;
+  branch?: string;
+  environment?: string;
+  url?: string;
+  [key: string]: unknown;
+}
+
 // Risk patterns based on OWASP MCP Top 10
 const RISK_PATTERNS = {
   // Critical risk - always requires approval
@@ -55,46 +64,130 @@ const RISK_PATTERNS = {
   ],
 };
 
+const SECRET_PATH_PATTERNS = [/\.env/i, /secret/i, /credential/i, /token/i, /private[_-]?key/i, /id_rsa/i];
+const INFRA_PATH_PATTERNS = [/docker/i, /k8s/i, /kubernetes/i, /terraform/i, /helm/i, /infra/i, /deployment/i, /github\/workflows/i];
+const PROD_BRANCH_PATTERNS = [/^main$/i, /^master$/i, /^production$/i, /^release\//i, /^hotfix\//i];
+
+function extractSignals(action_type: string, action_details: ActionDetails): {
+  path: string;
+  command: string;
+  branch: string;
+  environment: string;
+  url: string;
+  actionText: string;
+} {
+  const path = typeof action_details.path === 'string' ? action_details.path : '';
+  const command = typeof action_details.command === 'string' ? action_details.command : '';
+  const branch = typeof action_details.branch === 'string' ? action_details.branch : '';
+  const environment = typeof action_details.environment === 'string' ? action_details.environment : '';
+  const url = typeof action_details.url === 'string' ? action_details.url : '';
+  const actionText = `${action_type} ${JSON.stringify(action_details)}`;
+
+  return { path, command, branch, environment, url, actionText };
+}
+
+function hasPatternMatch(patterns: RegExp[], value: string): boolean {
+  return patterns.some((pattern) => pattern.test(value));
+}
+
+function pushUnique(riskFactors: string[], message: string): void {
+  if (!riskFactors.includes(message)) {
+    riskFactors.push(message);
+  }
+}
+
 /**
  * Evaluate the risk level of an action
  */
-export function evaluateRisk(action_type: string, action_details: any): RiskAssessment {
+export function evaluateRisk(action_type: string, action_details: ActionDetails): RiskAssessment {
   const risk_factors: string[] = [];
   let risk_level: 'low' | 'medium' | 'high' | 'critical' = 'low';
   let requires_approval = false;
   let risk_reason = '';
-
-  // Check action type
-  const actionString = `${action_type} ${JSON.stringify(action_details)}`;
+  const { path, command, branch, environment, url, actionText } = extractSignals(action_type, action_details);
 
   // Check critical patterns
   for (const pattern of RISK_PATTERNS.critical) {
-    if (pattern.test(actionString)) {
-      risk_factors.push(`Critical pattern matched: ${pattern.source}`);
+    if (pattern.test(actionText)) {
+      pushUnique(risk_factors, `Critical pattern matched: ${pattern.source}`);
       risk_level = 'critical';
       requires_approval = true;
     }
   }
 
+  if (path && hasPatternMatch(SECRET_PATH_PATTERNS, path)) {
+    pushUnique(risk_factors, `Sensitive file path targeted: ${path}`);
+    risk_level = 'critical';
+    requires_approval = true;
+  }
+
+  if (environment && /prod/i.test(environment)) {
+    pushUnique(risk_factors, `Production environment targeted: ${environment}`);
+    risk_level = 'critical';
+    requires_approval = true;
+  }
+
+  if (branch && hasPatternMatch(PROD_BRANCH_PATTERNS, branch)) {
+    pushUnique(risk_factors, `Protected branch targeted: ${branch}`);
+    risk_level = 'critical';
+    requires_approval = true;
+  }
+
   // Check high risk patterns (if not already critical)
   if (risk_level !== 'critical') {
     for (const pattern of RISK_PATTERNS.high) {
-      if (pattern.test(actionString)) {
-        risk_factors.push(`High risk pattern matched: ${pattern.source}`);
+      if (pattern.test(actionText)) {
+        pushUnique(risk_factors, `High risk pattern matched: ${pattern.source}`);
         risk_level = 'high';
         requires_approval = true;
       }
+    }
+
+    if (path && hasPatternMatch(INFRA_PATH_PATTERNS, path)) {
+      pushUnique(risk_factors, `Infrastructure-related path modified: ${path}`);
+      risk_level = 'high';
+      requires_approval = true;
+    }
+
+    if (action_type === 'file_delete') {
+      pushUnique(risk_factors, 'File deletion requested');
+      risk_level = 'high';
+      requires_approval = true;
+    }
+
+    if (command && /git\s+push/i.test(command) && hasPatternMatch(PROD_BRANCH_PATTERNS, branch || command)) {
+      pushUnique(risk_factors, 'Push to protected branch detected');
+      risk_level = 'high';
+      requires_approval = true;
     }
   }
 
   // Check medium risk patterns (if not already high or critical)
   if (risk_level === 'low') {
     for (const pattern of RISK_PATTERNS.medium) {
-      if (pattern.test(actionString)) {
-        risk_factors.push(`Medium risk pattern matched: ${pattern.source}`);
+      if (pattern.test(actionText)) {
+        pushUnique(risk_factors, `Medium risk pattern matched: ${pattern.source}`);
         risk_level = 'medium';
         requires_approval = true;
       }
+    }
+
+    if (action_type === 'command_execute' && command) {
+      pushUnique(risk_factors, `Command execution requested: ${command}`);
+      risk_level = 'medium';
+      requires_approval = true;
+    }
+
+    if (action_type === 'api_call' && url) {
+      pushUnique(risk_factors, `External API call requested: ${url}`);
+      risk_level = 'medium';
+      requires_approval = true;
+    }
+
+    if (action_type === 'file_write' && path) {
+      pushUnique(risk_factors, `File modification requested: ${path}`);
+      risk_level = 'medium';
+      requires_approval = true;
     }
   }
 
