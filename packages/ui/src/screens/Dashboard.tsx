@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import ActiveWorkflows from '../components/ActiveWorkflows'
 
 interface Agent {
   id: string

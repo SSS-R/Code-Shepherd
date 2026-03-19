@@ -6,10 +6,12 @@
 import express, { Request, Response } from 'express';
 import Database from 'better-sqlite3';
 import { NativeConnection, Worker } from '@temporalio/worker';
+import { Connection, WorkflowClient } from '@temporalio/client';
 import { createAgentRoutes } from './routes/agents';
 import { createApprovalRoutes } from './routes/approvals';
 import { createNotificationRoutes } from './routes/notifications';
 import { createAuditRoutes } from './routes/audit';
+import { createWorkflowRoutes } from './routes/workflows';
 import { getVapidKeys } from './utils/vapidKeys';
 import * as activities from './activities';
 
@@ -30,8 +32,9 @@ app.use((req: Request, res: Response, next: Function) => {
 // SQLite Database
 const db = new Database('./relay.db');
 
-// Temporal.io connection
+// Temporal.io connections
 let temporalWorker: Worker | null = null;
+let workflowClient: WorkflowClient | null = null;
 
 async function initializeTemporal() {
   try {
@@ -46,8 +49,17 @@ async function initializeTemporal() {
       workflowsPath: require.resolve('./workflows'),
       activities
     });
+
+    // Create client for querying
+    const clientConnection = await Connection.connect({
+      address: 'localhost:7233'
+    });
+    workflowClient = new WorkflowClient({
+      connection: clientConnection,
+      namespace: 'default',
+    });
     
-    console.log('Temporal worker connected');
+    console.log('Temporal worker and client connected');
   } catch (error) {
     console.error('Temporal connection failed (expected in dev):', error);
   }
@@ -73,6 +85,9 @@ app.use('/audit-logs', createAuditRoutes(db));
 
 // Push Notifications API
 app.use('/notifications', createNotificationRoutes(db, vapidKeys));
+
+// Workflows API
+app.use('/workflows', createWorkflowRoutes(workflowClient));
 
 // Start server
 async function start() {

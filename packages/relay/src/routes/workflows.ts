@@ -6,6 +6,7 @@
  */
 
 import { Request, Response } from 'express';
+import { WorkflowClient } from '@temporalio/client';
 
 interface WorkflowInfo {
   workflowId: string;
@@ -16,40 +17,52 @@ interface WorkflowInfo {
   description: string;
 }
 
-export function createWorkflowRoutes(): ReturnType<typeof require>['Router'] {
+export function createWorkflowRoutes(client: WorkflowClient | null): ReturnType<typeof require>['Router'] {
   const router = require('express').Router();
 
   /**
    * GET /workflows
-   * List all active workflows (mock data until Temporal integration)
+   * List all active workflows from Temporal
    */
-  router.get('/', (req: Request, res: Response) => {
+  router.get('/', async (req: Request, res: Response) => {
     try {
-      // Mock data - will be replaced with actual Temporal client query
-      const workflows: WorkflowInfo[] = [
-        {
-          workflowId: 'wf-approval-001',
-          workflowType: 'ApprovalWorkflow',
-          status: 'waiting',
-          waitingSince: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-          agentId: 'agent-001',
-          description: 'Waiting for approval on file_write action'
-        },
-        {
-          workflowId: 'wf-session-002',
-          workflowType: 'AgentSessionWorkflow',
-          status: 'running',
-          agentId: 'agent-002',
-          description: 'Agent session active, monitoring heartbeats'
-        }
-      ];
+      if (!client) {
+        return res.json([]);
+      }
+
+      // Query Temporal for open workflows
+      const response = await client.connection.workflowService.listOpenWorkflowExecutions({
+        namespace: 'default',
+        maximumPageSize: 10,
+      });
+
+      const workflows: WorkflowInfo[] = (response.executions || []).map(execution => {
+        const type = execution.type?.name || 'Unknown';
+        const id = execution.execution?.workflowId || 'unknown';
+        const startTime = execution.startTime ? new Date(Number(execution.startTime.seconds) * 1000).toISOString() : undefined;
+        
+        return {
+          workflowId: id,
+          workflowType: type,
+          status: 'running', // Temporal listOpen shows running/pending
+          waitingSince: startTime,
+          description: getWorkflowDescription(type, id)
+        };
+      });
 
       res.json(workflows);
     } catch (error: unknown) {
       console.error('Get workflows error:', error);
-      res.status(500).json({ error: 'Failed to get workflows' });
+      // Fallback to empty if cluster is down to prevent UI crash
+      res.json([]);
     }
   });
 
   return router;
+}
+
+function getWorkflowDescription(type: string, id: string): string {
+  if (type === 'ApprovalWorkflow') return 'Waiting for human interaction or timeout';
+  if (type === 'AgentSessionWorkflow') return 'Active agent control session';
+  return `Execution of ${type} workflow`;
 }
