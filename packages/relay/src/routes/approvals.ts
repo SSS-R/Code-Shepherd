@@ -14,6 +14,7 @@ import { sendPushNotification } from './notifications';
 import { getVapidKeys } from '../utils/vapidKeys';
 import { generateSummary } from '../utils/summaryGenerator';
 import { processApprovalWithDiff } from '../utils/diffGenerator';
+import { evaluateRisk } from '../middleware/riskPolicy';
 
 export function createApprovalRoutes(db: Database): ReturnType<typeof require>['Router'] {
   const vapidKeys = getVapidKeys();
@@ -84,6 +85,10 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
         return res.status(400).json({ error: 'id, agent_id, and action_type are required' });
       }
 
+      const assessment = evaluateRisk(action_type, action_details || {});
+      const resolvedRiskLevel = risk_level || assessment.risk_level;
+      const resolvedRiskReason = risk_reason || assessment.risk_reason;
+
       // Generate human-readable summary
       const summary = generateSummary(action_type, action_details || {});
 
@@ -96,7 +101,7 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
       `);
 
-      stmt.run(id, agent_id, action_type, summary, diff, is_new_file ? 1 : 0, JSON.stringify(action_details || {}), risk_level, risk_reason);
+      stmt.run(id, agent_id, action_type, summary, diff, is_new_file ? 1 : 0, JSON.stringify(action_details || {}), resolvedRiskLevel, resolvedRiskReason);
 
       // Log to audit trail
       const auditStmt = db.prepare(`
@@ -104,6 +109,14 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
         VALUES ('approval_requested', ?, ?, ?)
       `);
       auditStmt.run(JSON.stringify({ action_type, action_details }), agent_id, id);
+
+      void sendPushNotification(db, vapidKeys, 'AgentOps Approval Required', `${summary} (${resolvedRiskLevel} risk)`, {
+        approvalId: id,
+        agentId: agent_id,
+        actionType: action_type,
+      }).catch((notificationError: unknown) => {
+        console.error('Push notification error:', notificationError);
+      });
 
       return res.status(201).json({
         id,
@@ -113,8 +126,8 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
         diff,
         is_new_file,
         action_details: action_details || {},
-        risk_level: risk_level || 'medium',
-        risk_reason: risk_reason || null,
+        risk_level: resolvedRiskLevel,
+        risk_reason: resolvedRiskReason || null,
         status: 'pending',
         message: 'Approval request created'
       });

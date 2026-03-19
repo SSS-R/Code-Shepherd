@@ -2,7 +2,7 @@
 
 **Created:** 2026-03-17  
 **Type:** Monorepo — Agent Orchestration Platform  
-**Status:** Phase 0 ✅ Complete  
+**Status:** Phase 1 Prototype In Progress  
 **Version:** 2.0 (Pre-Launch)
 
 ---
@@ -54,17 +54,20 @@ Developer approves from phone → Workflow resumes → Logged to audit trail
 
 ---
 
-## Phase 0 Status ✅
+## Current Status
 
 | Component | Status | Files |
 |-----------|--------|-------|
 | Monorepo scaffold | ✅ Complete | All packages configured |
-| Relay Server + Temporal | ✅ Complete | `packages/relay/src/` |
+| Relay Server + SQLite | ✅ Complete | `packages/relay/src/` |
+| Temporal scaffold | 🟡 Partial | `packages/relay/src/workflows/` |
 | Agent Registry API | ✅ Complete | `routes/agents.ts` |
 | Approval Queue API | ✅ Complete | `routes/approvals.ts` |
-| Risk Policy Engine | ✅ Complete | `middleware/riskPolicy.ts` |
 | Push Notifications | ✅ Complete | `routes/notifications.ts`, `utils/vapidKeys.ts` |
 | Mobile Dashboard PWA | ✅ Complete | `packages/ui/src/` |
+| Approval summaries & diff preview | ✅ Complete | `utils/summaryGenerator.ts`, `utils/diffGenerator.ts` |
+| Agent-side SDK | ✅ Complete | `packages/sdk/src/` |
+| Risk enforcement | 🟡 Basic | `middleware/riskPolicy.ts` |
 | Audit Log | ✅ Complete | SQLite `audit_logs` table |
 
 ---
@@ -72,7 +75,7 @@ Developer approves from phone → Workflow resumes → Logged to audit trail
 ## Known Issues
 
 - [ ] Temporal server not running (expected in dev)
-- [ ] No unit tests yet
+- [ ] No automated tests yet
 - [ ] VAPID keys need to be generated on first run
 - [ ] PWA manifest/icons not created
 - [ ] iOS PWA install friction (secondary target for v1)
@@ -81,13 +84,14 @@ Developer approves from phone → Workflow resumes → Logged to audit trail
 
 ## Next Priorities
 
-### Phase 1: Make It Trustworthy (Weeks 4-6) ✅ COMPLETE
+### Phase 1: Make It Trustworthy (Weeks 4-6) 🟡 IN PROGRESS
 
 1. ✅ Approval-Ready Summaries — Human-readable summaries for all actions
 2. ✅ Diff Preview — Inline code diff viewer with syntax highlighting
 3. ✅ Approval Reason Capture — Required rejection reasons
-4. ✅ Session Replay (lite) — Visual timeline of agent actions
-5. ✅ Resumable Workflows UI — Active workflows list with resume capability
+4. ✅ Session Timeline — Visual timeline of agent actions
+5. 🟡 Resumable Workflows — UI hook present, Temporal signal flow still needs hardening
+6. 🟡 Risk Enforcement — basic risk scoring present, not full policy system
 
 ### Phase 2: Operational Excellence (Weeks 7-10) ⏳ NEXT
 

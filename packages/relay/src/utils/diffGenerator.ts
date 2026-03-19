@@ -1,11 +1,9 @@
 /**
  * Diff Generator
  * 
- * Generates unified diffs for file_write approval requests.
- * Uses the 'diff' package to compute differences between old and new content.
+ * Generates lightweight unified diffs for file_write approval requests.
  */
 
-import { createTwoFilesPatch } from 'diff';
 
 interface DiffResult {
   diff: string | null;
@@ -44,14 +42,7 @@ export function generateDiff(action_details: FileActionDetails): DiffResult {
 
   // Case 2: File modification (has both old and new content)
   if (new_content !== undefined) {
-    const diff = createTwoFilesPatch(
-      path,
-      path,
-      old_content,
-      new_content,
-      'original',
-      'modified'
-    );
+    const diff = createUnifiedDiff(path, old_content, new_content);
 
     return {
       diff,
@@ -68,6 +59,40 @@ export function generateDiff(action_details: FileActionDetails): DiffResult {
     has_old_content: false,
     has_new_content: !!content
   };
+}
+
+function createUnifiedDiff(path: string, oldContent: string, newContent: string): string {
+  const oldLines = oldContent.split('\n');
+  const newLines = newContent.split('\n');
+  const maxLines = Math.max(oldLines.length, newLines.length);
+  const body: string[] = [];
+
+  for (let index = 0; index < maxLines; index += 1) {
+    const before = oldLines[index];
+    const after = newLines[index];
+
+    if (before === after) {
+      if (before !== undefined) {
+        body.push(` ${before}`);
+      }
+      continue;
+    }
+
+    if (before !== undefined) {
+      body.push(`-${before}`);
+    }
+
+    if (after !== undefined) {
+      body.push(`+${after}`);
+    }
+  }
+
+  return [
+    `--- a/${path}`,
+    `+++ b/${path}`,
+    `@@ -1,${oldLines.length} +1,${newLines.length} @@`,
+    ...body,
+  ].join('\n');
 }
 
 /**

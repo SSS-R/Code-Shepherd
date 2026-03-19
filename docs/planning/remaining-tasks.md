@@ -22,6 +22,7 @@
 | Rejection Reason Capture | P1 | ✅ |
 | Session Timeline (agent history) | P1 | ✅ |
 | Active Workflows Dashboard (Temporal queries) | P1 | ✅ |
+| Agent-side SDK source | P1 | ✅ |
 
 ---
 
@@ -45,11 +46,11 @@ These are the features that complete the "Killer Loop" and make the product usab
 
 #### 2. Agent-Side SDK (`@agentops/sdk`)
 **Why:** Without this, no agent can actually connect. This enables the entire product.
-- [ ] Create `packages/sdk/` with `client.ts`, `heartbeat.ts`, `approvals.ts`
-- [ ] `AgentOps.register({ name, capabilities })` → POST /agents
-- [ ] Auto-heartbeat every 30s → POST /agents/:id/heartbeat
-- [ ] `AgentOps.requestApproval({ action_type, details })` → POST /approvals
-- [ ] Wait for approval signal (poll or WebSocket)
+- [x] Create `packages/sdk/` with `client.ts`, `heartbeat.ts`, `approvals.ts`
+- [x] `AgentOps.register({ name, capabilities })` → POST /agents
+- [x] Auto-heartbeat every 30s → POST /agents/:id/heartbeat
+- [x] `AgentOps.requestApproval({ action_type, details })` → POST /approvals
+- [x] Wait for approval decision via polling helper
 - [ ] Publish to npm as `@agentops/sdk`
 - **Estimated effort:** 1–2 sessions
 

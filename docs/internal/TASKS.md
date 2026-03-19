@@ -3,11 +3,11 @@
 ## Backlog
 
 ### Phase 1: Make It Trustworthy (Weeks 4-6)
-- [ ] Approval-Ready Summaries — Structured artifact cards instead of raw logs
-- [ ] Diff Preview — Inline code diff with syntax highlighting
-- [ ] Approval Reason Capture — Log rejection reasons
-- [ ] Session Replay (lite) — Replay key decision points
-- [ ] Resumable Workflows UI — See interrupted sessions
+- [x] Approval-Ready Summaries — Structured artifact cards instead of raw logs
+- [x] Diff Preview — Inline code diff with syntax highlighting
+- [x] Approval Reason Capture — Log rejection reasons
+- [x] Session Timeline — Replay key decision points
+- [ ] Resumable Workflows hardening — complete Temporal signal/resume path
 
 ### Phase 2: Make It Operational (Weeks 7-10)
 - [ ] Kanban Task Board — Drag-and-drop board with states
@@ -31,6 +31,7 @@
 - [ ] Write unit tests for relay server
 - [ ] Write unit tests for UI components
 - [ ] Set up CI/CD pipeline
+- [ ] Add end-to-end SDK example / smoke test
 
 ---
 
@@ -43,6 +44,7 @@
 - [x] Phase 0: Risk Policy Engine ✅
 - [x] Phase 0: Push Notifications ✅
 - [x] Phase 0: Mobile Dashboard PWA ✅
+- [x] SDK scaffold replaced with working source ✅
 
 ---
 
@@ -69,7 +71,9 @@
 - [x] Audit Log (append-only SQLite table)
 - [x] All documentation (README, ARCHITECTURE, etc.)
 
-**Phase 0 Status:** ✅ **COMPLETE** — The Killer Loop is fully functional.
+**Phase 0 Status:** ✅ **COMPLETE** — Base loop exists.
+
+**Current overall repo state:** 🟡 **EARLY PHASE 1 PROTOTYPE** — usable demo, not production-ready.
 
 ---
 

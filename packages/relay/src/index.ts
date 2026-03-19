@@ -17,6 +17,10 @@ import * as activities from './activities';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const DATABASE_PATH = process.env.DATABASE_PATH || './relay.db';
+const TEMPORAL_ADDRESS = process.env.TEMPORAL_ADDRESS || 'localhost:7233';
+const TEMPORAL_NAMESPACE = process.env.TEMPORAL_NAMESPACE || 'default';
+const TEMPORAL_TASK_QUEUE = process.env.TEMPORAL_TASK_QUEUE || 'agentops-queue';
 
 // Get VAPID keys for Web Push
 const vapidKeys = getVapidKeys();
@@ -30,7 +34,7 @@ app.use((req: Request, res: Response, next: Function) => {
 });
 
 // SQLite Database
-const db = new Database('./relay.db');
+const db = new Database(DATABASE_PATH);
 
 // Temporal.io connections
 let temporalWorker: Worker | null = null;
@@ -39,26 +43,26 @@ let workflowClient: WorkflowClient | null = null;
 async function initializeTemporal() {
   try {
     const connection = await NativeConnection.connect({
-      address: 'localhost:7233'
+      address: TEMPORAL_ADDRESS
     });
-    
+
     temporalWorker = await Worker.create({
       connection,
-      namespace: 'default',
-      taskQueue: 'agentops-queue',
+      namespace: TEMPORAL_NAMESPACE,
+      taskQueue: TEMPORAL_TASK_QUEUE,
       workflowsPath: require.resolve('./workflows'),
       activities
     });
 
     // Create client for querying
     const clientConnection = await Connection.connect({
-      address: 'localhost:7233'
+      address: TEMPORAL_ADDRESS
     });
     workflowClient = new WorkflowClient({
       connection: clientConnection,
-      namespace: 'default',
+      namespace: TEMPORAL_NAMESPACE,
     });
-    
+
     console.log('Temporal worker and client connected');
   } catch (error) {
     console.error('Temporal connection failed (expected in dev):', error);
@@ -67,8 +71,8 @@ async function initializeTemporal() {
 
 // Routes
 app.get('/health', (req: Request, res: Response) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     temporal: temporalWorker ? 'connected' : 'disconnected',
     agents: db.prepare('SELECT COUNT(*) as count FROM agents').get()
   });
@@ -92,7 +96,7 @@ app.use('/workflows', createWorkflowRoutes(workflowClient));
 // Start server
 async function start() {
   await initializeTemporal();
-  
+
   app.listen(PORT, () => {
     console.log(`Relay server running on http://localhost:${PORT}`);
     console.log(`Health check: http://localhost:${PORT}/health`);
@@ -103,6 +107,8 @@ async function start() {
     console.log(`Workflows API: http://localhost:${PORT}/workflows`);
     console.log(`Notifications API: http://localhost:${PORT}/notifications`);
     console.log(`VAPID Public Key: ${vapidKeys.publicKey}`);
+    console.log(`Database Path: ${DATABASE_PATH}`);
+    console.log(`Temporal Address: ${TEMPORAL_ADDRESS}`);
   });
 }
 

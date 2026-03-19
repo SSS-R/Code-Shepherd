@@ -12,6 +12,7 @@ interface Workflow {
 export default function ActiveWorkflows() {
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [loading, setLoading] = useState(true)
+  const [resumingId, setResumingId] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('http://localhost:3000/workflows')
@@ -24,6 +25,20 @@ export default function ActiveWorkflows() {
         setLoading(false)
       })
   }, [])
+
+  const handleResume = async (workflowId: string): Promise<void> => {
+    try {
+      setResumingId(workflowId)
+      await fetch(`http://localhost:3000/workflows/${workflowId}/resume`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+    } catch (error) {
+      console.error('Failed to resume workflow:', error)
+    } finally {
+      setResumingId(null)
+    }
+  }
 
   const getTimeAgo = (timestamp?: string): string => {
     if (!timestamp) return '';
@@ -77,11 +92,10 @@ export default function ActiveWorkflows() {
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${
-                    workflow.status === 'running' ? 'bg-green-500 animate-pulse' :
-                    workflow.status === 'waiting' ? 'bg-yellow-500 animate-pulse' :
-                    'bg-blue-500'
-                  }`} />
+                  <div className={`w-2 h-2 rounded-full ${workflow.status === 'running' ? 'bg-green-500 animate-pulse' :
+                      workflow.status === 'waiting' ? 'bg-yellow-500 animate-pulse' :
+                        'bg-blue-500'
+                    }`} />
                   <span className="text-sm font-semibold text-white">
                     {workflow.workflowType}
                   </span>
@@ -90,11 +104,11 @@ export default function ActiveWorkflows() {
                   {workflow.status}
                 </span>
               </div>
-              
+
               <p className="text-sm text-slate-400 mb-2">
                 {workflow.description}
               </p>
-              
+
               <div className="flex items-center gap-4 text-xs text-slate-500">
                 <span>ID: {workflow.workflowId}</span>
                 {workflow.agentId && (
@@ -105,11 +119,15 @@ export default function ActiveWorkflows() {
                 )}
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2">
               {workflow.status === 'waiting' && (
-                <button className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors">
-                  Resume
+                <button
+                  onClick={() => void handleResume(workflow.workflowId)}
+                  disabled={resumingId === workflow.workflowId}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  {resumingId === workflow.workflowId ? 'Resuming...' : 'Resume'}
                 </button>
               )}
               <button className="px-4 py-2 glass hover:bg-white/5 text-white rounded-lg text-sm font-medium transition-colors">

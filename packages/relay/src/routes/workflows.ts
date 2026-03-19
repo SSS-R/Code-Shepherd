@@ -40,7 +40,7 @@ export function createWorkflowRoutes(client: WorkflowClient | null): ReturnType<
         const type = execution.type?.name || 'Unknown';
         const id = execution.execution?.workflowId || 'unknown';
         const startTime = execution.startTime ? new Date(Number(execution.startTime.seconds) * 1000).toISOString() : undefined;
-        
+
         return {
           workflowId: id,
           workflowType: type,
@@ -50,11 +50,29 @@ export function createWorkflowRoutes(client: WorkflowClient | null): ReturnType<
         };
       });
 
-      res.json(workflows);
+      return res.json(workflows);
     } catch (error: unknown) {
       console.error('Get workflows error:', error);
       // Fallback to empty if cluster is down to prevent UI crash
-      res.json([]);
+      return res.json([]);
+    }
+  });
+
+  router.post('/:id/resume', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params as { id: string };
+
+      if (!client) {
+        return res.status(503).json({ error: 'Temporal client unavailable' });
+      }
+
+      const handle = client.getHandle(id);
+      await handle.signal('resume');
+
+      return res.json({ id, message: 'Resume signal sent' });
+    } catch (error: unknown) {
+      console.error('Resume workflow error:', error);
+      return res.status(500).json({ error: 'Failed to resume workflow' });
     }
   });
 

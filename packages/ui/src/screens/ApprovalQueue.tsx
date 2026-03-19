@@ -161,7 +161,7 @@ export default function ApprovalQueue() {
             {approvals.length} pending
           </div>
         </div>
-        
+
         {approvals.length === 0 ? (
           <div className="glass rounded-2xl p-16 text-center animate-slide-up">
             <div className="text-7xl mb-6">✅</div>
@@ -230,19 +230,19 @@ interface ApprovalCardProps {
   riskBadge: string
 }
 
-function ApprovalCard({ 
-  approval, 
-  index, 
-  onApprove, 
-  onRejectClick, 
-  onRejectConfirm, 
+function ApprovalCard({
+  approval,
+  index,
+  onApprove,
+  onRejectClick,
+  onRejectConfirm,
   onRejectCancel,
   isRejecting,
   rejectReason,
   setRejectReason,
   showReasonError,
   riskBorder,
-  riskBadge 
+  riskBadge
 }: ApprovalCardProps) {
   return (
     <div
@@ -262,20 +262,20 @@ function ApprovalCard({
           {approval.risk_level}
         </div>
       </div>
-      
+
       {approval.risk_reason && (
         <div className="text-sm text-slate-300 mb-4 glass p-3 rounded-lg">
           <p className="font-semibold mb-1 text-slate-200">Risk Assessment:</p>
           {approval.risk_reason}
         </div>
       )}
-      
+
       {approval.diff && (
         <div className="mb-4">
-          <DiffViewer diff={approval.diff} isNewFile={false} />
+          <DiffViewer diff={approval.diff} isNewFile={approval.is_new_file ?? false} />
         </div>
       )}
-      
+
       {approval.action_details && Object.keys(approval.action_details).length > 0 && !approval.diff && (
         <div className="text-xs text-slate-400 mb-4">
           <pre className="glass p-3 rounded-lg overflow-auto text-xs bg-black/20">
@@ -283,7 +283,7 @@ function ApprovalCard({
           </pre>
         </div>
       )}
-      
+
       {isRejecting ? (
         <div className="space-y-3 animate-fade-in">
           <div>

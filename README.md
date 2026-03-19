@@ -2,7 +2,7 @@
 
 > **Mobile-first command surface to monitor agents, approve risky actions, recover interrupted workflows, and maintain searchable audit trails.**
 
-[![Phase](https://img.shields.io/badge/Phase-0%20Complete-green)](AgentOPS.md)
+[![Phase](https://img.shields.io/badge/Phase-1%20Prototype-blue)](AgentOPS.md)
 [![Status](https://img.shields.io/badge/status-pre--launch-orange)](AgentOPS.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -182,22 +182,23 @@ VAPID_PRIVATE_KEY=your_vapid_private_key_here
 
 ---
 
-## Phase 0 Status ✅
+## Current Delivery Status
 
 | Component | Status |
 |-----------|--------|
-| Monorepo scaffold | ✅ Complete |
-| Relay Server + Temporal | ✅ Complete |
-| Agent Registry API | ✅ Complete |
-| Approval Queue API | ✅ Complete |
-| Risk Policy Engine | ✅ Complete (OWASP MCP Top 10) |
-| Push Notifications | ✅ Complete (Web Push) |
-| Mobile Dashboard PWA | ✅ Complete |
-| Audit Log | ✅ Complete (append-only) |
+| Monorepo scaffold | ✅ Built |
+| Relay Server + SQLite | ✅ Built |
+| Temporal integration | 🟡 Partial scaffold |
+| Agent Registry API | ✅ Built |
+| Approval Queue API | ✅ Built |
+| Push Notifications | ✅ Built |
+| Approval summaries + diff preview | ✅ Built |
+| Session timeline + workflows UI | ✅ Built |
+| Agent-side SDK | ✅ Built in this repo |
+| Risk enforcement | 🟡 Basic rule evaluation |
+| Tests / CI | ❌ Not yet built |
 
-**Phase 0 Goal:** *"Prove: I can leave my desk and still control my agents."*
-
-**Status:** ✅ **PROVEN** — The Killer Loop is fully functional.
+**Status:** This repository is now at an **early Phase 1 prototype** state. The core approval loop is present, but production hardening, tests, and full Temporal-driven resumability are still in progress.
 
 ---
 
@@ -238,7 +239,7 @@ VAPID_PRIVATE_KEY=your_vapid_private_key_here
 | Phase | Timeline | Goal | Status |
 |-------|----------|------|--------|
 | **Phase 0** | Weeks 1-3 | Prove: "I can leave my desk and still control my agents." | ✅ Complete |
-| **Phase 1** | Weeks 4-6 | Prove: "I can trust what I'm approving." | ✅ Complete |
+| **Phase 1** | Weeks 4-6 | Prove: "I can trust what I'm approving." | 🟡 Prototype in progress |
 | **Phase 2** | Weeks 7-10 | Prove: "I can run multiple agents cleanly." | ⏳ Next |
 | **Phase 3** | Weeks 11+ | Team features, RBAC, compliance | ⏳ Future |
 

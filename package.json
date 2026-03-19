@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "install:all": "npm install",
-    "build": "npm run build --workspaces",
+    "build": "npm run build --workspace=@agentops/shared && npm run build --workspace=@agentops/relay && npm run build --workspace=@agentops/sdk && npm run build --workspace=@agentops/ui",
     "build:relay": "npm run build --workspace=@agentops/relay",
     "build:ui": "npm run build --workspace=@agentops/ui",
     "dev": "npm run dev --workspaces --if-present",
@@ -18,7 +18,7 @@
     "test:relay": "npm run test --workspace=@agentops/relay",
     "test:ui": "npm run test --workspace=@agentops/ui",
     "lint": "npm run lint --workspaces --if-present",
-    "clean": "rm -rf packages/*/dist packages/*/node_modules node_modules"
+    "clean": "node -e \"const fs=require('fs');['packages/relay/dist','packages/ui/dist','packages/sdk/dist','packages/shared/dist','node_modules'].forEach((p)=>fs.rmSync(p,{recursive:true,force:true}));\""
   },
   "keywords": [
     "ai-agents",
