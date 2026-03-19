@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
+import { ReactNode, useState, useEffect } from 'react'
+import { BellRing, History, LayoutDashboard, Settings as SettingsIcon } from 'lucide-react'
 import Dashboard from './screens/Dashboard'
 import ApprovalQueue from './screens/ApprovalQueue'
 import AgentDetail from './screens/AgentDetail'
+import ActiveWorkflows from './components/ActiveWorkflows'
 
-type Screen = 'dashboard' | 'approvals' | 'agent-detail'
+type Screen = 'dashboard' | 'approvals' | 'timeline' | 'settings' | 'agent-detail'
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('dashboard')
@@ -18,33 +20,30 @@ function App() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
       <div className="shadow-overlay" />
-      {/* Header */}
-      <header className="sticky top-0 z-20 border-b border-white/6 bg-black/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-20 border-b border-white/6 bg-[var(--bg-base)]/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-3">
-              <div className="glass-glow flex h-11 w-11 items-center justify-center rounded-2xl border border-[#4f9e97]/30 text-lg font-semibold text-[#6ee1c9]">
+              <div className="surface-panel flex h-11 w-11 items-center justify-center rounded-xl text-sm font-semibold text-blue-300">
                 AO
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-gradient-primary">
-                  AgentOps
-                </h1>
-                <p className="text-xs text-neutral-500 mt-0.5">Mobile command surface for AI coding agents</p>
+                <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">AgentOps</h1>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">Command center for AI coding agents</p>
               </div>
             </div>
           </div>
-          <div className="glass rounded-full px-4 py-2 flex items-center gap-3 border border-white/8">
+          <div className="surface-panel rounded-full px-4 py-2 flex items-center gap-3 border border-white/8">
             <div className="flex items-center gap-2">
-              <div className={`h-2.5 w-2.5 rounded-full ${isConnected ? 'bg-[#6ee1c9]' : 'bg-red-500'} ${isConnected ? 'animate-pulse' : ''}`} />
-              <span className="text-sm font-medium text-neutral-300">
+              <div className={`h-2.5 w-2.5 rounded-full ${isConnected ? 'status-online' : 'status-critical'}`} />
+              <span className="text-sm font-medium text-[var(--text-primary)]">
                 {isConnected ? 'Connected' : 'Offline'}
               </span>
             </div>
             <div className="h-4 w-px bg-white/8" />
-            <span className="rounded-full bg-[#4f9e97]/10 px-3 py-1 text-xs font-semibold tracking-wide text-[#6ee1c9] border border-[#4f9e97]/20">
+            <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300 border border-blue-500/20">
               Phase 1
             </span>
           </div>
@@ -59,24 +58,53 @@ function App() {
           <AgentDetail agentId={selectedAgentId} onBack={() => { setSelectedAgentId(null); setCurrentScreen('dashboard'); }} />
         ) : currentScreen === 'approvals' ? (
           <ApprovalQueue />
+        ) : currentScreen === 'timeline' ? (
+          <section className="space-y-4">
+            <div>
+              <h2 className="text-[22px] font-semibold text-[var(--text-primary)]">Execution Timeline</h2>
+              <p className="text-[15px] text-[var(--text-secondary)]">Dedicated timeline screen scaffolded to match the 4-tab AgentOps design system.</p>
+            </div>
+            <ActiveWorkflows />
+          </section>
+        ) : currentScreen === 'settings' ? (
+          <section className="space-y-4">
+            <div>
+              <h2 className="text-[22px] font-semibold text-[var(--text-primary)]">Settings</h2>
+              <p className="text-[15px] text-[var(--text-secondary)]">Preferences, notification controls, and policy surfaces will live here.</p>
+            </div>
+            <div className="glass rounded-xl p-5">
+              <div className="text-[15px] text-[var(--text-secondary)]">Phase 1 settings shell added to complete the 4-tab command-center architecture.</div>
+            </div>
+          </section>
         ) : null}
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-4 left-0 right-0 z-30 px-4">
-        <div className="mx-auto max-w-md glass rounded-full border border-white/8 px-3 py-2">
-          <div className="flex gap-2">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/6 bg-[var(--bg-base)]/95 backdrop-blur-md">
+        <div className="mx-auto max-w-3xl px-2">
+          <div className="grid h-16 grid-cols-4 gap-1">
             <NavButton
-              icon="DA"
+              icon={<LayoutDashboard size={18} />}
               label="Dashboard"
               isActive={currentScreen === 'dashboard'}
               onClick={() => setCurrentScreen('dashboard')}
             />
             <NavButton
-              icon="AP"
+              icon={<BellRing size={18} />}
               label="Approvals"
               isActive={currentScreen === 'approvals'}
               onClick={() => setCurrentScreen('approvals')}
+            />
+            <NavButton
+              icon={<History size={18} />}
+              label="Timeline"
+              isActive={currentScreen === 'timeline'}
+              onClick={() => setCurrentScreen('timeline')}
+            />
+            <NavButton
+              icon={<SettingsIcon size={18} />}
+              label="Settings"
+              isActive={currentScreen === 'settings'}
+              onClick={() => setCurrentScreen('settings')}
             />
           </div>
         </div>
@@ -86,7 +114,7 @@ function App() {
 }
 
 interface NavButtonProps {
-  icon: string
+  icon: ReactNode
   label: string
   isActive: boolean
   onClick: () => void
@@ -96,13 +124,15 @@ function NavButton({ icon, label, isActive, onClick }: NavButtonProps) {
   return (
     <button
       onClick={onClick}
-      className={`flex-1 rounded-full py-3 flex flex-col items-center gap-1.5 transition-all duration-200 ${isActive
-          ? 'bg-[#4f9e97]/14 text-[#6ee1c9] shadow-[0_0_24px_rgba(79,158,151,0.18)]'
-          : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.02]'
+      className={`relative flex h-full flex-col items-center justify-center gap-1.5 transition-all duration-200 ${isActive
+        ? 'text-[var(--accent-primary)]'
+        : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
         }`}
+      style={{ touchAction: 'manipulation' }}
     >
-      <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/8 bg-black/30 text-xs font-bold tracking-[0.2em]">{icon}</span>
-      <span className="text-xs font-semibold tracking-wide">{label}</span>
+      {isActive && <span className="absolute top-0 h-0.5 w-12 rounded-full bg-[var(--accent-primary)]" />}
+      <span>{icon}</span>
+      <span className="text-[13px] font-medium">{label}</span>
     </button>
   )
 }

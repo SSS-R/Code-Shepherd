@@ -1,20 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 /* Custom theme configuration for Tailwind v4 */
 @theme {
-  --color-primary: #4f9e97;
-  --color-primary-dark: #3f857f;
-  --color-primary-hover: #6ee1c9;
-  --color-success: #22c55e;
-  --color-warning: #eab308;
-  --color-danger: #ef4444;
-  --color-offline: #6b7280;
-  --color-surface: #111111;
-  --color-surface-alt: #0a0a0a;
-  --color-text-secondary: #a3a3a3;
-  --color-text-muted: #737373;
+  --bg-base: #0B1120;
+  --bg-surface: #111827;
+  --bg-surface-elevated: #1E293B;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-active: rgba(255, 255, 255, 0.12);
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --accent-primary: #3B82F6;
+  --accent-success: #22C55E;
+  --accent-warning: #F59E0B;
+  --accent-danger: #EF4444;
+  --accent-info: #8B5CF6;
+  --color-offline: #64748B;
 
   --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
 
   --animation-fade-in: fade-in 0.3s ease-out;
   --animation-slide-up: slide-up 0.4s ease-out;
@@ -52,41 +57,26 @@ body {
   font-family: var(--font-family-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background:
-    radial-gradient(circle at top, rgba(79, 158, 151, 0.16), transparent 28%),
-    radial-gradient(circle at 80% 20%, rgba(110, 225, 201, 0.08), transparent 22%),
-    linear-gradient(180deg, #050505 0%, #000000 100%);
-  color: #ffffff;
+  background: var(--bg-base);
+  color: var(--text-primary);
 }
 
 #root {
   min-height: 100vh;
 }
 
-/* Glassmorphism utility */
 .glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 0 30px rgba(79, 158, 151, 0.04);
-}
-
-.glass-glow {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 40px rgba(79, 158, 151, 0.1);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
 }
 
 .surface-panel {
-  background: linear-gradient(180deg, rgba(17, 17, 17, 0.92), rgba(10, 10, 10, 0.95));
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
 }
 
 .text-gradient-primary {
-  background: linear-gradient(90deg, #4f9e97 0%, #6ee1c9 100%);
+  background: linear-gradient(90deg, #60A5FA 0%, #3B82F6 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -97,24 +87,52 @@ body {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle at top, rgba(79, 158, 151, 0.12), transparent 28%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.72) 100%);
+    radial-gradient(circle at top, rgba(59, 130, 246, 0.14), transparent 24%),
+    linear-gradient(180deg, rgba(11, 17, 32, 0) 0%, rgba(11, 17, 32, 0.9) 100%);
 }
 
 .btn-primary {
-  background: linear-gradient(90deg, #4f9e97 0%, #6ee1c9 100%);
-  color: #021312;
-  box-shadow: 0 10px 30px rgba(79, 158, 151, 0.25);
+  background: var(--accent-primary);
+  color: white;
 }
 
 .btn-primary:hover {
-  box-shadow: 0 14px 36px rgba(110, 225, 201, 0.3);
+  background: #2563EB;
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(79, 158, 151, 0.3);
-  color: #d7fffa;
+  background: transparent;
+  border: 1px solid var(--border-active);
+  color: var(--text-primary);
+}
+
+.code-surface {
+  background: #0F172A;
+  border: 1px solid var(--border-subtle);
+  font-family: var(--font-family-mono);
+}
+
+.status-online {
+  background: var(--accent-success);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.status-critical {
+  background: var(--accent-danger);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
 }
 
 /* Smooth scrolling */

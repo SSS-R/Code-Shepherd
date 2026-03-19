@@ -40,5 +40,8 @@
   "bugs": {
     "url": "https://github.com/SSS-R/agentops/issues"
   },
-  "homepage": "https://github.com/SSS-R/agentops#readme"
+  "homepage": "https://github.com/SSS-R/agentops#readme",
+  "dependencies": {
+    "lucide-react": "^0.577.0"
+  }
 }
