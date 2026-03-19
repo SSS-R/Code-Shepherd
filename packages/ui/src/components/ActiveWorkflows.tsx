@@ -63,9 +63,9 @@ export default function ActiveWorkflows() {
 
   if (loading) {
     return (
-      <div className="glass rounded-xl p-6">
+      <div className="glass rounded-[20px] p-6">
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6ee1c9]"></div>
         </div>
       </div>
     );
@@ -73,10 +73,10 @@ export default function ActiveWorkflows() {
 
   if (workflows.length === 0) {
     return (
-      <div className="glass rounded-xl p-8 text-center">
-        <div className="text-4xl mb-3">✅</div>
-        <p className="text-slate-400">No active workflows</p>
-        <p className="text-sm text-slate-500 mt-1">All workflows are complete or idle</p>
+      <div className="glass rounded-[20px] p-8 text-center border border-dashed border-white/10">
+        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#4f9e97]/20 bg-[#4f9e97]/10 text-xs font-bold tracking-[0.25em] text-[#6ee1c9]">WF</div>
+        <p className="text-neutral-300">No active workflows</p>
+        <p className="text-sm text-neutral-500 mt-1">All workflows are complete or idle</p>
       </div>
     );
   }
@@ -86,17 +86,17 @@ export default function ActiveWorkflows() {
       {workflows.map((workflow) => (
         <div
           key={workflow.workflowId}
-          className="glass rounded-xl p-4 border-l-4 border-blue-500 transition-all duration-200 hover:scale-[1.01]"
+          className="glass rounded-[20px] p-5 border border-white/8 transition-all duration-200 hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(79,158,151,0.08)]"
         >
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-3 mb-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${workflow.status === 'running' ? 'bg-green-500 animate-pulse' :
-                      workflow.status === 'waiting' ? 'bg-yellow-500 animate-pulse' :
-                        'bg-blue-500'
+                    workflow.status === 'waiting' ? 'bg-yellow-500 animate-pulse' :
+                      'bg-blue-500'
                     }`} />
-                  <span className="text-sm font-semibold text-white">
+                  <span className="text-sm font-semibold text-white tracking-wide">
                     {workflow.workflowType}
                   </span>
                 </div>
@@ -105,11 +105,11 @@ export default function ActiveWorkflows() {
                 </span>
               </div>
 
-              <p className="text-sm text-slate-400 mb-2">
+              <p className="text-sm text-neutral-400 mb-2">
                 {workflow.description}
               </p>
 
-              <div className="flex items-center gap-4 text-xs text-slate-500">
+              <div className="flex items-center gap-4 text-xs text-neutral-500 flex-wrap">
                 <span>ID: {workflow.workflowId}</span>
                 {workflow.agentId && (
                   <span>Agent: {workflow.agentId}</span>
@@ -125,12 +125,12 @@ export default function ActiveWorkflows() {
                 <button
                   onClick={() => void handleResume(workflow.workflowId)}
                   disabled={resumingId === workflow.workflowId}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="btn-primary px-4 py-2 disabled:opacity-60 rounded-xl text-sm font-semibold transition-all duration-200"
                 >
                   {resumingId === workflow.workflowId ? 'Resuming...' : 'Resume'}
                 </button>
               )}
-              <button className="px-4 py-2 glass hover:bg-white/5 text-white rounded-lg text-sm font-medium transition-colors">
+              <button className="btn-secondary px-4 py-2 rounded-xl text-sm font-medium transition-colors">
                 View
               </button>
             </div>
