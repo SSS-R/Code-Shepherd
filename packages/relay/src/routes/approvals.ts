@@ -17,13 +17,7 @@ import { generateSummary } from '../utils/summaryGenerator';
 import { processApprovalWithDiff } from '../utils/diffGenerator';
 import { evaluateRisk } from '../middleware/riskPolicy';
 import { approvalRequestWorkflow, decisionSignal } from '../workflows/approvalWorkflow';
-
-const APPROVAL_TIMEOUTS_MS: Record<string, number> = {
-  low: 5 * 60 * 1000,
-  medium: 15 * 60 * 1000,
-  high: 30 * 60 * 1000,
-  critical: 24 * 60 * 60 * 1000,
-};
+import { resolveApprovalTimeoutMs } from '../utils/approvalTimeout';
 
 export function createApprovalRoutes(db: Database, workflowClient: WorkflowClient | null): ReturnType<typeof require>['Router'] {
   const vapidKeys = getVapidKeys();
@@ -130,7 +124,7 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
             action_details: action_details || {},
             risk_level: resolvedRiskLevel,
             status: 'pending',
-            timeoutMs: APPROVAL_TIMEOUTS_MS[resolvedRiskLevel] ?? APPROVAL_TIMEOUTS_MS.medium,
+            timeoutMs: resolveApprovalTimeoutMs(resolvedRiskLevel),
           }],
         }).catch((workflowError: unknown) => {
           console.error('Failed to start approval workflow:', workflowError);

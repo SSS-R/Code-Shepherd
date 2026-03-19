@@ -15,6 +15,7 @@
 | better-sqlite3 | SQLite database |
 | @temporalio/client | Temporal.io workflow client |
 | @temporalio/worker | Temporal.io workflow worker |
+| node:test | Built-in Node.js test runner for relay coverage |
 
 ## @agentops/ui
 

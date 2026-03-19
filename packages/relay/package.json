@@ -7,7 +7,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
-    "test": "echo \"No tests yet\""
+    "test": "npm run build && node --test dist/**/*.test.js"
   },
   "dependencies": {
     "@temporalio/client": "^1.15.0",
