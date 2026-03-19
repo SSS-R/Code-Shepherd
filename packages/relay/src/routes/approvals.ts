@@ -12,6 +12,7 @@ import { Request, Response } from 'express';
 import type { Database } from 'better-sqlite3';
 import { sendPushNotification } from './notifications';
 import { getVapidKeys } from '../utils/vapidKeys';
+import { generateSummary } from '../utils/summaryGenerator';
 
 export function createApprovalRoutes(db: Database): ReturnType<typeof require>['Router'] {
   const vapidKeys = getVapidKeys();
@@ -23,6 +24,7 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
       id TEXT PRIMARY KEY,
       agent_id TEXT NOT NULL,
       action_type TEXT NOT NULL,
+      summary TEXT,
       action_details TEXT,
       risk_level TEXT DEFAULT 'medium',
       risk_reason TEXT,
@@ -34,6 +36,13 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
       FOREIGN KEY (agent_id) REFERENCES agents(id)
     )
   `);
+
+  // Ensure 'summary' column exists (migration for existing DBs)
+  try {
+    db.exec('ALTER TABLE approvals ADD COLUMN summary TEXT');
+  } catch (e) {
+    // Column already exists, ignore
+  }
 
   // Initialize audit_logs table (append-only)
   db.exec(`
@@ -66,13 +75,16 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
         return res.status(400).json({ error: 'id, agent_id, and action_type are required' });
       }
 
+      // Generate human-readable summary
+      const summary = generateSummary(action_type, action_details || {});
+
       // Insert approval request
       const stmt = db.prepare(`
-        INSERT INTO approvals (id, agent_id, action_type, action_details, risk_level, risk_reason, status)
-        VALUES (?, ?, ?, ?, ?, ?, 'pending')
+        INSERT INTO approvals (id, agent_id, action_type, summary, action_details, risk_level, risk_reason, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
       `);
 
-      stmt.run(id, agent_id, action_type, JSON.stringify(action_details || {}), risk_level, risk_reason);
+      stmt.run(id, agent_id, action_type, summary, JSON.stringify(action_details || {}), risk_level, risk_reason);
 
       // Log to audit trail
       const auditStmt = db.prepare(`
@@ -85,6 +97,7 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
         id,
         agent_id,
         action_type,
+        summary,
         action_details: action_details || {},
         risk_level: risk_level || 'medium',
         risk_reason: risk_reason || null,
@@ -142,7 +155,8 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
       const stmt = db.prepare(query);
       const approvals = stmt.all(...params).map((approval: any): any => ({
         ...approval,
-        action_details: JSON.parse(approval.action_details || '{}')
+        action_details: JSON.parse(approval.action_details || '{}'),
+        summary: approval.summary || null
       }));
 
       return res.json(approvals);
@@ -168,7 +182,8 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
 
       return res.json({
         ...approval,
-        action_details: JSON.parse(approval.action_details || '{}')
+        action_details: JSON.parse(approval.action_details || '{}'),
+        summary: approval.summary || null
       });
     } catch (error: unknown) {
       console.error('Get approval error:', error);

@@ -52,7 +52,7 @@ export async function subscribeToPushNotifications(): Promise<PushSubscription |
   // Subscribe to push notifications
   const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as any
   })
 
   // Send subscription to server
