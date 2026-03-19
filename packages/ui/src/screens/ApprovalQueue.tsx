@@ -4,6 +4,7 @@ interface Approval {
   id: string
   agent_id: string
   action_type: string
+  summary: string
   action_details: any
   risk_level: string
   risk_reason: string
@@ -21,6 +22,9 @@ export default function ApprovalQueue() {
   const [approvals, setApprovals] = useState<Approval[]>([])
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<Stats>({ pending: 0, approved: 0, rejected: 0 })
+  const [rejectingId, setRejectingId] = useState<string | null>(null)
+  const [rejectReason, setRejectReason] = useState('')
+  const [showReasonError, setShowReasonError] = useState(false)
 
   useEffect(() => {
     fetch('http://localhost:3000/approvals/pending')
@@ -33,30 +37,65 @@ export default function ApprovalQueue() {
       .catch(() => setLoading(false))
   }, [])
 
-  const handleDecision = async (id: string, decision: 'approved' | 'rejected') => {
+  const handleApprove = async (id: string) => {
     try {
       const res = await fetch(`http://localhost:3000/approvals/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          decision,
-          decision_reason: decision === 'approved' ? 'Approved via mobile dashboard' : 'Rejected via mobile dashboard',
-          decidedBy: 'mobile-user'
+          decision: 'approved',
+          decision_reason: 'Approved via dashboard',
+          decidedBy: 'dashboard-user'
         })
       })
 
       if (res.ok) {
         setApprovals(approvals.filter(a => a.id !== id))
-        setStats(prev => ({
-          ...prev,
-          pending: prev.pending - 1,
-          approved: decision === 'approved' ? prev.approved + 1 : prev.approved,
-          rejected: decision === 'rejected' ? prev.rejected + 1 : prev.rejected
-        }))
+        setStats(prev => ({ ...prev, pending: prev.pending - 1, approved: prev.approved + 1 }))
       }
     } catch (error) {
-      console.error('Failed to submit decision:', error)
+      console.error('Failed to approve:', error)
     }
+  }
+
+  const handleRejectClick = (id: string) => {
+    setRejectingId(id)
+    setRejectReason('')
+    setShowReasonError(false)
+  }
+
+  const handleRejectConfirm = async (id: string) => {
+    if (!rejectReason.trim()) {
+      setShowReasonError(true)
+      return
+    }
+
+    try {
+      const res = await fetch(`http://localhost:3000/approvals/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          decision: 'rejected',
+          decision_reason: rejectReason.trim(),
+          decidedBy: 'dashboard-user'
+        })
+      })
+
+      if (res.ok) {
+        setApprovals(approvals.filter(a => a.id !== id))
+        setStats(prev => ({ ...prev, pending: prev.pending - 1, rejected: prev.rejected + 1 }))
+        setRejectingId(null)
+        setRejectReason('')
+      }
+    } catch (error) {
+      console.error('Failed to reject:', error)
+    }
+  }
+
+  const handleRejectCancel = () => {
+    setRejectingId(null)
+    setRejectReason('')
+    setShowReasonError(false)
   }
 
   const getRiskBorder = (level: string): string => {
@@ -137,7 +176,14 @@ export default function ApprovalQueue() {
                 key={approval.id}
                 approval={approval}
                 index={index}
-                onDecision={handleDecision}
+                onApprove={handleApprove}
+                onRejectClick={handleRejectClick}
+                onRejectConfirm={handleRejectConfirm}
+                onRejectCancel={handleRejectCancel}
+                isRejecting={rejectingId === approval.id}
+                rejectReason={rejectReason}
+                setRejectReason={setRejectReason}
+                showReasonError={showReasonError}
                 riskBorder={getRiskBorder(approval.risk_level)}
                 riskBadge={getRiskBadge(approval.risk_level)}
               />
@@ -169,12 +215,32 @@ function StatCard({ label, value, icon, color }: StatCardProps) {
 interface ApprovalCardProps {
   approval: Approval
   index: number
-  onDecision: (id: string, decision: 'approved' | 'rejected') => void
+  onApprove: (id: string) => void
+  onRejectClick: (id: string) => void
+  onRejectConfirm: (id: string) => void
+  onRejectCancel: () => void
+  isRejecting: boolean
+  rejectReason: string
+  setRejectReason: (reason: string) => void
+  showReasonError: boolean
   riskBorder: string
   riskBadge: string
 }
 
-function ApprovalCard({ approval, index, onDecision, riskBorder, riskBadge }: ApprovalCardProps) {
+function ApprovalCard({ 
+  approval, 
+  index, 
+  onApprove, 
+  onRejectClick, 
+  onRejectConfirm, 
+  onRejectCancel,
+  isRejecting,
+  rejectReason,
+  setRejectReason,
+  showReasonError,
+  riskBorder,
+  riskBadge 
+}: ApprovalCardProps) {
   return (
     <div
       className={`glass rounded-xl p-5 border-l-4 ${riskBorder} transition-all duration-300 hover:scale-[1.02] animate-slide-up`}
@@ -183,7 +249,7 @@ function ApprovalCard({ approval, index, onDecision, riskBorder, riskBadge }: Ap
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <h3 className="text-lg font-bold text-white mb-1">
-            {approval.action_type}
+            {approval.summary || approval.action_type}
           </h3>
           <p className="text-sm text-slate-400">
             Agent: {approval.agent_id}
@@ -209,20 +275,55 @@ function ApprovalCard({ approval, index, onDecision, riskBorder, riskBadge }: Ap
         </div>
       )}
       
-      <div className="flex gap-3">
-        <button
-          onClick={() => onDecision(approval.id, 'approved')}
-          className="flex-1 bg-green-600 hover:bg-green-500 text-white py-3 px-4 rounded-xl text-sm font-bold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-        >
-          ✓ Approve
-        </button>
-        <button
-          onClick={() => onDecision(approval.id, 'rejected')}
-          className="flex-1 bg-red-600 hover:bg-red-500 text-white py-3 px-4 rounded-xl text-sm font-bold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-        >
-          ✕ Reject
-        </button>
-      </div>
+      {isRejecting ? (
+        <div className="space-y-3 animate-fade-in">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Why are you rejecting this?
+            </label>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              className="w-full glass bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+              rows={3}
+              placeholder="Explain why this action should be rejected..."
+              autoFocus
+            />
+            {showReasonError && (
+              <p className="text-xs text-red-400 mt-1">Rejection reason is required</p>
+            )}
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => onRejectConfirm(approval.id)}
+              className="flex-1 bg-red-600 hover:bg-red-500 text-white py-3 px-4 rounded-xl text-sm font-bold transition-all duration-200"
+            >
+              Confirm Reject
+            </button>
+            <button
+              onClick={onRejectCancel}
+              className="flex-1 bg-slate-600 hover:bg-slate-500 text-white py-3 px-4 rounded-xl text-sm font-bold transition-all duration-200"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex gap-3">
+          <button
+            onClick={() => onApprove(approval.id)}
+            className="flex-1 bg-green-600 hover:bg-green-500 text-white py-3 px-4 rounded-xl text-sm font-bold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            ✓ Approve
+          </button>
+          <button
+            onClick={() => onRejectClick(approval.id)}
+            className="flex-1 bg-red-600 hover:bg-red-500 text-white py-3 px-4 rounded-xl text-sm font-bold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            ✕ Reject
+          </button>
+        </div>
+      )}
     </div>
   )
 }

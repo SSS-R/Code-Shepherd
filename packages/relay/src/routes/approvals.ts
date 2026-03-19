@@ -110,7 +110,8 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
       `);
       const approvals = stmt.all().map((approval: any): any => ({
         ...approval,
-        action_details: JSON.parse(approval.action_details || '{}')
+        action_details: JSON.parse(approval.action_details || '{}'),
+        summary: approval.summary || null
       }));
 
       return res.json(approvals);
