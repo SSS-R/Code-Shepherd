@@ -10,6 +10,8 @@ interface Approval {
   risk_reason: string
   status: string
   requested_at: string
+  diff?: string | null
+  is_new_file?: boolean
 }
 
 interface Stats {

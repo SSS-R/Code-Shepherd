@@ -13,6 +13,7 @@ import type { Database } from 'better-sqlite3';
 import { sendPushNotification } from './notifications';
 import { getVapidKeys } from '../utils/vapidKeys';
 import { generateSummary } from '../utils/summaryGenerator';
+import { processApprovalWithDiff } from '../utils/diffGenerator';
 
 export function createApprovalRoutes(db: Database): ReturnType<typeof require>['Router'] {
   const vapidKeys = getVapidKeys();
@@ -42,6 +43,14 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
     db.exec('ALTER TABLE approvals ADD COLUMN summary TEXT');
   } catch (e) {
     // Column already exists, ignore
+  }
+
+  // Ensure 'diff' and 'is_new_file' columns exist
+  try {
+    db.exec('ALTER TABLE approvals ADD COLUMN diff TEXT');
+    db.exec('ALTER TABLE approvals ADD COLUMN is_new_file INTEGER DEFAULT 0');
+  } catch (e) {
+    // Columns already exist, ignore
   }
 
   // Initialize audit_logs table (append-only)
@@ -78,13 +87,16 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
       // Generate human-readable summary
       const summary = generateSummary(action_type, action_details || {});
 
+      // Generate code diff for file writes
+      const { diff, is_new_file } = processApprovalWithDiff(action_type, action_details || {});
+
       // Insert approval request
       const stmt = db.prepare(`
-        INSERT INTO approvals (id, agent_id, action_type, summary, action_details, risk_level, risk_reason, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+        INSERT INTO approvals (id, agent_id, action_type, summary, diff, is_new_file, action_details, risk_level, risk_reason, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
       `);
 
-      stmt.run(id, agent_id, action_type, summary, JSON.stringify(action_details || {}), risk_level, risk_reason);
+      stmt.run(id, agent_id, action_type, summary, diff, is_new_file ? 1 : 0, JSON.stringify(action_details || {}), risk_level, risk_reason);
 
       // Log to audit trail
       const auditStmt = db.prepare(`
@@ -98,6 +110,8 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
         agent_id,
         action_type,
         summary,
+        diff,
+        is_new_file,
         action_details: action_details || {},
         risk_level: risk_level || 'medium',
         risk_reason: risk_reason || null,
@@ -124,7 +138,9 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
       const approvals = stmt.all().map((approval: any): any => ({
         ...approval,
         action_details: JSON.parse(approval.action_details || '{}'),
-        summary: approval.summary || null
+        summary: approval.summary || null,
+        diff: approval.diff || null,
+        is_new_file: approval.is_new_file === 1
       }));
 
       return res.json(approvals);
@@ -184,7 +200,8 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
         ...approval,
         action_details: JSON.parse(approval.action_details || '{}'),
         summary: approval.summary || null,
-        diff: approval.diff || null
+        diff: approval.diff || null,
+        is_new_file: approval.is_new_file === 1
       });
     } catch (error: unknown) {
       console.error('Get approval error:', error);
