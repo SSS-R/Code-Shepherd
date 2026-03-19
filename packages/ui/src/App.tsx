@@ -4,8 +4,9 @@ import Dashboard from './screens/Dashboard'
 import ApprovalQueue from './screens/ApprovalQueue'
 import AgentDetail from './screens/AgentDetail'
 import ActiveWorkflows from './components/ActiveWorkflows'
+import KanbanBoard from './screens/KanbanBoard'
 
-type Screen = 'dashboard' | 'approvals' | 'timeline' | 'settings' | 'agent-detail'
+type Screen = 'dashboard' | 'approvals' | 'timeline' | 'settings' | 'kanban' | 'agent-detail'
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('dashboard')
@@ -76,12 +77,14 @@ function App() {
               <div className="text-[15px] text-[var(--text-secondary)]">Phase 1 settings shell added to complete the 4-tab command-center architecture.</div>
             </div>
           </section>
+        ) : currentScreen === 'kanban' ? (
+          <KanbanBoard />
         ) : null}
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/6 bg-[var(--bg-base)]/95 backdrop-blur-md">
         <div className="mx-auto max-w-3xl px-2">
-          <div className="grid h-16 grid-cols-4 gap-1">
+          <div className="grid h-16 grid-cols-5 gap-1">
             <NavButton
               icon={<LayoutDashboard size={18} />}
               label="Dashboard"
@@ -99,6 +102,12 @@ function App() {
               label="Timeline"
               isActive={currentScreen === 'timeline'}
               onClick={() => setCurrentScreen('timeline')}
+            />
+            <NavButton
+              icon={<LayoutDashboard size={18} />}
+              label="Kanban"
+              isActive={currentScreen === 'kanban'}
+              onClick={() => setCurrentScreen('kanban')}
             />
             <NavButton
               icon={<SettingsIcon size={18} />}

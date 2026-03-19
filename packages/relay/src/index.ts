@@ -12,6 +12,7 @@ import { createApprovalRoutes } from './routes/approvals';
 import { createNotificationRoutes } from './routes/notifications';
 import { createAuditRoutes } from './routes/audit';
 import { createWorkflowRoutes } from './routes/workflows';
+import { createTaskRoutes } from './routes/tasks';
 import { getVapidKeys } from './utils/vapidKeys';
 import * as activities from './activities';
 
@@ -92,6 +93,9 @@ app.use('/notifications', createNotificationRoutes(db, vapidKeys));
 
 // Workflows API
 app.use('/workflows', createWorkflowRoutes(workflowClient));
+
+// Tasks API
+app.use('/tasks', createTaskRoutes(db));
 
 // Start server
 async function start() {
