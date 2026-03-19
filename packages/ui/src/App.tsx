@@ -45,9 +45,9 @@ function App() {
           <Dashboard onViewAgent={(id) => { setSelectedAgentId(id); setCurrentScreen('agent-detail'); }} />
         ) : currentScreen === 'agent-detail' && selectedAgentId ? (
           <AgentDetail agentId={selectedAgentId} onBack={() => { setSelectedAgentId(null); setCurrentScreen('dashboard'); }} />
-        ) : (
+        ) : currentScreen === 'approvals' ? (
           <ApprovalQueue />
-        )}
+        ) : null}
       </main>
 
       {/* Bottom Navigation */}
@@ -97,3 +97,4 @@ function NavButton({ icon, label, isActive, onClick }: NavButtonProps) {
 }
 
 export default App
+ault App
