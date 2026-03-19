@@ -4,6 +4,7 @@
 
 import { proxyActivities } from '@temporalio/workflow';
 import type * as activities from './activities';
+export { approvalRequestWorkflow, decisionSignal, resumeSignal } from './workflows/approvalWorkflow';
 
 const { processAgentTask } = proxyActivities<typeof activities>({
   startToCloseTimeout: '1 minute'

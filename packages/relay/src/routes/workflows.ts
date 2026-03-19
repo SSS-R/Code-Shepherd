@@ -7,6 +7,7 @@
 
 import { Request, Response } from 'express';
 import { WorkflowClient } from '@temporalio/client';
+import { resumeSignal } from '../workflows/approvalWorkflow';
 
 interface WorkflowInfo {
   workflowId: string;
@@ -67,7 +68,7 @@ export function createWorkflowRoutes(client: WorkflowClient | null): ReturnType<
       }
 
       const handle = client.getHandle(id);
-      await handle.signal('resume');
+      await handle.signal(resumeSignal);
 
       return res.json({ id, message: 'Resume signal sent' });
     } catch (error: unknown) {

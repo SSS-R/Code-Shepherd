@@ -82,7 +82,7 @@ app.get('/health', (req: Request, res: Response) => {
 app.use('/agents', createAgentRoutes(db));
 
 // Approval Queue API
-app.use('/approvals', createApprovalRoutes(db));
+app.use('/approvals', createApprovalRoutes(db, workflowClient));
 
 // Audit Logs API
 app.use('/audit-logs', createAuditRoutes(db));

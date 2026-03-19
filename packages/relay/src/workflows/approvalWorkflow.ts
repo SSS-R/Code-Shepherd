@@ -5,9 +5,10 @@
  * via Temporal Signals.
  */
 
-import { 
-  proxyActivities, 
+import {
+  proxyActivities,
   sleep,
+  condition,
   defineSignal,
   setHandler
 } from '@temporalio/workflow';
@@ -26,6 +27,7 @@ export interface ApprovalState {
   status: 'pending' | 'approved' | 'rejected' | 'timeout';
   decidedBy?: string;
   decision_reason?: string;
+  timeoutMs?: number;
 }
 
 export interface DecisionSignalPayload {
@@ -36,6 +38,7 @@ export interface DecisionSignalPayload {
 
 // Define decision signal
 export const decisionSignal = defineSignal<[DecisionSignalPayload]>('decision');
+export const resumeSignal = defineSignal<[]>('resume');
 
 /**
  * Approval Request Workflow
@@ -50,6 +53,8 @@ export async function approvalRequestWorkflow(
   let decision: 'approved' | 'rejected' | 'timeout' = 'timeout';
   let decision_reason = '';
   let decidedBy = '';
+  let resumeRequested = false;
+  const timeoutMs = state.timeoutMs ?? 24 * 60 * 60 * 1000;
 
   // Set up decision signal handler within workflow body
   setHandler(decisionSignal, (payload: DecisionSignalPayload): void => {
@@ -59,14 +64,21 @@ export async function approvalRequestWorkflow(
     decidedBy = payload.decidedBy;
   });
 
-  // Wait for decision or timeout (24 hours)
-  await sleep(86400000); // 24 hours
+  setHandler(resumeSignal, (): void => {
+    resumeRequested = true;
+  });
 
-  // If no decision received, mark as timeout
-  if (!decisionReceived) {
+  const decisionArrived = await condition(() => decisionReceived || resumeRequested, timeoutMs);
+
+  if (!decisionArrived) {
     state.status = 'timeout';
     decision = 'timeout';
-    decision_reason = 'Approval request timed out after 24 hours';
+    decision_reason = `Approval request timed out after ${Math.round(timeoutMs / 60000)} minutes`;
+    decidedBy = 'system-timeout';
+  } else if (resumeRequested && !decisionReceived) {
+    state.status = 'pending';
+    decision_reason = 'Workflow resumed without a final approval decision';
+    decidedBy = 'manual-resume';
   } else {
     state.status = decision;
     state.decidedBy = decidedBy;

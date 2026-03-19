@@ -10,13 +10,22 @@
 
 import { Request, Response } from 'express';
 import type { Database } from 'better-sqlite3';
+import { WorkflowClient } from '@temporalio/client';
 import { sendPushNotification } from './notifications';
 import { getVapidKeys } from '../utils/vapidKeys';
 import { generateSummary } from '../utils/summaryGenerator';
 import { processApprovalWithDiff } from '../utils/diffGenerator';
 import { evaluateRisk } from '../middleware/riskPolicy';
+import { approvalRequestWorkflow, decisionSignal } from '../workflows/approvalWorkflow';
 
-export function createApprovalRoutes(db: Database): ReturnType<typeof require>['Router'] {
+const APPROVAL_TIMEOUTS_MS: Record<string, number> = {
+  low: 5 * 60 * 1000,
+  medium: 15 * 60 * 1000,
+  high: 30 * 60 * 1000,
+  critical: 24 * 60 * 60 * 1000,
+};
+
+export function createApprovalRoutes(db: Database, workflowClient: WorkflowClient | null): ReturnType<typeof require>['Router'] {
   const vapidKeys = getVapidKeys();
   const router = require('express').Router();
 
@@ -109,6 +118,24 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
         VALUES ('approval_requested', ?, ?, ?)
       `);
       auditStmt.run(JSON.stringify({ action_type, action_details }), agent_id, id);
+
+      if (workflowClient) {
+        void workflowClient.start(approvalRequestWorkflow, {
+          taskQueue: process.env.TEMPORAL_TASK_QUEUE || 'agentops-queue',
+          workflowId: `approval-${id}`,
+          args: [{
+            approvalId: id,
+            agentId: agent_id,
+            action_type,
+            action_details: action_details || {},
+            risk_level: resolvedRiskLevel,
+            status: 'pending',
+            timeoutMs: APPROVAL_TIMEOUTS_MS[resolvedRiskLevel] ?? APPROVAL_TIMEOUTS_MS.medium,
+          }],
+        }).catch((workflowError: unknown) => {
+          console.error('Failed to start approval workflow:', workflowError);
+        });
+      }
 
       void sendPushNotification(db, vapidKeys, 'AgentOps Approval Required', `${summary} (${resolvedRiskLevel} risk)`, {
         approvalId: id,
@@ -254,6 +281,17 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
         VALUES ('approval_decided', ?, ?)
       `);
       auditStmt.run(JSON.stringify({ decision, decision_reason }), id);
+
+      if (workflowClient) {
+        const handle = workflowClient.getHandle(`approval-${id}`);
+        void handle.signal(decisionSignal, {
+          decision: decision === 'approved' ? 'approved' : 'rejected',
+          decision_reason: decision_reason || '',
+          decidedBy: 'dashboard-user',
+        }).catch((workflowError: unknown) => {
+          console.error('Failed to signal approval workflow:', workflowError);
+        });
+      }
 
       return res.json({
         id,

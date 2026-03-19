@@ -5,7 +5,8 @@
 import Database from 'better-sqlite3';
 
 // Initialize database connection
-const db = new Database('./relay.db');
+const DATABASE_PATH = process.env.DATABASE_PATH || './relay.db';
+const db = new Database(DATABASE_PATH);
 
 /**
  * Update approval status in the database
@@ -17,9 +18,10 @@ export async function updateApprovalStatus(
   decision_reason: string,
   decidedBy: string
 ): Promise<void> {
+  const shouldSetDecidedAt = status === 'approved' || status === 'rejected' || status === 'timeout';
   const stmt = db.prepare(`
     UPDATE approvals 
-    SET status = ?, decision = ?, decision_reason = ?, decided_at = CURRENT_TIMESTAMP
+    SET status = ?, decision = ?, decision_reason = ?, decided_at = ${shouldSetDecidedAt ? 'CURRENT_TIMESTAMP' : 'NULL'}
     WHERE id = ?
   `);
 
