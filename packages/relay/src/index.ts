@@ -78,7 +78,9 @@ async function start() {
     console.log(`Relay server running on http://localhost:${PORT}`);
     console.log(`Health check: http://localhost:${PORT}/health`);
     console.log(`Agent API: http://localhost:${PORT}/agents`);
+    console.log(`Agent Timeline: http://localhost:${PORT}/agents/:id/timeline`);
     console.log(`Approval API: http://localhost:${PORT}/approvals`);
+    console.log(`Audit Log API: http://localhost:${PORT}/audit-logs`);
     console.log(`Notifications API: http://localhost:${PORT}/notifications`);
     console.log(`VAPID Public Key: ${vapidKeys.publicKey}`);
   });

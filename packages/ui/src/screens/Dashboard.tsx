@@ -90,7 +90,12 @@ export default function Dashboard() {
         ) : (
           <div className="grid gap-4">
             {agents.map((agent, index) => (
-              <AgentCard key={agent.id} agent={agent} index={index} />
+              <AgentCard 
+                key={agent.id} 
+                agent={agent} 
+                index={index}
+                onClick={() => onViewAgent?.(agent.id)}
+              />
             ))}
           </div>
         )}

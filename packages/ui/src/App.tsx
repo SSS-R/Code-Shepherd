@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react'
 import Dashboard from './screens/Dashboard'
 import ApprovalQueue from './screens/ApprovalQueue'
 
-type Screen = 'dashboard' | 'approvals'
+type Screen = 'dashboard' | 'approvals' | 'agent-detail'
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('dashboard')
   const [isConnected, setIsConnected] = useState(false)
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('http://localhost:3000/health')
@@ -40,7 +41,9 @@ function App() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6 pb-24">
         {currentScreen === 'dashboard' ? (
-          <Dashboard />
+          <Dashboard onViewAgent={(id) => { setSelectedAgentId(id); setCurrentScreen('agent-detail'); }} />
+        ) : currentScreen === 'agent-detail' && selectedAgentId ? (
+          <AgentDetail agentId={selectedAgentId} onBack={() => { setSelectedAgentId(null); setCurrentScreen('dashboard'); }} />
         ) : (
           <ApprovalQueue />
         )}
