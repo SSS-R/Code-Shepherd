@@ -36,9 +36,59 @@ export interface DecisionSignalPayload {
   decidedBy: string;
 }
 
+export interface ApprovalResolution {
+  status: 'pending' | 'approved' | 'rejected' | 'timeout';
+  decision: 'approved' | 'rejected' | 'timeout';
+  decision_reason: string;
+  decidedBy: string;
+}
+
 // Define decision signal
 export const decisionSignal = defineSignal<[DecisionSignalPayload]>('decision');
 export const resumeSignal = defineSignal<[]>('resume');
+
+export function resolveApprovalOutcome(params: {
+  decisionReceived: boolean;
+  resumeRequested: boolean;
+  timeoutMs: number;
+  decision: 'approved' | 'rejected' | 'timeout';
+  decision_reason: string;
+  decidedBy: string;
+}): ApprovalResolution {
+  const {
+    decisionReceived,
+    resumeRequested,
+    timeoutMs,
+    decision,
+    decision_reason,
+    decidedBy,
+  } = params;
+
+  if (!decisionReceived && !resumeRequested) {
+    return {
+      status: 'timeout',
+      decision: 'timeout',
+      decision_reason: `Approval request timed out after ${Math.round(timeoutMs / 60000)} minutes`,
+      decidedBy: 'system-timeout',
+    };
+  }
+
+  if (resumeRequested && !decisionReceived) {
+    return {
+      status: 'pending',
+      decision: 'timeout',
+      decision_reason: 'Workflow resumed without a final approval decision',
+      decidedBy: 'manual-resume',
+    };
+  }
+
+  return {
+    status: decision,
+    decision,
+    decision_reason,
+    decidedBy,
+  };
+}
 
 /**
  * Approval Request Workflow
@@ -70,27 +120,25 @@ export async function approvalRequestWorkflow(
 
   const decisionArrived = await condition(() => decisionReceived || resumeRequested, timeoutMs);
 
-  if (!decisionArrived) {
-    state.status = 'timeout';
-    decision = 'timeout';
-    decision_reason = `Approval request timed out after ${Math.round(timeoutMs / 60000)} minutes`;
-    decidedBy = 'system-timeout';
-  } else if (resumeRequested && !decisionReceived) {
-    state.status = 'pending';
-    decision_reason = 'Workflow resumed without a final approval decision';
-    decidedBy = 'manual-resume';
-  } else {
-    state.status = decision;
-    state.decidedBy = decidedBy;
-    state.decision_reason = decision_reason;
-  }
+  const resolution = resolveApprovalOutcome({
+    decisionReceived: decisionArrived && decisionReceived,
+    resumeRequested,
+    timeoutMs,
+    decision,
+    decision_reason,
+    decidedBy,
+  });
+
+  state.status = resolution.status;
+  state.decidedBy = resolution.decidedBy;
+  state.decision_reason = resolution.decision_reason;
 
   // Update approval status in database
   await updateApprovalStatus(
     state.approvalId,
-    state.status,
-    decision,
-    decision_reason,
-    decidedBy
+    resolution.status,
+    resolution.decision,
+    resolution.decision_reason,
+    resolution.decidedBy
   );
 }

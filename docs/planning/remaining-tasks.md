@@ -57,15 +57,15 @@ These are the features that complete the "Killer Loop" and make the product usab
 #### 3. Risk Policy Engine
 **Why:** Auto-approving everything defeats the purpose. Users need trust.
 - [ ] Create `packages/relay/src/security/policies.ts`
-- [ ] Block auto-approval for: secrets/env files, `rm -rf`, production branch merges, infra changes
-- [ ] Risk scoring: `low` / `medium` / `high` / `critical` based on action type + file path
+- [x] Block auto-approval for: secrets/env files, `rm -rf`, production branch merges, infra changes
+- [x] Risk scoring: `low` / `medium` / `high` / `critical` based on action type + file path
 - [ ] Configurable rules (JSON/YAML policy file)
 - **Estimated effort:** 1 session
 
 #### 4. Approval Timeout & Escalation
 **Why:** Agents can't wait forever. Unattended approvals need a fallback.
-- [ ] Configurable timeout per risk level (e.g., low=5min, high=30min, critical=never)
-- [ ] Auto-reject on timeout with audit log entry
+- [x] Configurable timeout per risk level (e.g., low=5min, high=30min, critical=never)
+- [x] Auto-reject on timeout with audit log entry
 - [ ] Optional: escalate to fallback contact (email/webhook)
 - **Estimated effort:** 1 session
 

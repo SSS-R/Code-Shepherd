@@ -2,7 +2,7 @@
 
 **Timeline:** Weeks 4-6  
 **Goal:** Prove developers can trust what they're approving  
-**Status:** ✅ **COMPLETE** (All 5 features implemented)
+**Status:** 🟡 **HARDENED AND NEAR POLISH COMPLETE**
 
 ---
 
@@ -21,7 +21,9 @@ Phase 1 focuses on transforming raw agent actions into **trustworthy, understand
 | Diff Preview | ✅ Complete | `diffGenerator.ts`, `DiffViewer.tsx` | +200 |
 | Session Replay (lite) | ✅ Complete | `audit.ts`, `SessionTimeline.tsx`, `AgentDetail.tsx` | +480 |
 | Resumable Workflows UI | ✅ Complete | `workflows.ts`, `ActiveWorkflows.tsx` | +220 |
-| **Total** | **✅ Complete** | **11 files** | **+1,130 lines** |
+| Workflow hardening + timeout handling | ✅ Complete | `approvalWorkflow.ts`, `approvals.ts`, `workflows.ts` | +150 |
+| Relay trust/reliability tests | ✅ Complete | `src/__tests__/` | +100 |
+| **Total** | **🟡 Hardened** | **14+ files** | **+1,380+ lines** |
 
 ---
 
@@ -208,7 +210,7 @@ Phase 1 focuses on transforming raw agent actions into **trustworthy, understand
 
 ## Next Steps
 
-**Phase 1 is COMPLETE.** All features implemented and deployed.
+**Phase 1 is functionally complete and substantially hardened.**
 
 1. ✅ Phase 0 UI polish
 2. ✅ Approval-Ready Summaries
@@ -216,8 +218,9 @@ Phase 1 focuses on transforming raw agent actions into **trustworthy, understand
 4. ✅ Diff Preview
 5. ✅ Session Replay (lite)
 6. ✅ Resumable Workflows UI
+7. ✅ Workflow hardening for timeout / decision / resume handling
+8. ✅ Initial relay test coverage for policy and timeout behavior
 
 ---
 
-**Phase 1 Goal:** ✅ **ACHIEVED** — Developers can trust what they're approving because they see summaries, diffs, timelines, and workflow status.
- what they're approving.
+**Phase 1 Goal:** 🟡 **NEARLY ACHIEVED** — the repo now has trustworthy summaries, diffs, timelines, workflow behavior, and initial backend coverage, with final polish remaining before it should be labeled fully complete.
