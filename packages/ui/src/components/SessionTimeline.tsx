@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-interface TimelineEvent {
+export interface TimelineEvent {
   id: number;
   event_type: string;
   event_details: Record<string, unknown>;

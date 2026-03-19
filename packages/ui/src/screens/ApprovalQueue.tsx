@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import DiffViewer from '../components/DiffViewer'
 
 interface Approval {
   id: string

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Dashboard from './screens/Dashboard'
 import ApprovalQueue from './screens/ApprovalQueue'
+import AgentDetail from './screens/AgentDetail'
 
 type Screen = 'dashboard' | 'approvals' | 'agent-detail'
 

@@ -9,6 +9,7 @@ import { NativeConnection, Worker } from '@temporalio/worker';
 import { createAgentRoutes } from './routes/agents';
 import { createApprovalRoutes } from './routes/approvals';
 import { createNotificationRoutes } from './routes/notifications';
+import { createAuditRoutes } from './routes/audit';
 import { getVapidKeys } from './utils/vapidKeys';
 import * as activities from './activities';
 
@@ -66,6 +67,9 @@ app.use('/agents', createAgentRoutes(db));
 
 // Approval Queue API
 app.use('/approvals', createApprovalRoutes(db));
+
+// Audit Logs API
+app.use('/audit-logs', createAuditRoutes(db));
 
 // Push Notifications API
 app.use('/notifications', createNotificationRoutes(db, vapidKeys));

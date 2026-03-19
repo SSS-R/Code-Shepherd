@@ -14,7 +14,7 @@ interface Stats {
   totalSessions: number
 }
 
-export default function Dashboard() {
+export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) => void }) {
   const [agents, setAgents] = useState<Agent[]>([])
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<Stats>({ activeAgents: 0, pendingApprovals: 0, totalSessions: 0 })
@@ -124,14 +124,16 @@ function StatCard({ label, value, icon, color }: StatCardProps) {
 interface AgentCardProps {
   agent: Agent
   index: number
+  onClick?: () => void
 }
 
-function AgentCard({ agent, index }: AgentCardProps) {
+function AgentCard({ agent, index, onClick }: AgentCardProps) {
   const statusColor = agent.status === 'online' ? 'border-green-500' : 'border-slate-600'
   
   return (
     <div
-      className={`glass rounded-xl p-5 border-l-4 ${statusColor} transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-blue-500/10 animate-slide-up`}
+      onClick={onClick}
+      className={`glass rounded-xl p-5 border-l-4 ${statusColor} transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-blue-500/10 animate-slide-up cursor-pointer`}
       style={{ animationDelay: `${index * 50}ms` }}
     >
       <div className="flex items-center justify-between">

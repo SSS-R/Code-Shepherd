@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import SessionTimeline from '../components/SessionTimeline';
+import SessionTimeline, { TimelineEvent } from '../components/SessionTimeline';
 
 interface Agent {
   id: string;
@@ -9,15 +9,7 @@ interface Agent {
   last_heartbeat: string;
 }
 
-interface TimelineEvent {
-  id: number;
-  event_type: string;
-  event_details: Record<string, unknown>;
-  timestamp: string;
-  icon: string;
-  category: string;
-  status: string;
-}
+// Using imported TimelineEvent interface
 
 interface AgentDetailProps {
   agentId: string;
