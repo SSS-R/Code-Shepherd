@@ -183,7 +183,8 @@ export function createApprovalRoutes(db: Database): ReturnType<typeof require>['
       return res.json({
         ...approval,
         action_details: JSON.parse(approval.action_details || '{}'),
-        summary: approval.summary || null
+        summary: approval.summary || null,
+        diff: approval.diff || null
       });
     } catch (error: unknown) {
       console.error('Get approval error:', error);

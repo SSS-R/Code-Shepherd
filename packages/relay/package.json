@@ -13,6 +13,7 @@
     "@temporalio/client": "^1.15.0",
     "@temporalio/worker": "^1.15.0",
     "better-sqlite3": "^12.8.0",
+    "diff": "^8.0.3",
     "express": "^4.22.1",
     "sqlite3": "^6.0.1",
     "web-push": "^3.6.7"

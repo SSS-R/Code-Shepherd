@@ -267,7 +267,13 @@ function ApprovalCard({
         </div>
       )}
       
-      {approval.action_details && Object.keys(approval.action_details).length > 0 && (
+      {approval.diff && (
+        <div className="mb-4">
+          <DiffViewer diff={approval.diff} isNewFile={false} />
+        </div>
+      )}
+      
+      {approval.action_details && Object.keys(approval.action_details).length > 0 && !approval.diff && (
         <div className="text-xs text-slate-400 mb-4">
           <pre className="glass p-3 rounded-lg overflow-auto text-xs bg-black/20">
             {JSON.stringify(approval.action_details, null, 2)}
