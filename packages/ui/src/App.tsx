@@ -97,4 +97,3 @@ function NavButton({ icon, label, isActive, onClick }: NavButtonProps) {
 }
 
 export default App
-ault App

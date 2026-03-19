@@ -85,6 +85,7 @@ async function start() {
     console.log(`Agent Timeline: http://localhost:${PORT}/agents/:id/timeline`);
     console.log(`Approval API: http://localhost:${PORT}/approvals`);
     console.log(`Audit Log API: http://localhost:${PORT}/audit-logs`);
+    console.log(`Workflows API: http://localhost:${PORT}/workflows`);
     console.log(`Notifications API: http://localhost:${PORT}/notifications`);
     console.log(`VAPID Public Key: ${vapidKeys.publicKey}`);
   });

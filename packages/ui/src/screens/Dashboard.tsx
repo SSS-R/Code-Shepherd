@@ -100,6 +100,12 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
           </div>
         )}
       </div>
+
+      {/* Active Workflows Section */}
+      <div>
+        <h2 className="text-xl font-bold text-white mb-4">Active Workflows</h2>
+        <ActiveWorkflows />
+      </div>
     </div>
   )
 }
