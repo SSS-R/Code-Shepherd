@@ -81,13 +81,19 @@ Developer approves from phone → Workflow resumes → Logged to audit trail
 
 ## Next Priorities
 
-### Phase 1: Make It Trustworthy (Weeks 4-6)
+### Phase 1: Make It Trustworthy (Weeks 4-6) ✅ COMPLETE
 
-1. ⏳ Approval-Ready Summaries — Replace raw logs with structured artifact cards
-2. ⏳ Diff Preview — Inline code diff with syntax highlighting
-3. ⏳ Approval Reason Capture — Log rejection reasons for training signal
-4. ⏳ Session Replay (lite) — Replay key decision points
-5. ⏳ Resumable Workflows UI — Explicit UI to see interrupted sessions
+1. ✅ Approval-Ready Summaries — Human-readable summaries for all actions
+2. ✅ Diff Preview — Inline code diff viewer with syntax highlighting
+3. ✅ Approval Reason Capture — Required rejection reasons
+4. ✅ Session Replay (lite) — Visual timeline of agent actions
+5. ✅ Resumable Workflows UI — Active workflows list with resume capability
+
+### Phase 2: Operational Excellence (Weeks 7-10) ⏳ NEXT
+
+1. ⏳ Kanban Task Board — Drag-and-drop task management
+2. ⏳ Git Worktree Isolation — Per-task git worktrees
+3. ⏳ Priority & Labels — Task prioritization system
 
 ---
 
@@ -109,6 +115,16 @@ Developer approves from phone → Workflow resumes → Logged to audit trail
 |--------|-------------|
 | `25ddcd9` | Phase 0 complete - Agent Registry, Approval Queue, Push Notifications, Mobile PWA |
 | `4e84656` | docs: Update all markdown files based on AgentOPS.md roadmap |
+| `a0b7ff0` | chore: Initialize monorepo with all bootstrap files (7/7) |
+
+---
+
+## References
+
+- [Full Roadmap](AgentOPS.md)
+- [Architecture Details](ARCHITECTURE.md)
+- [Codebase Map](CODEBASE_MAP.md)
+markdown files based on AgentOPS.md roadmap |
 | `a0b7ff0` | chore: Initialize monorepo with all bootstrap files (7/7) |
 
 ---

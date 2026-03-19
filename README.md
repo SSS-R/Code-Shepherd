@@ -238,8 +238,8 @@ VAPID_PRIVATE_KEY=your_vapid_private_key_here
 | Phase | Timeline | Goal | Status |
 |-------|----------|------|--------|
 | **Phase 0** | Weeks 1-3 | Prove: "I can leave my desk and still control my agents." | ✅ Complete |
-| **Phase 1** | Weeks 4-6 | Prove: "I can trust what I'm approving." | ⏳ Next |
-| **Phase 2** | Weeks 7-10 | Prove: "I can run multiple agents cleanly." | ⏳ Queued |
+| **Phase 1** | Weeks 4-6 | Prove: "I can trust what I'm approving." | ✅ Complete |
+| **Phase 2** | Weeks 7-10 | Prove: "I can run multiple agents cleanly." | ⏳ Next |
 | **Phase 3** | Weeks 11+ | Team features, RBAC, compliance | ⏳ Future |
 
 ---
@@ -258,6 +258,18 @@ VAPID_PRIVATE_KEY=your_vapid_private_key_here
 ---
 
 ## License
+
+MIT — See [LICENSE](LICENSE) for details.
+
+---
+
+*"The control plane for AI coding agents."*
+SE](LICENSE) for details.
+
+---
+
+*"The control plane for AI coding agents."*
+ense
 
 MIT — See [LICENSE](LICENSE) for details.
 
