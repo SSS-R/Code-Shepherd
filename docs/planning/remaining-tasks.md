@@ -121,13 +121,13 @@ These features make the product competitive and differentiate it from Vibe Kanba
 - **Estimated effort:** 1 session
 
 #### 10. Git Worktree Isolation
-- [ ] Auto-create isolated git worktree per task
-- [ ] tmux/terminal session per agent
+- [x] Auto-create isolated git worktree per task
+- [x] tmux/terminal session per agent
 - **Estimated effort:** 2 sessions
 
 #### 11. WebAssembly Terminal (ghostty-web fallback)
-- [ ] Embedded terminal for when approval summaries aren't enough
-- [ ] SSH into agent environment
+- [x] Embedded terminal for when approval summaries aren't enough
+- [x] SSH into agent environment
 - **Estimated effort:** 2–3 sessions
 
 ---

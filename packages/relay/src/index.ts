@@ -14,6 +14,7 @@ import { createNotificationRoutes } from './routes/notifications';
 import { createAuditRoutes } from './routes/audit';
 import { createWorkflowRoutes } from './routes/workflows';
 import { createTaskRoutes } from './routes/tasks';
+import { createOperationsRoutes } from './routes/operations';
 import { getVapidKeys } from './utils/vapidKeys';
 import * as activities from './activities';
 import { initializeRealtime } from './realtime';
@@ -99,6 +100,9 @@ app.use('/workflows', createWorkflowRoutes(workflowClient));
 
 // Tasks API
 app.use('/tasks', createTaskRoutes(db));
+
+// Operational runtime scaffolding
+app.use('/operations', createOperationsRoutes(db));
 
 // Start server
 async function start() {

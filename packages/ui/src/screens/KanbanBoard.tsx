@@ -13,6 +13,13 @@ interface Task {
     assigned_agent_id: string | null
 }
 
+interface TaskRuntime {
+    task_id: string
+    worktree_path: string
+    terminal_session_id: string
+    terminal_status: 'idle' | 'ready' | 'active'
+}
+
 interface Agent {
     id: string
     name: string
@@ -24,6 +31,7 @@ export default function KanbanBoard() {
     const [tasks, setTasks] = useState<Task[]>([])
     const [agents, setAgents] = useState<Agent[]>([])
     const [loading, setLoading] = useState(true)
+    const [runtimeByTask, setRuntimeByTask] = useState<Record<string, TaskRuntime>>({})
     const [form, setForm] = useState({
         title: '',
         description: '',
@@ -98,6 +106,23 @@ export default function KanbanBoard() {
         if (res.ok) {
             const updated = await res.json()
             setTasks(current => current.map(task => task.id === taskId ? updated : task))
+        }
+    }
+
+    const provisionRuntime = async (taskId: string) => {
+        const res = await fetch(`http://localhost:3000/operations/tasks/${taskId}/provision`, { method: 'POST' })
+        if (res.ok) {
+            const runtime = await res.json()
+            setRuntimeByTask((current) => ({ ...current, [taskId]: runtime }))
+        }
+    }
+
+    const activateTerminal = async (taskId: string) => {
+        const res = await fetch(`http://localhost:3000/operations/tasks/${taskId}/terminal/activate`, { method: 'POST' })
+        if (res.ok) {
+            setRuntimeByTask((current) => current[taskId]
+                ? { ...current, [taskId]: { ...current[taskId], terminal_status: 'active' } }
+                : current)
         }
     }
 
@@ -236,6 +261,17 @@ export default function KanbanBoard() {
                                         </div>
                                         {task.blocked_by_task_id && (
                                             <div className="mt-3 text-[13px] text-amber-300">Blocked by: {tasks.find((candidate) => candidate.id === task.blocked_by_task_id)?.title || task.blocked_by_task_id}</div>
+                                        )}
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            <button onClick={() => void provisionRuntime(task.id)} className="btn-secondary rounded-lg px-3 py-2 text-[13px] font-medium">Provision Worktree</button>
+                                            <button onClick={() => void activateTerminal(task.id)} className="btn-primary rounded-lg px-3 py-2 text-[13px] font-medium">Activate Terminal</button>
+                                        </div>
+                                        {runtimeByTask[task.id] && (
+                                            <div className="mt-3 rounded-lg border border-white/8 bg-slate-950/60 p-3 text-[13px] text-[var(--text-secondary)]">
+                                                <div>Worktree: {runtimeByTask[task.id].worktree_path}</div>
+                                                <div>Terminal: {runtimeByTask[task.id].terminal_session_id}</div>
+                                                <div>Status: {runtimeByTask[task.id].terminal_status}</div>
+                                            </div>
                                         )}
                                     </article>
                                 ))
