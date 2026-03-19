@@ -9,6 +9,7 @@
 
 import { Request, Response } from 'express';
 import type { Database } from 'better-sqlite3';
+import { broadcastRealtimeEvent } from '../realtime';
 
 export function createAgentRoutes(db: Database) {
   const router = require('express').Router();
@@ -45,6 +46,8 @@ export function createAgentRoutes(db: Database) {
 
       const result = stmt.run(id, name, JSON.stringify(capabilities || []));
 
+      broadcastRealtimeEvent('agents.updated', { action: 'registered', agentId: id });
+
       return res.status(201).json({
         id,
         name,
@@ -78,6 +81,8 @@ export function createAgentRoutes(db: Database) {
       if (result.changes === 0) {
         return res.status(404).json({ error: 'Agent not found' });
       }
+
+      broadcastRealtimeEvent('agents.updated', { action: 'heartbeat', agentId: id });
 
       return res.json({
         id,

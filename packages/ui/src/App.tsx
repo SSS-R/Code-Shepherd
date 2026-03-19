@@ -5,6 +5,7 @@ import ApprovalQueue from './screens/ApprovalQueue'
 import AgentDetail from './screens/AgentDetail'
 import ActiveWorkflows from './components/ActiveWorkflows'
 import KanbanBoard from './screens/KanbanBoard'
+import ExecutionTimeline from './screens/ExecutionTimeline'
 
 type Screen = 'dashboard' | 'approvals' | 'timeline' | 'settings' | 'kanban' | 'agent-detail'
 
@@ -60,21 +61,26 @@ function App() {
         ) : currentScreen === 'approvals' ? (
           <ApprovalQueue />
         ) : currentScreen === 'timeline' ? (
-          <section className="space-y-4">
-            <div>
-              <h2 className="text-[22px] font-semibold text-[var(--text-primary)]">Execution Timeline</h2>
-              <p className="text-[15px] text-[var(--text-secondary)]">Dedicated timeline screen scaffolded to match the 4-tab AgentOps design system.</p>
-            </div>
-            <ActiveWorkflows />
-          </section>
+          <ExecutionTimeline />
         ) : currentScreen === 'settings' ? (
           <section className="space-y-4">
             <div>
               <h2 className="text-[22px] font-semibold text-[var(--text-primary)]">Settings</h2>
-              <p className="text-[15px] text-[var(--text-secondary)]">Preferences, notification controls, and policy surfaces will live here.</p>
+              <p className="text-[15px] text-[var(--text-secondary)]">Preferences, notification controls, policy surfaces, and terminal/worktree setup guidance live here for the operational Phase 2 flow.</p>
             </div>
-            <div className="glass rounded-xl p-5">
-              <div className="text-[15px] text-[var(--text-secondary)]">Phase 1 settings shell added to complete the 4-tab command-center architecture.</div>
+            <div className="glass rounded-xl p-5 space-y-4">
+              <div>
+                <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">Notification threshold</h3>
+                <p className="mt-1 text-[13px] text-[var(--text-secondary)]">Use approvals for sensitive actions and realtime updates for task changes.</p>
+              </div>
+              <div>
+                <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">Terminal fallback</h3>
+                <p className="mt-1 text-[13px] text-[var(--text-secondary)]">Phase 2 terminal fallback is currently scaffolded operationally through the relay/workflow model, with a full embedded terminal still pending.</p>
+              </div>
+              <div>
+                <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">Worktree isolation</h3>
+                <p className="mt-1 text-[13px] text-[var(--text-secondary)]">Each Kanban task is designed to become a future isolated worktree execution unit. The current build stores assignment and dependency metadata to support that transition.</p>
+              </div>
             </div>
           </section>
         ) : currentScreen === 'kanban' ? (

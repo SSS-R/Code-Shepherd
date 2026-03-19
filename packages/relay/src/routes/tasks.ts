@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import type { Database } from 'better-sqlite3';
+import { broadcastRealtimeEvent } from '../realtime';
 
 type TaskStatus = 'Queued' | 'In Progress' | 'Blocked' | 'Done' | 'Failed';
 type TaskPriority = 'P0' | 'P1' | 'P2' | 'P3';
@@ -11,6 +12,7 @@ interface TaskRow {
     status: TaskStatus;
     priority: TaskPriority;
     labels: string | null;
+    blocked_by_task_id: string | null;
     assigned_agent_id: string | null;
     created_at: string;
     updated_at: string;
@@ -37,12 +39,20 @@ export function createTaskRoutes(db: Database): ReturnType<typeof require>['Rout
       status TEXT NOT NULL DEFAULT 'Queued',
       priority TEXT NOT NULL DEFAULT 'P2',
       labels TEXT DEFAULT '[]',
+      blocked_by_task_id TEXT,
       assigned_agent_id TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (blocked_by_task_id) REFERENCES tasks(id),
       FOREIGN KEY (assigned_agent_id) REFERENCES agents(id)
     )
   `);
+
+    try {
+        db.exec('ALTER TABLE tasks ADD COLUMN blocked_by_task_id TEXT');
+    } catch (error) {
+        // column already exists
+    }
 
     router.get('/', (req: Request, res: Response) => {
         try {
@@ -64,6 +74,7 @@ export function createTaskRoutes(db: Database): ReturnType<typeof require>['Rout
                 status = 'Queued',
                 priority = 'P2',
                 labels = [],
+                blocked_by_task_id = null,
                 assigned_agent_id = null,
             } = req.body as {
                 id: string;
@@ -72,6 +83,7 @@ export function createTaskRoutes(db: Database): ReturnType<typeof require>['Rout
                 status?: TaskStatus;
                 priority?: TaskPriority;
                 labels?: string[];
+                blocked_by_task_id?: string | null;
                 assigned_agent_id?: string | null;
             };
 
@@ -88,12 +100,13 @@ export function createTaskRoutes(db: Database): ReturnType<typeof require>['Rout
             }
 
             const stmt = db.prepare(`
-        INSERT INTO tasks (id, title, description, status, priority, labels, assigned_agent_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO tasks (id, title, description, status, priority, labels, blocked_by_task_id, assigned_agent_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `);
-            stmt.run(id, title, description || null, status, priority, JSON.stringify(labels), assigned_agent_id);
+            stmt.run(id, title, description || null, status, priority, JSON.stringify(labels), blocked_by_task_id, assigned_agent_id);
 
             const created = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as TaskRow;
+            broadcastRealtimeEvent('tasks.updated', { action: 'created', taskId: id });
             return res.status(201).json(mapTask(created));
         } catch (error) {
             console.error('Create task error:', error);
@@ -104,12 +117,13 @@ export function createTaskRoutes(db: Database): ReturnType<typeof require>['Rout
     router.patch('/:id', (req: Request, res: Response) => {
         try {
             const { id } = req.params as { id: string };
-            const { title, description, status, priority, labels, assigned_agent_id } = req.body as {
+            const { title, description, status, priority, labels, blocked_by_task_id, assigned_agent_id } = req.body as {
                 title?: string;
                 description?: string | null;
                 status?: TaskStatus;
                 priority?: TaskPriority;
                 labels?: string[];
+                blocked_by_task_id?: string | null;
                 assigned_agent_id?: string | null;
             };
 
@@ -136,6 +150,7 @@ export function createTaskRoutes(db: Database): ReturnType<typeof require>['Rout
             status = ?,
             priority = ?,
             labels = ?,
+            blocked_by_task_id = ?,
             assigned_agent_id = ?,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
@@ -147,11 +162,13 @@ export function createTaskRoutes(db: Database): ReturnType<typeof require>['Rout
                 nextStatus,
                 nextPriority,
                 JSON.stringify(labels ?? JSON.parse(existing.labels || '[]')),
+                blocked_by_task_id ?? existing.blocked_by_task_id,
                 assigned_agent_id ?? existing.assigned_agent_id,
                 id
             );
 
             const updated = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as TaskRow;
+            broadcastRealtimeEvent('tasks.updated', { action: 'updated', taskId: id });
             return res.json(mapTask(updated));
         } catch (error) {
             console.error('Update task error:', error);
@@ -169,6 +186,7 @@ export function createTaskRoutes(db: Database): ReturnType<typeof require>['Rout
                 return res.status(404).json({ error: 'Task not found' });
             }
 
+            broadcastRealtimeEvent('tasks.updated', { action: 'deleted', taskId: id });
             return res.json({ id, message: 'Task deleted' });
         } catch (error) {
             console.error('Delete task error:', error);

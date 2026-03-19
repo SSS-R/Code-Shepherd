@@ -9,6 +9,7 @@ interface Task {
     status: TaskStatus
     priority: 'P0' | 'P1' | 'P2' | 'P3'
     labels: string[]
+    blocked_by_task_id?: string | null
     assigned_agent_id: string | null
 }
 
@@ -29,6 +30,7 @@ export default function KanbanBoard() {
         priority: 'P2' as Task['priority'],
         labels: '',
         assigned_agent_id: '',
+        blocked_by_task_id: '',
     })
 
     useEffect(() => {
@@ -44,6 +46,19 @@ export default function KanbanBoard() {
                 setLoading(false)
             })
             .catch(() => setLoading(false))
+
+        const socket = new WebSocket('ws://localhost:3000/realtime')
+        socket.onmessage = (event) => {
+            const message = JSON.parse(event.data) as { type?: string }
+            if (message.type === 'tasks.updated') {
+                fetch('http://localhost:3000/tasks')
+                    .then(res => res.json())
+                    .then(data => setTasks(data))
+                    .catch(() => undefined)
+            }
+        }
+
+        return () => socket.close()
     }, [])
 
     const createTask = async () => {
@@ -56,6 +71,7 @@ export default function KanbanBoard() {
             priority: form.priority,
             status: 'Queued',
             labels: form.labels.split(',').map(label => label.trim()).filter(Boolean),
+            blocked_by_task_id: form.blocked_by_task_id || null,
             assigned_agent_id: form.assigned_agent_id || null,
         }
 
@@ -68,7 +84,7 @@ export default function KanbanBoard() {
         if (res.ok) {
             const created = await res.json()
             setTasks([created, ...tasks])
-            setForm({ title: '', description: '', priority: 'P2', labels: '', assigned_agent_id: '' })
+            setForm({ title: '', description: '', priority: 'P2', labels: '', assigned_agent_id: '', blocked_by_task_id: '' })
         }
     }
 
@@ -132,6 +148,16 @@ export default function KanbanBoard() {
                     </select>
                     <div className="flex gap-3">
                         <select
+                            value={form.blocked_by_task_id}
+                            onChange={(e) => setForm({ ...form, blocked_by_task_id: e.target.value })}
+                            className="surface-panel flex-1 rounded-lg px-4 py-3 text-[15px] text-white focus:outline-none"
+                        >
+                            <option value="">No dependency</option>
+                            {tasks.map((task) => (
+                                <option key={task.id} value={task.id}>{task.title}</option>
+                            ))}
+                        </select>
+                        <select
                             value={form.assigned_agent_id}
                             onChange={(e) => setForm({ ...form, assigned_agent_id: e.target.value })}
                             className="surface-panel flex-1 rounded-lg px-4 py-3 text-[15px] text-white focus:outline-none"
@@ -141,7 +167,7 @@ export default function KanbanBoard() {
                                 <option key={agent.id} value={agent.id}>{agent.name}</option>
                             ))}
                         </select>
-                        <button onClick={() => void createTask()} className="btn-primary rounded-lg px-4 py-3 text-sm font-medium">Add Task</button>
+                        <button onClick={() => void createTask()} className="btn-primary rounded-lg px-4 py-3 text-sm font-medium whitespace-nowrap">Add Task</button>
                     </div>
                 </div>
             </section>
@@ -181,6 +207,16 @@ export default function KanbanBoard() {
                                         </div>
                                         <div className="mt-3 grid gap-2">
                                             <select
+                                                value={task.blocked_by_task_id || ''}
+                                                onChange={(e) => void updateTask(task.id, { blocked_by_task_id: e.target.value || null })}
+                                                className="surface-panel rounded-lg px-3 py-2 text-[13px] text-white"
+                                            >
+                                                <option value="">No dependency</option>
+                                                {tasks.filter((candidate) => candidate.id !== task.id).map((candidate) => (
+                                                    <option key={candidate.id} value={candidate.id}>{candidate.title}</option>
+                                                ))}
+                                            </select>
+                                            <select
                                                 value={task.status}
                                                 onChange={(e) => void updateTask(task.id, { status: e.target.value as TaskStatus })}
                                                 className="surface-panel rounded-lg px-3 py-2 text-[13px] text-white"
@@ -198,6 +234,9 @@ export default function KanbanBoard() {
                                                 ))}
                                             </select>
                                         </div>
+                                        {task.blocked_by_task_id && (
+                                            <div className="mt-3 text-[13px] text-amber-300">Blocked by: {tasks.find((candidate) => candidate.id === task.blocked_by_task_id)?.title || task.blocked_by_task_id}</div>
+                                        )}
                                     </article>
                                 ))
                             )}

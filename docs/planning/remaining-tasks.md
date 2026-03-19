@@ -97,9 +97,9 @@ These features make the product competitive and differentiate it from Vibe Kanba
 
 #### 7. WebSocket Real-Time Updates
 **Why:** Currently the UI polls. Real-time updates make it feel alive.
-- [ ] Add `ws` to relay server
-- [ ] Broadcast events: agent status change, new approval, workflow update
-- [ ] UI subscribes and updates in real-time (no refresh needed)
+- [x] Add `ws` to relay server
+- [x] Broadcast events: agent status change, new approval, workflow update
+- [x] UI subscribes and updates in real-time (no refresh needed)
 - **Estimated effort:** 1 session
 
 #### 8. Settings Screen
@@ -116,8 +116,8 @@ These features make the product competitive and differentiate it from Vibe Kanba
 ### 🟢 MEDIUM — Ship Before Team Features
 
 #### 9. Task Dependencies
-- [ ] "Blocked by" relationships between tasks
-- [ ] Visual dependency chain on Kanban
+- [x] "Blocked by" relationships between tasks
+- [x] Visual dependency chain on Kanban
 - **Estimated effort:** 1 session
 
 #### 10. Git Worktree Isolation

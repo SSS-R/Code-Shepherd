@@ -4,6 +4,7 @@
  */
 
 import express, { Request, Response } from 'express';
+import { createServer } from 'http';
 import Database from 'better-sqlite3';
 import { NativeConnection, Worker } from '@temporalio/worker';
 import { Connection, WorkflowClient } from '@temporalio/client';
@@ -15,8 +16,10 @@ import { createWorkflowRoutes } from './routes/workflows';
 import { createTaskRoutes } from './routes/tasks';
 import { getVapidKeys } from './utils/vapidKeys';
 import * as activities from './activities';
+import { initializeRealtime } from './realtime';
 
 const app = express();
+const server = createServer(app);
 const PORT = process.env.PORT || 3000;
 const DATABASE_PATH = process.env.DATABASE_PATH || './relay.db';
 const TEMPORAL_ADDRESS = process.env.TEMPORAL_ADDRESS || 'localhost:7233';
@@ -101,7 +104,9 @@ app.use('/tasks', createTaskRoutes(db));
 async function start() {
   await initializeTemporal();
 
-  app.listen(PORT, () => {
+  initializeRealtime(server);
+
+  server.listen(PORT, () => {
     console.log(`Relay server running on http://localhost:${PORT}`);
     console.log(`Health check: http://localhost:${PORT}/health`);
     console.log(`Agent API: http://localhost:${PORT}/agents`);
@@ -113,6 +118,7 @@ async function start() {
     console.log(`VAPID Public Key: ${vapidKeys.publicKey}`);
     console.log(`Database Path: ${DATABASE_PATH}`);
     console.log(`Temporal Address: ${TEMPORAL_ADDRESS}`);
+    console.log(`Realtime WS: ws://localhost:${PORT}/realtime`);
   });
 }
 

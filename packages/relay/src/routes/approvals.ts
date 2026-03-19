@@ -18,6 +18,7 @@ import { processApprovalWithDiff } from '../utils/diffGenerator';
 import { evaluateRisk } from '../middleware/riskPolicy';
 import { approvalRequestWorkflow, decisionSignal } from '../workflows/approvalWorkflow';
 import { resolveApprovalTimeoutMs } from '../utils/approvalTimeout';
+import { broadcastRealtimeEvent } from '../realtime';
 
 export function createApprovalRoutes(db: Database, workflowClient: WorkflowClient | null): ReturnType<typeof require>['Router'] {
   const vapidKeys = getVapidKeys();
@@ -138,6 +139,8 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
       }).catch((notificationError: unknown) => {
         console.error('Push notification error:', notificationError);
       });
+
+      broadcastRealtimeEvent('approvals.updated', { action: 'created', approvalId: id });
 
       return res.status(201).json({
         id,
@@ -286,6 +289,8 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
           console.error('Failed to signal approval workflow:', workflowError);
         });
       }
+
+      broadcastRealtimeEvent('approvals.updated', { action: 'updated', approvalId: id, decision });
 
       return res.json({
         id,
