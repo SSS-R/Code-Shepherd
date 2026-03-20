@@ -19,10 +19,12 @@ import { evaluateRisk } from '../middleware/riskPolicy';
 import { approvalRequestWorkflow, decisionSignal } from '../workflows/approvalWorkflow';
 import { resolveApprovalTimeoutMs } from '../utils/approvalTimeout';
 import { broadcastRealtimeEvent } from '../realtime';
+import { requireAuth, requireRole } from '../middleware/auth';
 
 export function createApprovalRoutes(db: Database, workflowClient: WorkflowClient | null): ReturnType<typeof require>['Router'] {
   const vapidKeys = getVapidKeys();
   const router = require('express').Router();
+  router.use(requireAuth);
 
   // Initialize approvals table
   db.exec(`
@@ -58,6 +60,12 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
     // Columns already exist, ignore
   }
 
+  try {
+    db.exec('ALTER TABLE approvals ADD COLUMN team_id TEXT');
+  } catch (e) {
+    // Column already exists, ignore
+  }
+
   // Initialize audit_logs table (append-only)
   db.exec(`
     CREATE TABLE IF NOT EXISTS audit_logs (
@@ -74,7 +82,7 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
    * POST /approvals
    * Request approval for an action (agent-initiated)
    */
-  router.post('/', (req: Request, res: Response) => {
+  router.post('/', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
     try {
       const { id, agent_id, action_type, action_details, risk_level, risk_reason } = req.body as {
         id: string;
@@ -101,11 +109,11 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
 
       // Insert approval request
       const stmt = db.prepare(`
-        INSERT INTO approvals (id, agent_id, action_type, summary, diff, is_new_file, action_details, risk_level, risk_reason, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+        INSERT INTO approvals (id, agent_id, action_type, summary, diff, is_new_file, action_details, risk_level, risk_reason, status, team_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
       `);
 
-      stmt.run(id, agent_id, action_type, summary, diff, is_new_file ? 1 : 0, JSON.stringify(action_details || {}), resolvedRiskLevel, resolvedRiskReason);
+      stmt.run(id, agent_id, action_type, summary, diff, is_new_file ? 1 : 0, JSON.stringify(action_details || {}), resolvedRiskLevel, resolvedRiskReason, req.auth?.teamId ?? null);
 
       // Log to audit trail
       const auditStmt = db.prepare(`
@@ -169,10 +177,10 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
     try {
       const stmt = db.prepare(`
         SELECT * FROM approvals 
-        WHERE status = 'pending' 
+        WHERE status = 'pending' AND (team_id IS ? OR team_id = ?)
         ORDER BY requested_at ASC
       `);
-      const approvals = stmt.all().map((approval: any): any => ({
+      const approvals = stmt.all(req.auth?.teamId ?? null, req.auth?.teamId ?? null).map((approval: any): any => ({
         ...approval,
         action_details: JSON.parse(approval.action_details || '{}'),
         summary: approval.summary || null,
@@ -199,8 +207,12 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
       let query = 'SELECT * FROM approvals';
 
       if (status) {
-        query += ' WHERE status = ?';
+        query += ' WHERE status = ? AND (team_id IS ? OR team_id = ?)';
         params.push(status);
+        params.push(req.auth?.teamId ?? null, req.auth?.teamId ?? null);
+      } else {
+        query += ' WHERE (team_id IS ? OR team_id = ?)';
+        params.push(req.auth?.teamId ?? null, req.auth?.teamId ?? null);
       }
 
       query += ' ORDER BY requested_at DESC';
@@ -226,8 +238,8 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
   router.get('/:id', (req: Request, res: Response) => {
     try {
       const { id } = req.params as { id: string };
-      const stmt = db.prepare('SELECT * FROM approvals WHERE id = ?');
-      const approval = stmt.get(id) as any;
+      const stmt = db.prepare('SELECT * FROM approvals WHERE id = ? AND (team_id IS ? OR team_id = ?)');
+      const approval = stmt.get(id, req.auth?.teamId ?? null, req.auth?.teamId ?? null) as any;
 
       if (!approval) {
         return res.status(404).json({ error: 'Approval not found' });
@@ -250,7 +262,7 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
    * PATCH /approvals/:id
    * Approve or reject an approval (human decision)
    */
-  router.patch('/:id', (req: Request, res: Response) => {
+  router.patch('/:id', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
     try {
       const { id } = req.params as { id: string };
       const { decision, decision_reason } = req.body as { decision: string; decision_reason: string };

@@ -6,6 +6,7 @@ import AgentDetail from './screens/AgentDetail'
 import ActiveWorkflows from './components/ActiveWorkflows'
 import KanbanBoard from './screens/KanbanBoard'
 import ExecutionTimeline from './screens/ExecutionTimeline'
+import Settings from './screens/Settings'
 
 type Screen = 'dashboard' | 'approvals' | 'timeline' | 'settings' | 'kanban' | 'agent-detail'
 
@@ -63,26 +64,7 @@ function App() {
         ) : currentScreen === 'timeline' ? (
           <ExecutionTimeline />
         ) : currentScreen === 'settings' ? (
-          <section className="space-y-4">
-            <div>
-              <h2 className="text-[22px] font-semibold text-[var(--text-primary)]">Settings</h2>
-              <p className="text-[15px] text-[var(--text-secondary)]">Preferences, notification controls, policy surfaces, and terminal/worktree setup guidance live here for the operational Phase 2 flow.</p>
-            </div>
-            <div className="glass rounded-xl p-5 space-y-4">
-              <div>
-                <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">Notification threshold</h3>
-                <p className="mt-1 text-[13px] text-[var(--text-secondary)]">Use approvals for sensitive actions and realtime updates for task changes.</p>
-              </div>
-              <div>
-                <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">Terminal fallback</h3>
-                <p className="mt-1 text-[13px] text-[var(--text-secondary)]">Phase 2 terminal fallback is currently scaffolded operationally through the relay/workflow model, with a full embedded terminal still pending.</p>
-              </div>
-              <div>
-                <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">Worktree isolation</h3>
-                <p className="mt-1 text-[13px] text-[var(--text-secondary)]">Each Kanban task is designed to become a future isolated worktree execution unit. The current build stores assignment and dependency metadata to support that transition.</p>
-              </div>
-            </div>
-          </section>
+          <Settings />
         ) : currentScreen === 'kanban' ? (
           <KanbanBoard />
         ) : null}

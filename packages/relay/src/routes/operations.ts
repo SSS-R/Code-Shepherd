@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import type { Database } from 'better-sqlite3';
 import { broadcastRealtimeEvent } from '../realtime';
+import { requireAuth, requireRole } from '../middleware/auth';
 
 interface TaskRuntimeRow {
     task_id: string;
@@ -21,6 +22,7 @@ function buildTerminalSessionId(taskId: string): string {
 
 export function createOperationsRoutes(db: Database): ReturnType<typeof require>['Router'] {
     const router = require('express').Router();
+    router.use(requireAuth);
 
     db.exec(`
     CREATE TABLE IF NOT EXISTS task_runtime (
@@ -34,7 +36,7 @@ export function createOperationsRoutes(db: Database): ReturnType<typeof require>
     )
   `);
 
-    router.post('/tasks/:id/provision', (req: Request, res: Response) => {
+    router.post('/tasks/:id/provision', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
         try {
             const { id } = req.params as { id: string };
             const task = db.prepare('SELECT id FROM tasks WHERE id = ?').get(id) as { id: string } | undefined;
@@ -86,7 +88,7 @@ export function createOperationsRoutes(db: Database): ReturnType<typeof require>
         }
     });
 
-    router.post('/tasks/:id/terminal/activate', (req: Request, res: Response) => {
+    router.post('/tasks/:id/terminal/activate', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
         try {
             const { id } = req.params as { id: string };
             const result = db.prepare(`

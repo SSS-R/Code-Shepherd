@@ -136,9 +136,9 @@ These features make the product competitive and differentiate it from Vibe Kanba
 
 | Feature | Priority |
 |---------|----------|
-| User Auth (email/password + OAuth) | 🔴 |
-| Team Management (invite, seats) | 🔴 |
-| RBAC (Admin, Developer, Viewer) | 🟡 |
+| User Auth (email/password + OAuth) | ✅ foundation added |
+| Team Management (invite, seats) | ✅ foundation added |
+| RBAC (Admin, Developer, Viewer) | ✅ foundation added |
 | Propose-and-Approve Steering | 🟡 |
 | Compliance Dashboard | 🟡 |
 | SSO / SAML / OIDC | 🟡 |

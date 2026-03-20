@@ -8,6 +8,7 @@
 
 import { Request, Response } from 'express';
 import type { Database } from 'better-sqlite3';
+import { requireAuth, requireRole } from '../middleware/auth';
 
 interface TimelineEvent {
   id: number;
@@ -23,6 +24,7 @@ interface TimelineEvent {
 
 export function createAuditRoutes(db: Database): ReturnType<typeof require>['Router'] {
   const router = require('express').Router();
+  router.use(requireAuth);
 
   /**
    * GET /agents/:id/timeline
@@ -46,11 +48,11 @@ export function createAuditRoutes(db: Database): ReturnType<typeof require>['Rou
       // Format events with icons and categories
       const timeline = logs.map((log): TimelineEvent => {
         const { icon, category, status } = categorizeEvent(log.event_type, log.event_details);
-        
+
         return {
           ...log,
-          event_details: typeof log.event_details === 'string' 
-            ? JSON.parse(log.event_details) 
+          event_details: typeof log.event_details === 'string'
+            ? JSON.parse(log.event_details)
             : log.event_details,
           icon,
           category,
@@ -69,18 +71,19 @@ export function createAuditRoutes(db: Database): ReturnType<typeof require>['Rou
    * GET /audit-logs
    * List all audit logs (admin endpoint)
    */
-  router.get('/', (req: Request, res: Response) => {
+  router.get('/', requireRole(['Admin', 'Developer', 'Viewer']), (req: Request, res: Response) => {
     try {
       const { limit = 100 } = req.query as { limit?: string };
       const stmt = db.prepare(`
         SELECT * FROM audit_logs 
+        WHERE team_id IS ? OR team_id = ?
         ORDER BY timestamp DESC 
         LIMIT ?
       `);
-      const logs = stmt.all(Number(limit)).map((log: any) => ({
+      const logs = stmt.all(req.auth?.teamId ?? null, req.auth?.teamId ?? null, Number(limit)).map((log: any) => ({
         ...log,
-        event_details: typeof log.event_details === 'string' 
-          ? JSON.parse(log.event_details) 
+        event_details: typeof log.event_details === 'string'
+          ? JSON.parse(log.event_details)
           : log.event_details
       }));
 
@@ -108,10 +111,10 @@ function categorizeEvent(event_type: string, event_details: Record<string, unkno
   }
   if (event_type === 'approval_decided') {
     const details = event_details as { decision?: string };
-    return { 
-      icon: details.decision === 'approved' ? '✅' : '❌', 
-      category: 'approval', 
-      status: details.decision === 'approved' ? 'success' : 'failure' 
+    return {
+      icon: details.decision === 'approved' ? '✅' : '❌',
+      category: 'approval',
+      status: details.decision === 'approved' ? 'success' : 'failure'
     };
   }
 

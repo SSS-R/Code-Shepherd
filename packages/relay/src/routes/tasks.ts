@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import type { Database } from 'better-sqlite3';
 import { broadcastRealtimeEvent } from '../realtime';
+import { requireAuth, requireRole } from '../middleware/auth';
 
 type TaskStatus = 'Queued' | 'In Progress' | 'Blocked' | 'Done' | 'Failed';
 type TaskPriority = 'P0' | 'P1' | 'P2' | 'P3';
@@ -30,6 +31,7 @@ function mapTask(task: TaskRow) {
 
 export function createTaskRoutes(db: Database): ReturnType<typeof require>['Router'] {
     const router = require('express').Router();
+    router.use(requireAuth);
 
     db.exec(`
     CREATE TABLE IF NOT EXISTS tasks (
@@ -56,8 +58,8 @@ export function createTaskRoutes(db: Database): ReturnType<typeof require>['Rout
 
     router.get('/', (req: Request, res: Response) => {
         try {
-            const stmt = db.prepare('SELECT * FROM tasks ORDER BY created_at DESC');
-            const tasks = (stmt.all() as TaskRow[]).map(mapTask);
+            const tasks = (db.prepare('SELECT * FROM tasks WHERE team_id IS ? OR team_id = ? ORDER BY created_at DESC')
+                .all(req.auth?.teamId ?? null, req.auth?.teamId ?? null) as TaskRow[]).map(mapTask);
             return res.json(tasks);
         } catch (error) {
             console.error('List tasks error:', error);
@@ -65,7 +67,7 @@ export function createTaskRoutes(db: Database): ReturnType<typeof require>['Rout
         }
     });
 
-    router.post('/', (req: Request, res: Response) => {
+    router.post('/', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
         try {
             const {
                 id,
@@ -100,10 +102,10 @@ export function createTaskRoutes(db: Database): ReturnType<typeof require>['Rout
             }
 
             const stmt = db.prepare(`
-        INSERT INTO tasks (id, title, description, status, priority, labels, blocked_by_task_id, assigned_agent_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO tasks (id, title, description, status, priority, labels, blocked_by_task_id, assigned_agent_id, team_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
-            stmt.run(id, title, description || null, status, priority, JSON.stringify(labels), blocked_by_task_id, assigned_agent_id);
+            stmt.run(id, title, description || null, status, priority, JSON.stringify(labels), blocked_by_task_id, assigned_agent_id, req.auth?.teamId ?? null);
 
             const created = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as TaskRow;
             broadcastRealtimeEvent('tasks.updated', { action: 'created', taskId: id });
@@ -114,7 +116,7 @@ export function createTaskRoutes(db: Database): ReturnType<typeof require>['Rout
         }
     });
 
-    router.patch('/:id', (req: Request, res: Response) => {
+    router.patch('/:id', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
         try {
             const { id } = req.params as { id: string };
             const { title, description, status, priority, labels, blocked_by_task_id, assigned_agent_id } = req.body as {
@@ -127,7 +129,7 @@ export function createTaskRoutes(db: Database): ReturnType<typeof require>['Rout
                 assigned_agent_id?: string | null;
             };
 
-            const existing = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as TaskRow | undefined;
+            const existing = db.prepare('SELECT * FROM tasks WHERE id = ? AND (team_id IS ? OR team_id = ?)').get(id, req.auth?.teamId ?? null, req.auth?.teamId ?? null) as TaskRow | undefined;
             if (!existing) {
                 return res.status(404).json({ error: 'Task not found' });
             }
@@ -176,7 +178,7 @@ export function createTaskRoutes(db: Database): ReturnType<typeof require>['Rout
         }
     });
 
-    router.delete('/:id', (req: Request, res: Response) => {
+    router.delete('/:id', requireRole(['Admin']), (req: Request, res: Response) => {
         try {
             const { id } = req.params as { id: string };
             const stmt = db.prepare('DELETE FROM tasks WHERE id = ?');

@@ -15,6 +15,7 @@ import { createAuditRoutes } from './routes/audit';
 import { createWorkflowRoutes } from './routes/workflows';
 import { createTaskRoutes } from './routes/tasks';
 import { createOperationsRoutes } from './routes/operations';
+import { createAuthRoutes } from './routes/auth';
 import { getVapidKeys } from './utils/vapidKeys';
 import * as activities from './activities';
 import { initializeRealtime } from './realtime';
@@ -94,6 +95,9 @@ app.use('/audit-logs', createAuditRoutes(db));
 
 // Push Notifications API
 app.use('/notifications', createNotificationRoutes(db, vapidKeys));
+
+// Auth / Teams API
+app.use('/auth', createAuthRoutes(db));
 
 // Workflows API
 app.use('/workflows', createWorkflowRoutes(workflowClient));
