@@ -160,5 +160,37 @@ export function createAuthRoutes(db: Database): ReturnType<typeof require>['Rout
         }
     });
 
+    router.get('/teams/:teamId/invitations', (req: Request, res: Response) => {
+        try {
+            const { teamId } = req.params as { teamId: string };
+            const invitations = db.prepare('SELECT * FROM team_invitations WHERE team_id = ? ORDER BY created_at DESC').all(teamId);
+            return res.json(invitations);
+        } catch (error) {
+            console.error('List invitations error:', error);
+            return res.status(500).json({ error: 'Failed to list invitations' });
+        }
+    });
+
+    router.post('/invitations/:id/accept', (req: Request, res: Response) => {
+        try {
+            const { id } = req.params as { id: string };
+            const { userId } = req.body as { userId: string };
+            const invitation = db.prepare('SELECT * FROM team_invitations WHERE id = ?').get(id) as { team_id: string; role: string; status: string } | undefined;
+
+            if (!invitation || invitation.status !== 'pending') {
+                return res.status(404).json({ error: 'Invitation not found or already handled' });
+            }
+
+            db.prepare('INSERT INTO team_members (id, team_id, user_id, role) VALUES (?, ?, ?, ?)')
+                .run(`member-${randomUUID()}`, invitation.team_id, userId, invitation.role);
+            db.prepare('UPDATE team_invitations SET status = ? WHERE id = ?').run('accepted', id);
+
+            return res.json({ id, status: 'accepted', team_id: invitation.team_id, role: invitation.role });
+        } catch (error) {
+            console.error('Accept invitation error:', error);
+            return res.status(500).json({ error: 'Failed to accept invitation' });
+        }
+    });
+
     return router;
 }
