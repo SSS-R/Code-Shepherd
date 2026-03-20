@@ -89,6 +89,7 @@ export default function Settings() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
         })
+
         if (res.ok) {
             setInviteEmail('')
             void loadInvitations()
@@ -102,6 +103,7 @@ export default function Settings() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId }),
         })
+
         if (res.ok) {
             void loadInvitations()
             void loadTeams()
