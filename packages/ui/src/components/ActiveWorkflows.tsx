@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Eye, Loader2, Pause } from 'lucide-react'
+import { buildAuthHeaders } from '../utils/authSession'
 
 interface Workflow {
     workflowId: string;
@@ -16,7 +17,7 @@ export default function ActiveWorkflows() {
     const [resumingId, setResumingId] = useState<string | null>(null)
 
     useEffect(() => {
-        fetch('http://localhost:3000/workflows')
+        fetch('http://localhost:3000/workflows', { headers: buildAuthHeaders() })
             .then(res => res.json())
             .then(data => {
                 setWorkflows(data)
@@ -30,7 +31,7 @@ export default function ActiveWorkflows() {
             setResumingId(workflowId)
             await fetch(`http://localhost:3000/workflows/${workflowId}/resume`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                headers: buildAuthHeaders()
             })
         } catch (error) {
             console.error('Failed to resume workflow:', error)

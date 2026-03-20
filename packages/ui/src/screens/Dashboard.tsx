@@ -1,6 +1,7 @@
 import { useState, useEffect, ReactNode } from 'react'
 import { ArrowRight, BellRing, Bot, CircleCheck, CircleX, LayoutDashboard } from 'lucide-react'
 import ActiveWorkflows from '../components/ActiveWorkflows'
+import { buildAuthHeaders } from '../utils/authSession'
 
 interface Agent {
     id: string
@@ -23,8 +24,8 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
 
     useEffect(() => {
         Promise.all([
-            fetch('http://localhost:3000/agents').then(res => res.json()),
-            fetch('http://localhost:3000/approvals/pending').then(res => res.json())
+            fetch('http://localhost:3000/agents', { headers: buildAuthHeaders() }).then(res => res.json()),
+            fetch('http://localhost:3000/approvals/pending', { headers: buildAuthHeaders() }).then(res => res.json())
         ]).then(([agentsData, approvalsData]) => {
             setAgents(agentsData)
             setStats({

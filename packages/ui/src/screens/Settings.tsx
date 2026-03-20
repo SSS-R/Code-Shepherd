@@ -26,6 +26,7 @@ export default function Settings() {
     const [inviteRole, setInviteRole] = useState('Developer')
     const [invitations, setInvitations] = useState<Invitation[]>([])
     const [sessionLabel, setSessionLabel] = useState('No session yet')
+    const activeRole = teams.find((team) => team.id === selectedTeamId)?.role || loadSession()?.role || 'Developer'
 
     useEffect(() => {
         const session = loadSession()
@@ -146,6 +147,9 @@ export default function Settings() {
             <section className="glass rounded-xl p-6 md:p-8">
                 <h2 className="text-[28px] font-bold tracking-tight text-[var(--text-primary)] md:text-[32px]">Collaboration settings</h2>
                 <p className="mt-2 text-[15px] text-[var(--text-secondary)]">Phase 3 adds account setup, teams, invitations, and role-aware operational control.</p>
+                <div className="mt-4 inline-flex rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-[13px] font-medium text-violet-300">
+                    Active role: {activeRole}
+                </div>
             </section>
 
             <section className="grid gap-4 lg:grid-cols-2">
@@ -200,7 +204,7 @@ export default function Settings() {
                         <option value="Viewer">Viewer</option>
                         <option value="Admin">Admin</option>
                     </select>
-                    <button onClick={() => void createInvitation()} className="btn-primary rounded-lg px-4 py-3 text-sm font-medium">Create invitation</button>
+                    <button onClick={() => void createInvitation()} disabled={activeRole === 'Viewer'} className="btn-primary rounded-lg px-4 py-3 text-sm font-medium disabled:opacity-50">Create invitation</button>
                 </div>
 
                 <div className="glass rounded-xl p-5 space-y-3">

@@ -7,6 +7,7 @@ import ActiveWorkflows from './components/ActiveWorkflows'
 import KanbanBoard from './screens/KanbanBoard'
 import ExecutionTimeline from './screens/ExecutionTimeline'
 import Settings from './screens/Settings'
+import { loadSession } from './utils/authSession'
 
 type Screen = 'dashboard' | 'approvals' | 'timeline' | 'settings' | 'kanban' | 'agent-detail'
 
@@ -14,6 +15,7 @@ function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('dashboard')
   const [isConnected, setIsConnected] = useState(false)
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
+  const session = loadSession()
 
   useEffect(() => {
     fetch('http://localhost:3000/health')
@@ -49,6 +51,14 @@ function App() {
             <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300 border border-blue-500/20">
               Phase 1
             </span>
+            {session?.teamId && (
+              <>
+                <div className="h-4 w-px bg-white/8" />
+                <span className="rounded-full bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-300 border border-violet-500/20">
+                  Team session
+                </span>
+              </>
+            )}
           </div>
         </div>
       </header>

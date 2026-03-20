@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import SessionTimeline, { TimelineEvent } from '../components/SessionTimeline';
+import { buildAuthHeaders } from '../utils/authSession';
 
 interface Agent {
   id: string;
@@ -23,8 +24,8 @@ export default function AgentDetail({ agentId, onBack }: AgentDetailProps) {
 
   useEffect(() => {
     Promise.all([
-      fetch(`http://localhost:3000/agents/${agentId}`).then(res => res.json()),
-      fetch(`http://localhost:3000/audit-logs/${agentId}/timeline`).then(res => res.json())
+      fetch(`http://localhost:3000/agents/${agentId}`, { headers: buildAuthHeaders() }).then(res => res.json()),
+      fetch(`http://localhost:3000/audit-logs/${agentId}/timeline`, { headers: buildAuthHeaders() }).then(res => res.json())
     ]).then(([agentData, eventsData]) => {
       setAgent(agentData);
       setEvents(eventsData);
@@ -85,11 +86,10 @@ export default function AgentDetail({ agentId, onBack }: AgentDetailProps) {
           <h1 className="text-2xl font-bold text-white">{agent.name}</h1>
           <p className="text-sm text-slate-400">ID: {agent.id}</p>
         </div>
-        <div className={`px-4 py-2 rounded-full text-sm font-bold ${
-          agent.status === 'online'
+        <div className={`px-4 py-2 rounded-full text-sm font-bold ${agent.status === 'online'
             ? 'bg-green-500/20 text-green-300 border border-green-500/30'
             : 'bg-slate-500/20 text-slate-300 border border-slate-500/30'
-        }`}>
+          }`}>
           {agent.status}
         </div>
       </div>
