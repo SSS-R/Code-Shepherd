@@ -26,6 +26,17 @@ export default function Settings() {
     const [invitations, setInvitations] = useState<Invitation[]>([])
     const [sessionLabel, setSessionLabel] = useState('No session yet')
 
+    const seedDemo = async () => {
+        const res = await fetch('http://localhost:3000/demo/seed', { method: 'POST' })
+        if (res.ok) {
+            const data = await res.json()
+            setUserId(data.user.id)
+            setTeams([data.team])
+            setSelectedTeamId(data.team.id)
+            setSessionLabel(`Demo loaded for ${data.user.name}`)
+        }
+    }
+
     const signUp = async () => {
         const res = await fetch('http://localhost:3000/auth/signup', {
             method: 'POST',
@@ -127,6 +138,7 @@ export default function Settings() {
                     <div className="flex gap-3">
                         <button onClick={() => void signUp()} className="btn-primary rounded-lg px-4 py-3 text-sm font-medium">Sign Up</button>
                         <button onClick={() => void login()} className="btn-secondary rounded-lg px-4 py-3 text-sm font-medium">Login</button>
+                        <button onClick={() => void seedDemo()} className="btn-secondary rounded-lg px-4 py-3 text-sm font-medium">Load Demo</button>
                     </div>
                     <p className="text-[13px] text-[var(--text-secondary)]">{sessionLabel}</p>
                 </div>
