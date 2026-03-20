@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { buildAuthHeaders } from '../utils/authSession'
 
 type TaskStatus = 'Queued' | 'In Progress' | 'Blocked' | 'Done' | 'Failed'
 
@@ -42,11 +43,11 @@ export default function KanbanBoard() {
     })
 
     useEffect(() => {
-        fetch('http://localhost:3000/tasks')
+        fetch('http://localhost:3000/tasks', { headers: buildAuthHeaders() })
             .then(res => res.json())
             .then(data => {
                 setTasks(data)
-                return fetch('http://localhost:3000/agents')
+                return fetch('http://localhost:3000/agents', { headers: buildAuthHeaders() })
             })
             .then(res => res?.json?.())
             .then(agentData => {
@@ -59,7 +60,7 @@ export default function KanbanBoard() {
         socket.onmessage = (event) => {
             const message = JSON.parse(event.data) as { type?: string }
             if (message.type === 'tasks.updated') {
-                fetch('http://localhost:3000/tasks')
+                fetch('http://localhost:3000/tasks', { headers: buildAuthHeaders() })
                     .then(res => res.json())
                     .then(data => setTasks(data))
                     .catch(() => undefined)
@@ -85,7 +86,7 @@ export default function KanbanBoard() {
 
         const res = await fetch('http://localhost:3000/tasks', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: buildAuthHeaders(),
             body: JSON.stringify(payload),
         })
 
@@ -99,7 +100,7 @@ export default function KanbanBoard() {
     const updateTask = async (taskId: string, patch: Partial<Task>) => {
         const res = await fetch(`http://localhost:3000/tasks/${taskId}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: buildAuthHeaders(),
             body: JSON.stringify(patch),
         })
 
@@ -110,7 +111,7 @@ export default function KanbanBoard() {
     }
 
     const provisionRuntime = async (taskId: string) => {
-        const res = await fetch(`http://localhost:3000/operations/tasks/${taskId}/provision`, { method: 'POST' })
+        const res = await fetch(`http://localhost:3000/operations/tasks/${taskId}/provision`, { method: 'POST', headers: buildAuthHeaders() })
         if (res.ok) {
             const runtime = await res.json()
             setRuntimeByTask((current) => ({ ...current, [taskId]: runtime }))
@@ -118,7 +119,7 @@ export default function KanbanBoard() {
     }
 
     const activateTerminal = async (taskId: string) => {
-        const res = await fetch(`http://localhost:3000/operations/tasks/${taskId}/terminal/activate`, { method: 'POST' })
+        const res = await fetch(`http://localhost:3000/operations/tasks/${taskId}/terminal/activate`, { method: 'POST', headers: buildAuthHeaders() })
         if (res.ok) {
             setRuntimeByTask((current) => current[taskId]
                 ? { ...current, [taskId]: { ...current[taskId], terminal_status: 'active' } }

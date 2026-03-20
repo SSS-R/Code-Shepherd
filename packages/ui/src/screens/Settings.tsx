@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { buildAuthHeaders, clearSession, loadSession, saveSession } from '../utils/authSession'
 
 interface Team {
     id: string
@@ -26,21 +27,19 @@ export default function Settings() {
     const [invitations, setInvitations] = useState<Invitation[]>([])
     const [sessionLabel, setSessionLabel] = useState('No session yet')
 
-    const seedDemo = async () => {
-        const res = await fetch('http://localhost:3000/demo/seed', { method: 'POST' })
-        if (res.ok) {
-            const data = await res.json()
-            setUserId(data.user.id)
-            setTeams([data.team])
-            setSelectedTeamId(data.team.id)
-            setSessionLabel(`Demo loaded for ${data.user.name}`)
+    useEffect(() => {
+        const session = loadSession()
+        if (session) {
+            setUserId(session.userId)
+            setSelectedTeamId(session.teamId ?? '')
+            setSessionLabel(`Signed in as ${session.name || session.userId}`)
         }
-    }
+    }, [])
 
     const signUp = async () => {
         const res = await fetch('http://localhost:3000/auth/signup', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: buildAuthHeaders(),
             body: JSON.stringify({ email, password, name, teamName }),
         })
 
@@ -51,6 +50,9 @@ export default function Settings() {
             if (data.team) {
                 setTeams([data.team])
                 setSelectedTeamId(data.team.id)
+                saveSession({ userId: data.user.id, teamId: data.team.id, role: data.team.role, name: data.user.name, email: data.user.email })
+            } else {
+                saveSession({ userId: data.user.id, teamId: null, role: 'Developer', name: data.user.name, email: data.user.email })
             }
         }
     }
@@ -58,7 +60,7 @@ export default function Settings() {
     const login = async () => {
         const res = await fetch('http://localhost:3000/auth/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: buildAuthHeaders(),
             body: JSON.stringify({ email, password }),
         })
 
@@ -69,38 +71,48 @@ export default function Settings() {
             setTeams(data.teams || [])
             if (data.teams?.[0]?.id) {
                 setSelectedTeamId(data.teams[0].id)
+                saveSession({ userId: data.user.id, teamId: data.teams[0].id, role: data.teams[0].role, name: data.user.name, email: data.user.email })
+            } else {
+                saveSession({ userId: data.user.id, teamId: null, role: 'Developer', name: data.user.name, email: data.user.email })
             }
+        }
+    }
+
+    const seedDemo = async () => {
+        const res = await fetch('http://localhost:3000/demo/seed', { method: 'POST', headers: buildAuthHeaders() })
+        if (res.ok) {
+            const data = await res.json()
+            setUserId(data.user.id)
+            setTeams([data.team])
+            setSelectedTeamId(data.team.id)
+            setSessionLabel(`Demo loaded for ${data.user.name}`)
+            saveSession({ userId: data.user.id, teamId: data.team.id, role: data.team.role, name: data.user.name, email: data.user.email })
         }
     }
 
     const loadTeams = async () => {
         if (!userId) return
-        const res = await fetch(`http://localhost:3000/auth/teams?userId=${userId}`)
+        const res = await fetch(`http://localhost:3000/auth/teams?userId=${userId}`, { headers: buildAuthHeaders() })
         if (res.ok) {
             const data = await res.json()
             setTeams(data)
-            if (data[0]?.id) {
-                setSelectedTeamId(data[0].id)
-            }
+            if (data[0]?.id) setSelectedTeamId(data[0].id)
         }
     }
 
     const loadInvitations = async () => {
         if (!selectedTeamId) return
-        const res = await fetch(`http://localhost:3000/auth/teams/${selectedTeamId}/invitations`)
-        if (res.ok) {
-            setInvitations(await res.json())
-        }
+        const res = await fetch(`http://localhost:3000/auth/teams/${selectedTeamId}/invitations`, { headers: buildAuthHeaders() })
+        if (res.ok) setInvitations(await res.json())
     }
 
     const createInvitation = async () => {
         if (!selectedTeamId || !inviteEmail) return
         const res = await fetch(`http://localhost:3000/auth/teams/${selectedTeamId}/invitations`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: buildAuthHeaders(),
             body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
         })
-
         if (res.ok) {
             setInviteEmail('')
             void loadInvitations()
@@ -111,14 +123,22 @@ export default function Settings() {
         if (!userId) return
         const res = await fetch(`http://localhost:3000/auth/invitations/${invitationId}/accept`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: buildAuthHeaders(),
             body: JSON.stringify({ userId }),
         })
-
         if (res.ok) {
             void loadInvitations()
             void loadTeams()
         }
+    }
+
+    const signOut = () => {
+        clearSession()
+        setUserId('')
+        setTeams([])
+        setSelectedTeamId('')
+        setInvitations([])
+        setSessionLabel('No session yet')
     }
 
     return (
@@ -135,10 +155,11 @@ export default function Settings() {
                     <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-white" />
                     <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-white" />
                     <input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="Team name (optional)" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-white" />
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 flex-wrap">
                         <button onClick={() => void signUp()} className="btn-primary rounded-lg px-4 py-3 text-sm font-medium">Sign Up</button>
                         <button onClick={() => void login()} className="btn-secondary rounded-lg px-4 py-3 text-sm font-medium">Login</button>
                         <button onClick={() => void seedDemo()} className="btn-secondary rounded-lg px-4 py-3 text-sm font-medium">Load Demo</button>
+                        <button onClick={signOut} className="btn-secondary rounded-lg px-4 py-3 text-sm font-medium">Sign Out</button>
                     </div>
                     <p className="text-[13px] text-[var(--text-secondary)]">{sessionLabel}</p>
                 </div>

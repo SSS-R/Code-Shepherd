@@ -1,6 +1,7 @@
 import { useState, useEffect, ReactNode } from 'react'
 import { BellRing, Check, FilePenLine, Shield, ShieldAlert, ShieldX, X } from 'lucide-react'
 import DiffViewer from '../components/DiffViewer'
+import { buildAuthHeaders } from '../utils/authSession'
 
 interface Approval {
     id: string
@@ -31,7 +32,7 @@ export default function ApprovalQueue() {
     const [showReasonError, setShowReasonError] = useState(false)
 
     useEffect(() => {
-        fetch('http://localhost:3000/approvals/pending')
+        fetch('http://localhost:3000/approvals/pending', { headers: buildAuthHeaders() })
             .then(res => res.json())
             .then(data => {
                 setApprovals(data)
@@ -45,7 +46,7 @@ export default function ApprovalQueue() {
         try {
             const res = await fetch(`http://localhost:3000/approvals/${id}`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: buildAuthHeaders(),
                 body: JSON.stringify({
                     decision: 'approved',
                     decision_reason: 'Approved via dashboard',
@@ -77,7 +78,7 @@ export default function ApprovalQueue() {
         try {
             const res = await fetch(`http://localhost:3000/approvals/${id}`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: buildAuthHeaders(),
                 body: JSON.stringify({
                     decision: 'rejected',
                     decision_reason: rejectReason.trim(),

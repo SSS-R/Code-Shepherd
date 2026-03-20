@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import SessionTimeline, { TimelineEvent } from '../components/SessionTimeline'
+import { buildAuthHeaders } from '../utils/authSession'
 
 export default function ExecutionTimeline() {
     const [events, setEvents] = useState<TimelineEvent[]>([])
@@ -8,7 +9,7 @@ export default function ExecutionTimeline() {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        fetch(`http://localhost:3000/audit-logs?limit=${limit}`)
+        fetch(`http://localhost:3000/audit-logs?limit=${limit}`, { headers: buildAuthHeaders() })
             .then((res) => res.json())
             .then((data) => {
                 setEvents(data)
