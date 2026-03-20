@@ -1,279 +1,246 @@
-# AgentOps — The Control Plane for AI Coding Agents
+# AgentOps
 
-> **Mobile-first command surface to monitor agents, approve risky actions, recover interrupted workflows, and maintain searchable audit trails.**
+> Mobile-first control plane for AI coding agents: approvals, audit history, agent visibility, and workflow state in one local-first prototype.
 
-[![Phase](https://img.shields.io/badge/Phase-1%20Prototype-blue)](AgentOPS.md)
-[![Status](https://img.shields.io/badge/status-pre--launch-orange)](AgentOPS.md)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Status](https://img.shields.io/badge/status-phase%201%20prototype-blue)](./AgentOPS.md)
+[![UI](https://img.shields.io/badge/ui-react%20pwa-61dafb)](./packages/ui)
+[![Relay](https://img.shields.io/badge/relay-express%20%2B%20temporal-111827)](./packages/relay)
+[![SDK](https://img.shields.io/badge/sdk-typescript-3178c6)](./packages/sdk)
 
----
+## What this repo currently is
 
-## The Problem
+AgentOps is a monorepo prototype for supervising coding agents from a browser or phone-sized PWA.
 
-Developers now run multiple AI coding agents simultaneously (Claude Code, Google Antigravity, custom agents) but managing them happens in **isolated silos**. This creates the **Agent Visibility Gap**:
+The current implementation is centered on the approval loop:
 
-- 📱 **Silent Stalls** — Agents get stuck waiting for approval, developers don't know until they check manually
-- 🔍 **No Single View** — No visibility into what 3+ agents are doing across different IDEs
-- 📋 **No Audit Trail** — Security teams cannot review what AI agents generated, approved, or executed
-- 🏠 **Desk-Bound** — Developers must sit at their computer to interact with agents
-- 💥 **State Loss** — Server crashes destroy long-running agent workflows
+1. an agent registers with the relay
+2. it sends heartbeats and appears in the dashboard
+3. it creates approval requests for risky work
+4. a human reviews the summary and diff/context
+5. the approval is approved, rejected, or timed out
+6. the decision is visible in audit/timeline views
 
----
+This repo already includes working UI screens, relay APIs, a local SQLite-backed datastore, realtime broadcasts, auth/team scaffolding, demo seeding, and an SDK package.
 
-## The Solution
+This repo does **not** yet represent the full long-term vision described in [`AgentOPS.md`](./AgentOPS.md). Some planned features remain partial or prototype-grade.
 
-A **mobile-first Progressive Web App (PWA)** connecting to any MCP-compatible AI coding agent through a **durable execution relay server**.
+## Current state at a glance
 
-### Core Value Propositions
+### Implemented now
 
-| Value | Description |
-|-------|-------------|
-| 📱 **Mobile Command Center** | Monitor all your agents from your phone. Live status across every tool. |
-| 🔔 **Approval Workflow** | Push notification → Approval-Ready Summary → one-tap approve or reject |
-| 🏗️ **Durable Execution** | Temporal.io — workflows persist through crashes and network drops |
-| 🛡️ **Layered Policy Enforcement** | Trusted registry, schema validation, risk scoring, approval gates |
-| 📊 **Execution Timeline** | Searchable log of tool activity, approvals, outputs, system events |
+- agent registration and heartbeat tracking
+- approval request creation, listing, and decision handling
+- approval summaries and code diff previews
+- audit log and agent timeline endpoints
+- realtime websocket event broadcasting
+- local auth, teams, invitations, and role-aware routes
+- task API and kanban-style UI surface
+- settings screen for local signup/login/demo loading
+- demo seed endpoint for local QA flows
+- TypeScript SDK for agent registration, heartbeats, approvals, and polling helpers
+- React/Vite PWA shell optimized for dashboard-style use
 
----
+### Partial / prototype-grade
 
-## The Killer Loop
+- Temporal durable execution is wired in, but local development can run with Temporal disconnected and some resumability semantics are still being hardened
+- risk policy enforcement exists, but is not yet a complete policy platform
+- collaboration/auth flows are local prototype scaffolding, not production auth
+- kanban and operations surfaces exist, but product behavior is still evolving
 
-```
-Agent starts work
-       ↓
-Agent hits a risky or uncertain action
-       ↓
-Push notification fires to developer's phone
-       ↓
-Developer sees Approval-Ready Summary
-       ↓
-Developer approves or rejects — from anywhere
-       ↓
-Workflow resumes (or halts) — durably, with no state loss
-       ↓
-Action logged to immutable audit trail
-```
+### Not done yet
 
-**Every feature in this repo serves this loop.**
+- production deployment story
+- npm publishing for the SDK
+- full enterprise/RBAC/compliance feature set
+- hardened multi-tenant architecture
+- full notification channel coverage beyond web push
 
----
+## Monorepo layout
 
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                  USER'S PHONE (PWA)                          │
-│  ┌──────────┐  ┌──────────┐  ┌──────────────────────────┐  │
-│  │Dashboard │  │ Approval │  │   Execution Timeline     │  │
-│  └────┬─────┘  └────┬─────┘  └───────────┬──────────────┘  │
-└─────────┼─────────────┼───────────────────┼─────────────────┘
-          │             │                   │  HTTPS / WSS
-          ▼             ▼                   ▼
-┌──────────────────────────────────────────────────────────────┐
-│                 AGENTOPS RELAY SERVER                         │
-│         (Node.js + Express + Temporal.io Workers)             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │   Agent     │  │  Approval   │  │   Immutable Audit   │  │
-│  │  Registry   │  │    Queue    │  │        Log          │  │
-│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘  │
-│  ┌──────┴────────────────┴────────────────────┴──────────┐   │
-│  │          Temporal.io — Durable Execution Engine         │   │
-│  └──────────────────────────┬─────────────────────────────┘   │
-└─────────────────────────────┼──────────────────────────────────┘
-                              │  MCP / HTTP / WebSocket
-              ┌───────────────┼───────────────┐
-              ▼               ▼               ▼
-       ┌──────────┐   ┌──────────┐   ┌──────────────┐
-       │  Claude  │   │ Google   │   │   Custom     │
-       │   Code   │   │Antigrav- │   │   Agents     │
-       │(VS Code) │   │  ity     │   │ (OpenClaw)   │
-       └──────────┘   └──────────┘   └──────────────┘
-```
-
----
-
-## Monorepo Structure
-
-```
+```text
 agentops/
 ├── packages/
-│   ├── relay/          # Express.js + Temporal.io server
-│   │   ├── src/
-│   │   │   ├── routes/        # API routes (agents, approvals, notifications)
-│   │   │   ├── workflows/     # Temporal workflows
-│   │   │   ├── activities/    # Temporal activities
-│   │   │   ├── middleware/    # Risk policy engine
-│   │   │   └── utils/         # VAPID keys, etc.
-│   │   ├── package.json
-│   │   └── tsconfig.json
-│   ├── ui/             # React PWA (mobile-first)
-│   │   ├── src/
-│   │   │   ├── screens/       # Dashboard, ApprovalQueue
-│   │   │   ├── utils/         # Push notifications
-│   │   │   └── service-worker.js
-│   │   ├── package.json
-│   │   └── vite.config.ts
-│   ├── sdk/            # Agent-side npm package
-│   │   └── (coming soon)
-│   └── shared/         # Shared TypeScript types
-│       └── (coming soon)
-├── AgentOPS.md         # Full product roadmap
-├── ARCHITECTURE.md     # System architecture details
-├── PROJECT_MEMORY.md   # Project context & decisions
-├── TASKS.md            # Task board
-├── CODEBASE_MAP.md     # Codebase orientation
-├── DEPENDENCIES.md     # Dependency documentation
-├── .gitignore
-├── .env.example
-└── requirements.txt    # Python dependencies (placeholder)
+│   ├── relay/   # Express relay, SQLite persistence, Temporal hooks, APIs
+│   ├── ui/      # React + Vite PWA
+│   ├── sdk/     # Agent-facing TypeScript client
+│   └── shared/  # Shared TS types
+├── docs/
+│   ├── ARCHITECTURE.md
+│   ├── internal/
+│   └── planning/
+├── AgentOPS.md
+├── README.md
+└── .env.example
 ```
 
----
+## Package summary
 
-## Getting Started
+| Package | Purpose | Notes |
+|---|---|---|
+| `@agentops/relay` | Express API, SQLite persistence, Temporal worker/client wiring, websocket broadcasts | Main backend runtime |
+| `@agentops/ui` | Mobile-first React PWA for dashboards, approvals, timeline, kanban, settings | Connects to `http://localhost:3000` |
+| `@agentops/sdk` | TypeScript helper package for agent registration, heartbeat, and approval flow | Local package, not published yet |
+| `@agentops/shared` | Shared types | Workspace dependency |
+
+## Main user-visible surfaces in the current prototype
+
+### Relay APIs
+
+The relay server exposes routes for:
+
+- `/health`
+- `/agents`
+- `/approvals`
+- `/audit-logs`
+- `/notifications`
+- `/auth`
+- `/demo`
+- `/workflows`
+- `/tasks`
+- `/operations`
+
+The server bootstrap lives in [`packages/relay/src/index.ts`](./packages/relay/src/index.ts).
+
+### UI screens
+
+The current PWA navigation includes:
+
+- dashboard
+- approvals
+- timeline
+- kanban
+- settings
+
+The main app shell lives in [`packages/ui/src/App.tsx`](./packages/ui/src/App.tsx).
+
+### Demo and QA helpers
+
+- seeded demo data via [`packages/relay/src/routes/demo.ts`](./packages/relay/src/routes/demo.ts)
+- signup/login/team/invitation flows via [`packages/relay/src/routes/auth.ts`](./packages/relay/src/routes/auth.ts)
+- local session persistence in [`packages/ui/src/utils/authSession.ts`](./packages/ui/src/utils/authSession.ts)
+
+## Local development setup
 
 ### Prerequisites
 
 - Node.js 18+
 - npm 9+
-- Python 3.12+ (for backend scripts)
-- Temporal.io (for durable execution)
+- optional: Temporal running at `localhost:7233` if you want workflow connectivity instead of the expected disconnected-dev fallback
 
-### Install Dependencies
+### Install dependencies
+
+From the repo root:
 
 ```bash
-# Root workspace
 npm install
-
-# Relay server (includes Temporal.io, web-push, etc.)
-cd packages/relay && npm install
-
-# UI (React PWA)
-cd packages/ui && npm install
 ```
 
-### Run Development
+The workspace is configured in [`package.json`](./package.json), so a root install covers the packages.
+
+### Configure environment
+
+Copy [`.env.example`](./.env.example) to `.env` in the repo root and adjust values if needed.
+
+Important defaults:
 
 ```bash
-# Relay server (port 3000)
-cd packages/relay && npm run dev
-
-# UI PWA (port 5173)
-cd packages/ui && npm run dev
-```
-
-### Environment Variables
-
-Copy `.env.example` to `.env` and configure:
-
-```bash
-# Server Configuration
 PORT=3000
-
-# Temporal.io Configuration
+DATABASE_PATH=./relay.db
 TEMPORAL_ADDRESS=localhost:7233
 TEMPORAL_NAMESPACE=default
 TEMPORAL_TASK_QUEUE=agentops-queue
-
-# Web Push Configuration (VAPID Keys)
-VAPID_PUBLIC_KEY=your_vapid_public_key_here
-VAPID_PRIVATE_KEY=your_vapid_private_key_here
 ```
 
----
+For push notifications, generate VAPID keys with:
 
-## Current Delivery Status
+```bash
+cd packages/relay && npx ts-node src/utils/vapidKeys.ts
+```
 
-| Component | Status |
-|-----------|--------|
-| Monorepo scaffold | ✅ Built |
-| Relay Server + SQLite | ✅ Built |
-| Temporal integration | 🟡 Partial scaffold |
-| Agent Registry API | ✅ Built |
-| Approval Queue API | ✅ Built |
-| Push Notifications | ✅ Built |
-| Approval summaries + diff preview | ✅ Built |
-| Session timeline + workflows UI | ✅ Built |
-| Agent-side SDK | ✅ Built in this repo |
-| Risk enforcement | 🟡 Basic rule evaluation |
-| Tests / CI | ❌ Not yet built |
+If you do not need push testing immediately, the rest of the app can still be documented and explored locally.
 
-**Status:** This repository is now at an **early Phase 1 prototype** state. The core approval loop is present, but production hardening, tests, and full Temporal-driven resumability are still in progress.
+## Running the prototype locally
 
----
+Open two terminals from the repo root.
 
-## API Endpoints
+### Terminal 1: relay
 
-### Agent Registry
+```bash
+npm run dev:relay
+```
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/agents/register` | POST | Register new agent |
-| `/agents/:id/heartbeat` | POST | Send heartbeat |
-| `/agents` | GET | List all agents |
-| `/agents/:id` | GET | Get agent status |
+This runs the relay TypeScript compiler in watch mode as defined in [`packages/relay/package.json`](./packages/relay/package.json).
 
-### Approval Queue
+For an actual running server build, use:
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/approvals` | POST | Request approval |
-| `/approvals/pending` | GET | List pending approvals |
-| `/approvals` | GET | List all approvals |
-| `/approvals/:id` | PATCH | Approve/reject |
-| `/approvals/audit-logs` | GET | List audit logs |
+```bash
+npm run build:relay
+npm run start --workspace=@agentops/relay
+```
 
-### Push Notifications
+### Terminal 2: UI
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/notifications/subscribe` | POST | Subscribe to push |
-| `/notifications/subscribe` | DELETE | Unsubscribe |
-| `/notifications/test` | POST | Send test notification |
-| `/notifications/subscriptions` | GET | List subscriptions |
+```bash
+npm run dev:ui
+```
 
----
+This starts the Vite app from [`packages/ui/package.json`](./packages/ui/package.json), typically at `http://localhost:5173`.
 
-## Roadmap
+### Health checks
 
-| Phase | Timeline | Goal | Status |
-|-------|----------|------|--------|
-| **Phase 0** | Weeks 1-3 | Prove: "I can leave my desk and still control my agents." | ✅ Complete |
-| **Phase 1** | Weeks 4-6 | Prove: "I can trust what I'm approving." | 🟡 Prototype in progress |
-| **Phase 2** | Weeks 7-10 | Prove: "I can run multiple agents cleanly." | ⏳ Next |
-| **Phase 3** | Weeks 11+ | Team features, RBAC, compliance | ⏳ Future |
+- relay health: `http://localhost:3000/health`
+- UI: `http://localhost:5173`
+- realtime websocket: `ws://localhost:3000/realtime`
 
----
+## Recommended local workflow
 
-## Documentation
+1. install deps with `npm install`
+2. create `.env` from [`.env.example`](./.env.example)
+3. build the relay at least once
+4. run the relay server
+5. run the UI
+6. open the Settings screen and either:
+   - sign up a user/team, or
+   - load demo data
+7. review dashboard, approvals, timeline, kanban, and settings flows
 
-| Document | Purpose |
-|----------|---------|
-| [AgentOPS.md](AgentOPS.md) | Full product roadmap, GTM strategy, risks |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture details |
-| [DEPENDENCIES.md](DEPENDENCIES.md) | Dependency documentation |
-| [CODEBASE_MAP.md](CODEBASE_MAP.md) | Codebase orientation |
-| [PROJECT_MEMORY.md](PROJECT_MEMORY.md) | Project context & decisions |
-| [TASKS.md](TASKS.md) | Task board |
+## Temporal behavior in development
 
----
+The relay tries to connect to Temporal during startup. In development, a failed Temporal connection is currently treated as expected and logged rather than crashing the whole server.
 
-## License
+That means:
 
-MIT — See [LICENSE](LICENSE) for details.
+- basic local API/UI work can still be explored without Temporal
+- workflow-related behavior is more complete when Temporal is actually running
+- docs should describe durable execution as **present but not fully hardened**
 
----
+## Current documentation map
 
-*"The control plane for AI coding agents."*
-SE](LICENSE) for details.
+| File | Purpose |
+|---|---|
+| [`AgentOPS.md`](./AgentOPS.md) | Product vision and broader roadmap |
+| [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Target architecture vs current prototype reality |
+| [`docs/internal/PROJECT_MEMORY.md`](./docs/internal/PROJECT_MEMORY.md) | Ongoing project context and decisions |
+| [`docs/planning/remaining-tasks.md`](./docs/planning/remaining-tasks.md) | Remaining work and roadmap slices |
+| [`docs/qa-beta-testing.md`](./docs/qa-beta-testing.md) | QA and beta tester guide |
 
----
+## Build verification
 
-*"The control plane for AI coding agents."*
-ense
+The root build command is:
 
-MIT — See [LICENSE](LICENSE) for details.
+```bash
+npm run build
+```
 
----
+It builds shared, relay, sdk, and ui in sequence as defined in [`package.json`](./package.json).
 
-*"The control plane for AI coding agents."*
+## Reality check for contributors
+
+When updating docs or demo instructions, describe the repository honestly:
+
+- present implemented screens and routes as working prototype features
+- present Temporal durability as partial/hardening-in-progress
+- present auth/teams as local prototype scaffolding
+- avoid promising production-ready security, compliance, or enterprise isolation
+
+That distinction already matches the intent of [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) and should stay consistent across future edits.
