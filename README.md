@@ -1,30 +1,55 @@
 # Code Shepherd
 
-> Mobile-first control plane for AI coding agents: approvals, audit history, agent visibility, and workflow state in one local-first prototype.
+> Unified control plane for coding agents across IDEs, local runtimes, MCP bridges, and custom agent systems.
 
-[![Status](https://img.shields.io/badge/status-phase%201%20prototype-blue)](./CODE_SHEPHERD.md)
+[![Status](https://img.shields.io/badge/status-architecture%20reset-orange)](./CODE_SHEPHERD.md)
 [![UI](https://img.shields.io/badge/ui-react%20pwa-61dafb)](./packages/ui)
 [![Relay](https://img.shields.io/badge/relay-express%20%2B%20temporal-111827)](./packages/relay)
 [![SDK](https://img.shields.io/badge/sdk-typescript-3178c6)](./packages/sdk)
 
-## What this repo currently is
+## What Code Shepherd is
 
-Code Shepherd is a monorepo prototype for supervising coding agents from a browser or phone-sized PWA.
+Code Shepherd is being shaped into a **multi-agent communication and control layer**.
 
-The current implementation is centered on the approval loop:
+The product goal is not to create a new model, a new IDE, or a new agent framework.
+The goal is to let developers connect existing systems such as Claude Code, Antigravity, Codex, Copilot, Kilo Code, OpenClaw, and custom agents into one place so they can:
 
-1. an agent registers with the relay
-2. it sends heartbeats and appears in the dashboard
-3. it creates approval requests for risky work
-4. a human reviews the summary and diff/context
-5. the approval is approved, rejected, or timed out
-6. the decision is visible in audit/timeline views
+- see which agents are online
+- send tasks or follow-up commands
+- receive replies and status updates
+- approve risky actions remotely
+- manage multiple agents at the same time
+- keep an audit trail across all sessions
 
-This repo already includes working UI screens, relay APIs, a local SQLite-backed datastore, realtime broadcasts, auth/team scaffolding, demo seeding, and an SDK package.
+## Core product principle
 
-This repo does **not** yet represent the full long-term vision described in [`CODE_SHEPHERD.md`](./CODE_SHEPHERD.md). Some planned features remain partial or prototype-grade.
+Code Shepherd should work even when the connected agent does not natively support Code Shepherd.
 
-## Current state at a glance
+That means the platform must support multiple connection patterns:
+
+- native MCP integrations
+- custom bridges or local companion processes
+- IDE plugins or extension-based bridges
+- command-driven installers or local helper software
+- monitor-only integrations for tools that do not yet allow full bidirectional control
+
+The user must keep the source machine online. If the PC, laptop, IDE, or local agent session is offline, Code Shepherd can show the last known state but cannot actively communicate with that agent.
+
+## Product direction
+
+The product center is now:
+
+1. **Inbox and conversations** with connected agents
+2. **Agent registry and presence** across devices and IDEs
+3. **Approvals and intervention** for risky actions
+4. **Parallel multi-agent coordination**
+5. **Audit and replay** across sessions
+
+Approvals remain critical, but they are now part of a broader multi-agent control flow rather than the entire product identity.
+
+## Current repository reality
+
+This repository is still a **prototype**. It already includes meaningful building blocks, but it does **not** yet implement the full unified agent inbox experience.
 
 ### Implemented now
 
@@ -32,38 +57,51 @@ This repo does **not** yet represent the full long-term vision described in [`CO
 - approval request creation, listing, and decision handling
 - approval summaries and code diff previews
 - audit log and agent timeline endpoints
-- realtime websocket event broadcasting
+- realtime event broadcasting foundation
 - local auth, teams, invitations, and role-aware routes
-- task API and kanban-style UI surface
-- settings screen for local signup/login/demo loading
+- task API and kanban-oriented UI surface
 - demo seed endpoint for local QA flows
 - TypeScript SDK for agent registration, heartbeats, approvals, and polling helpers
-- React/Vite PWA shell optimized for dashboard-style use
+- React and Vite PWA shell for mobile-first supervision
 
-### Partial / prototype-grade
+### Not implemented yet
 
-- Temporal durable execution is wired in, but local development can run with Temporal disconnected and some resumability semantics are still being hardened
-- risk policy enforcement exists, but is not yet a complete policy platform
-- collaboration/auth flows are local prototype scaffolding, not production auth
-- kanban and operations surfaces exist, but product behavior is still evolving
+- conversation threads between user and agents
+- message routing to connected agents
+- adapter layer for IDE-specific and custom-agent bridges
+- agent capability tiers such as monitor-only, approval-capable, and full chat control
+- unified inbox for simultaneous multi-agent communication
+- connector installation flow for bridges, plugins, and local helpers
 
-### Not done yet
+## Target connection model
 
-- production deployment story
-- npm publishing for the SDK
-- full enterprise/RBAC/compliance feature set
-- hardened multi-tenant architecture
-- full notification channel coverage beyond web push
+Every connected agent should appear inside Code Shepherd as a normalized session with:
+
+- identity
+- adapter type
+- connection status
+- capability level
+- active conversation or task context
+- pending approvals
+- last known activity
+
+Examples of future integration categories:
+
+- IDE-native agents like Claude Code, Antigravity, Codex, Copilot, and Kilo Code
+- MCP-capable agents
+- custom local agents started by scripts or CLIs
+- bridge-connected tools that require a plugin, extension, or helper daemon
+- direct session integrations such as the OpenClaw main session path
 
 ## Monorepo layout
 
 ```text
 code-shepherd/
 ├── packages/
-│   ├── relay/   # Express relay, SQLite persistence, Temporal hooks, APIs
-│   ├── ui/      # React + Vite PWA
-│   ├── sdk/     # Agent-facing TypeScript client
-│   └── shared/  # Shared TS types
+│   ├── relay/   # Relay server, workflows, approvals, audit, future adapter runtime
+│   ├── ui/      # PWA for inbox, agent visibility, approvals, timeline, settings
+│   ├── sdk/     # Agent and bridge-facing TypeScript client
+│   └── shared/  # Shared types and future cross-adapter contracts
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── internal/
@@ -73,51 +111,16 @@ code-shepherd/
 └── .env.example
 ```
 
-## Package summary
+## What the next product slice should deliver
 
-| Package | Purpose | Notes |
-|---|---|---|
-| `@code-shepherd/relay` | Express API, SQLite persistence, Temporal worker/client wiring, websocket broadcasts | Main backend runtime |
-| `@code-shepherd/ui` | Mobile-first React PWA for dashboards, approvals, timeline, kanban, settings | Connects to `http://localhost:3000` |
-| `@code-shepherd/sdk` | TypeScript helper package for agent registration, heartbeat, and approval flow | Local package, not published yet |
-| `@code-shepherd/shared` | Shared types | Workspace dependency |
+The next architecture-aligned milestone should prove this experience:
 
-## Main user-visible surfaces in the current prototype
-
-### Relay APIs
-
-The relay server exposes routes for:
-
-- `/health`
-- `/agents`
-- `/approvals`
-- `/audit-logs`
-- `/notifications`
-- `/auth`
-- `/demo`
-- `/workflows`
-- `/tasks`
-- `/operations`
-
-The server bootstrap lives in [`packages/relay/src/index.ts`](./packages/relay/src/index.ts).
-
-### UI screens
-
-The current PWA navigation includes:
-
-- dashboard
-- approvals
-- timeline
-- kanban
-- settings
-
-The main app shell lives in [`packages/ui/src/App.tsx`](./packages/ui/src/App.tsx).
-
-### Demo and QA helpers
-
-- seeded demo data via [`packages/relay/src/routes/demo.ts`](./packages/relay/src/routes/demo.ts)
-- signup/login/team/invitation flows via [`packages/relay/src/routes/auth.ts`](./packages/relay/src/routes/auth.ts)
-- local session persistence in [`packages/ui/src/utils/authSession.ts`](./packages/ui/src/utils/authSession.ts)
+1. two or more agents register from different tools
+2. the user sees them in one shared interface
+3. the user selects one or more agents and sends instructions
+4. agents respond back into their own threads or work queues
+5. risky actions still require approval
+6. the user can intervene from desktop or phone without sitting at the original machine
 
 ## Local development setup
 
@@ -125,7 +128,7 @@ The main app shell lives in [`packages/ui/src/App.tsx`](./packages/ui/src/App.ts
 
 - Node.js 18+
 - npm 9+
-- optional: Temporal running at `localhost:7233` if you want workflow connectivity instead of the expected disconnected-dev fallback
+- optional: Temporal running at `localhost:7233`
 
 ### Install dependencies
 
@@ -135,11 +138,9 @@ From the repo root:
 npm install
 ```
 
-The workspace is configured in [`package.json`](./package.json), so a root install covers the packages.
-
 ### Configure environment
 
-Copy [`.env.example`](./.env.example) to `.env` in the repo root and adjust values if needed.
+Copy [`.env.example`](./.env.example) to [`.env`](./.env) and adjust values if needed.
 
 Important defaults:
 
@@ -157,9 +158,7 @@ For push notifications, generate VAPID keys with:
 cd packages/relay && npx ts-node src/utils/vapidKeys.ts
 ```
 
-If you do not need push testing immediately, the rest of the app can still be documented and explored locally.
-
-## Running the prototype locally
+## Running the current prototype locally
 
 Open two terminals from the repo root.
 
@@ -169,22 +168,11 @@ Open two terminals from the repo root.
 npm run dev:relay
 ```
 
-This runs the relay TypeScript compiler in watch mode as defined in [`packages/relay/package.json`](./packages/relay/package.json).
-
-For an actual running server build, use:
-
-```bash
-npm run build:relay
-npm run start --workspace=@code-shepherd/relay
-```
-
 ### Terminal 2: UI
 
 ```bash
 npm run dev:ui
 ```
-
-This starts the Vite app from [`packages/ui/package.json`](./packages/ui/package.json), typically at `http://localhost:5173`.
 
 ### Health checks
 
@@ -192,55 +180,19 @@ This starts the Vite app from [`packages/ui/package.json`](./packages/ui/package
 - UI: `http://localhost:5173`
 - realtime websocket: `ws://localhost:3000/realtime`
 
-## Recommended local workflow
-
-1. install deps with `npm install`
-2. create `.env` from [`.env.example`](./.env.example)
-3. build the relay at least once
-4. run the relay server
-5. run the UI
-6. open the Settings screen and either:
-   - sign up a user/team, or
-   - load demo data
-7. review dashboard, approvals, timeline, kanban, and settings flows
-
-## Temporal behavior in development
-
-The relay tries to connect to Temporal during startup. In development, a failed Temporal connection is currently treated as expected and logged rather than crashing the whole server.
-
-That means:
-
-- basic local API/UI work can still be explored without Temporal
-- workflow-related behavior is more complete when Temporal is actually running
-- docs should describe durable execution as **present but not fully hardened**
-
-## Current documentation map
+## Documentation map
 
 | File | Purpose |
 |---|---|
-| [`CODE_SHEPHERD.md`](./CODE_SHEPHERD.md) | Product vision and broader roadmap |
-| [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Target architecture vs current prototype reality |
-| [`docs/internal/PROJECT_MEMORY.md`](./docs/internal/PROJECT_MEMORY.md) | Ongoing project context and decisions |
-| [`docs/planning/remaining-tasks.md`](./docs/planning/remaining-tasks.md) | Remaining work and roadmap slices |
-| [`docs/qa-beta-testing.md`](./docs/qa-beta-testing.md) | QA and beta tester guide |
-
-## Build verification
-
-The root build command is:
-
-```bash
-npm run build
-```
-
-It builds shared, relay, sdk, and ui in sequence as defined in [`package.json`](./package.json).
+| [`CODE_SHEPHERD.md`](./CODE_SHEPHERD.md) | Product vision, revised architecture direction, phased roadmap |
+| [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Target system and prototype reality |
+| [`docs/planning/remaining-tasks.md`](./docs/planning/remaining-tasks.md) | Execution order for the next product-defining work |
 
 ## Reality check for contributors
 
-When updating docs or demo instructions, describe the repository honestly:
+When describing the project, keep this distinction clear:
 
-- present implemented screens and routes as working prototype features
-- present Temporal durability as partial/hardening-in-progress
-- present auth/teams as local prototype scaffolding
-- avoid promising production-ready security, compliance, or enterprise isolation
+- **current repo:** approval-centric prototype with agent visibility foundations
+- **target product:** unified communication and control plane for many external agents
 
-That distinction already matches the intent of [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) and should stay consistent across future edits.
+Do not describe the current repository as if cross-agent chat, bridge installation, or multi-agent command dispatch is already complete.

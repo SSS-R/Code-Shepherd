@@ -2,249 +2,275 @@
 
 ## Document Scope
 
-This document describes two things clearly:
+This document separates:
 
-1. **Target Architecture** — the intended system from [`code-shepherd/CODE_SHEPHERD.md`](code-shepherd/CODE_SHEPHERD.md)
-2. **Current Prototype Reality** — what the repository currently implements
+1. **Target Architecture** for the product being built
+2. **Current Prototype Reality** in this repository today
 
-This separation prevents roadmap goals from being mistaken for completed implementation.
+That distinction matters because the repo already has useful infrastructure, but the product direction has expanded beyond approvals into unified cross-agent communication.
 
 ---
 
 ## System Overview
 
-Code Shepherd is a **mobile-first control plane for AI coding agents** with durable execution, approval workflows, and searchable audit history.
+Code Shepherd is a **unified control plane for coding agents**.
 
-**Core Insight:** The developer's phone is always with them. If agents can push approval requests to a mobile app and resume cleanly after human decisions, developers can govern agent work from anywhere.
+It should connect agents from IDEs, local runtimes, MCP servers, bridge processes, and custom systems into one shared experience where a user can:
+
+- discover which agents are online
+- message one or many agents
+- assign work or give follow-up instructions
+- approve risky actions remotely
+- inspect live and historical activity
+- switch between desktop and phone without losing control
+
+The source machine must remain online for active communication. Code Shepherd is a control plane, not a hosted execution replacement for local agents.
 
 ---
 
 ## Target Architecture
 
-The target architecture in [`code-shepherd/CODE_SHEPHERD.md`](code-shepherd/CODE_SHEPHERD.md) is:
+```mermaid
+flowchart TB
+    U[User on Phone or Desktop]
+    U --> UI[Code Shepherd PWA and Desktop UI]
+    UI --> Relay[Relay Server]
+    Relay --> Presence[Agent Registry and Presence]
+    Relay --> Conv[Conversation and Command Service]
+    Relay --> Approval[Approval and Policy Engine]
+    Relay --> Audit[Audit and Timeline Store]
+    Relay --> Workflow[Workflow and Resume Engine]
+    Relay --> Adapters[Adapter and Bridge Runtime]
 
+    Adapters --> IDE1[Claude Code Adapter]
+    Adapters --> IDE2[Antigravity Adapter]
+    Adapters --> IDE3[Copilot or Codex Adapter]
+    Adapters --> MCP[Generic MCP Adapter]
+    Adapters --> Custom[Custom Agent Bridge]
+    Adapters --> OC[OpenClaw Direct Session Path]
+
+    IDE1 --> A1[IDE Agent Session]
+    IDE2 --> A2[IDE Agent Session]
+    IDE3 --> A3[IDE Agent Session]
+    MCP --> A4[MCP Agent Session]
+    Custom --> A5[Local or Remote Custom Agent]
+    OC --> A6[OpenClaw Main Session]
 ```
-┌───────────────────────────────────────────────────────────────────┐
-│                       USER'S PHONE (PWA)                          │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌───────────────┐    │
-│  │Dashboard │  │ Approval │  │Execution │  │    Kanban     │    │
-│  │ (Home)   │  │  Queue   │  │ Timeline │  │    Board      │    │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └───────┬───────┘    │
-│  ┌────┴──────────────┴─────────────┴────────────────┴────────┐   │
-│  │     Code Shepherd API Client + WebAssembly Terminal (fallback)  │   │
-│  └──────────────────────────┬────────────────────────────────┘   │
-└─────────────────────────────┼────────────────────────────────────┘
-                              │  HTTPS / WSS
-                              ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                    AGENTOPS RELAY SERVER                         │
-│         (Node.js + Express + Temporal.io Workers)               │
-│                                                                  │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
-│  │   Agent     │  │  Approval   │  │   Immutable Audit Log   │  │
-│  │  Registry   │  │    Queue    │  │  (Execution Timeline)   │  │
-│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────────┘  │
-│  ┌──────┴────────────────┴────────────────────┴──────────────┐   │
-│  │             Temporal.io — Durable Execution Engine         │   │
-│  └──────────────────────────┬────────────────────────────────┘   │
-│  ┌──────────────────────────┴────────────────────────────────┐   │
-│  │ Notification Engine (Web Push / Slack / Email / Webhook)  │   │
-│  └──────────────────────────┬────────────────────────────────┘   │
-│  ┌──────────────────────────┴────────────────────────────────┐   │
-│  │             MCP Policy Enforcement Layer                   │   │
-│  │  Trusted Registry · Schema Validation · Risk Scoring       │   │
-│  │  Sandboxing · Scoped Credentials · Egress Controls         │   │
-│  └──────────────────────────┬────────────────────────────────┘   │
-└─────────────────────────────┼────────────────────────────────────┘
-                              │  MCP / HTTP / WebSocket
-              ┌───────────────┼───────────────┐
-              ▼               ▼               ▼
-       ┌──────────┐   ┌──────────┐   ┌──────────────┐
-       │  Claude  │   │ Google   │   │   Custom     │
-       │   Code   │   │Antigrav- │   │   Agents     │
-       │(VS Code) │   │  ity     │   │ (OpenClaw,   │
-       └──────────┘   └──────────┘   │  Cline...)   │
-                                     └──────────────┘
-```
+
+### Target architectural pillars
+
+#### 1. Unified agent presence
+Every connected system should register into a normalized model with:
+
+- agent identity
+- adapter type
+- connection status
+- capability tier
+- last heartbeat
+- current task or conversation
+
+#### 2. Conversation and command plane
+The UI should provide a shared inbox where users can:
+
+- open a thread with any agent
+- send commands or natural-language prompts
+- receive responses and status updates
+- manage many agents simultaneously
+
+#### 3. Adapter and bridge runtime
+Because not every agent exposes the same interface, Code Shepherd needs a bridge layer that can support:
+
+- native MCP connections
+- IDE-specific plugins or extensions
+- local companion daemons
+- CLI-installed connectors
+- degraded monitor-only integrations when full chat control is not possible
+
+#### 4. Approval and policy engine
+Approvals remain essential, but now sit inside a broader conversation flow.
+
+Sensitive actions should still trigger:
+
+- risk scoring
+- human approval gates
+- rejection reasons
+- resume or halt semantics
+
+#### 5. Audit and replay
+Every significant event should be traceable:
+
+- registration
+- presence change
+- messages
+- commands
+- approvals
+- task state changes
+- bridge connection issues
+
+#### 6. Workflow and resume layer
+Long-running work should survive disconnects where possible through workflow state, resumability, and reconnection semantics.
+
+---
+
+## Connection Model
+
+Code Shepherd should support multiple integration levels instead of assuming every agent is equally controllable.
+
+| Capability Tier | Meaning | Example Outcome |
+|---|---|---|
+| **Tier 1: Monitor** | Presence and status only | Agent appears online with activity metadata |
+| **Tier 2: Approval** | Presence plus approval exchange | Agent can request and receive decisions |
+| **Tier 3: Chat** | Bidirectional thread messaging | User can converse with the agent |
+| **Tier 4: Steering** | Full task and command control | User can direct ongoing work remotely |
+
+This makes the product realistic across many vendors and custom agent setups.
 
 ---
 
 ## Current Prototype Architecture
 
-The repository currently implements a **working prototype subset** of the target:
+The repository currently implements an **approval-first prototype subset** of the larger vision.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                  USER'S PHONE / BROWSER                    │
-│  Dashboard · Approval Queue · Agent Detail · Timeline      │
-└─────────────────────────────┬───────────────────────────────┘
-                              │ HTTP
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                  RELAY SERVER (Express)                    │
-│  Agents API · Approvals API · Audit API · Notifications    │
-│  Workflow list/resume scaffold · SQLite persistence        │
-└─────────────────────────────┬───────────────────────────────┘
-                              │
-                              ▼
-                    Temporal scaffold + workers
-                              │
-                              ▼
-                      Connected coding agents
+```text
+Browser or phone UI
+  -> Express relay
+  -> agents, approvals, audit, workflows, notifications routes
+  -> SQLite persistence
+  -> Temporal scaffold
+  -> connected agent clients via SDK and direct API calls
 ```
 
 ### Implemented now
-- Agent registration and heartbeat
-- Approval creation and decision flow
-- Approval summaries and code diff preview
-- Push notification subscription/test support
-- Agent timeline and active workflow UI
-- Agent-side SDK for registration, heartbeat, and approval polling
 
-### Not fully implemented yet
-- Full Kanban/task orchestration
-- WebAssembly terminal fallback
-- Real-time WebSocket streaming
-- Full MCP policy enforcement stack
-- Containerized sandbox execution
-- Team steering / RBAC / multi-tenant architecture
-- Complete Temporal-driven resumability semantics
+- agent registration and heartbeat
+- approval creation and decision flow
+- approval summaries and diff preview
+- audit and timeline endpoints
+- realtime event broadcasting foundation
+- auth and team scaffolding
+- task and operations routes
+- agent-side TypeScript SDK for registration, heartbeat, and approvals
 
----
+### Not implemented yet
 
-## Core Data Flow
-
-1. Agent registers with the relay through the SDK
-2. Agent sends heartbeats to remain visible in the dashboard
-3. Agent hits a risky or uncertain action
-4. Relay stores an approval request and sends a push notification
-5. Developer reviews the approval card in the PWA
-6. Developer approves or rejects the request
-7. Agent resumes, halts, or times out depending on workflow logic
-8. Audit events are recorded for the full interaction path
-
-This matches the killer loop defined in [`code-shepherd/CODE_SHEPHERD.md`](code-shepherd/CODE_SHEPHERD.md), even though some target-state subsystems are still partial.
+- conversation threads and message persistence
+- unified inbox UX
+- adapter runtime for IDEs and custom bridges
+- capability-tier modeling
+- one-to-many multi-agent command dispatch
+- connector onboarding and installation flows
+- fully hardened workflow resume semantics
 
 ---
 
-## Key Architecture Decisions
+## Core Data Flow in the Target Product
+
+1. An IDE agent, MCP tool, or custom local agent connects through a native integration or bridge
+2. Code Shepherd records presence, capability tier, and active session metadata
+3. A user opens the inbox and selects one or more agents
+4. The user sends a command, follow-up prompt, or operational instruction
+5. The relay routes that message through the correct adapter
+6. Agent responses stream back into the correct thread or task context
+7. If the agent reaches a risky action, an approval request is emitted into both the approval queue and the conversation context
+8. The human decision resumes, redirects, or halts the workflow
+9. All events are preserved in audit history
+
+---
+
+## Architecture Decisions
 
 | Decision | Choice | Status | Rationale |
-|----------|--------|--------|-----------|
-| **Durable Execution** | Temporal.io | Partial | Persists workflow state through crashes and pauses; current repo has worker/client scaffolding and workflow routes, but resume hardening is still ongoing. |
-| **PWA First** | Progressive Web App | Active | Ships to Android + Desktop quickly without app store friction. |
-| **Relay Server** | Centralized Node.js + Express relay | Active | Solves connectivity, centralizes approvals, notifications, and audit logging. |
-| **MCP Protocol** | Model Context Protocol | Strategic target | Keeps the system vendor-neutral across agent frameworks and IDEs. |
-| **MCP Security** | Layered enforcement | Partial | Risk scoring exists now; trusted registry, sandboxing, scoped credentials, and egress controls are target-state items. |
-| **WebAssembly Terminal** | `ghostty-web` over `xterm.js` | Planned | Better mobile terminal UX than traditional browser terminals. |
-| **Git Worktrees** | Per-task isolation | Planned | Prevents cross-agent conflicts during parallel execution. |
-| **SQLite → PostgreSQL** | Progressive migration path | Active plan | SQLite is enough for solo/beta; PostgreSQL is for multi-user/team phases. |
+|---|---|---|---|
+| **Product center** | Unified multi-agent control plane | Updated target | Stronger SaaS position than approvals-only tooling |
+| **Primary UX** | Inbox plus approvals plus agent visibility | Target | Communication is first-class, approvals are embedded |
+| **Relay model** | Centralized Node.js and Express relay | Active | Normalizes many external agent systems in one place |
+| **Bridge strategy** | Adapters plus local helpers plus MCP | Target | Many vendors require custom connection methods |
+| **Durable workflow state** | Temporal.io | Partial | Useful for pause, resume, timeout, and disconnected recovery |
+| **PWA first** | Progressive Web App | Active | Mobile and desktop reach without app-store dependence |
+| **Database path** | SQLite then PostgreSQL | Active plan | Good for local prototyping now, teams later |
+| **Security posture** | Policy and approval layered over connectors | Partial | Must govern risky actions across heterogeneous agent systems |
 
 ---
 
 ## Security Architecture
 
-### Target Security Model
+### Target security model
 
-The target model from [`code-shepherd/CODE_SHEPHERD.md`](code-shepherd/CODE_SHEPHERD.md) includes:
-- trusted tool registry
-- schema validation
-- risk scoring
-- approval gates
-- sandboxing
-- scoped credentials
-- outbound egress controls
-- immutable audit trail
+The platform should treat all connected agents and bridges as semi-trusted integration points.
 
-### Current Prototype Security Reality
+Security responsibilities include:
 
-The current repository implements only part of that model:
-- **basic risk scoring** in the relay
-- **approval gating** through the approval queue
-- **append-only style audit logging** in SQLite
+- bridge identity and registration control
+- capability scoping per adapter
+- risk scoring and policy enforcement
+- auditability of all user and agent actions
+- approval gating for destructive work
+- secret-safe connector installation guidance
 
-The following are **not yet implemented as full architecture components** and should not be described as complete in beta-facing docs:
-- per-user scoped auth tokens
-- approved client ID registry
-- containerized sandbox execution
+### Current prototype security reality
+
+Today the repo includes only a subset:
+
+- basic risk scoring
+- approval gating
+- append-oriented audit logging
+
+These remain future work:
+
+- connector trust model
+- scoped bridge credentials
 - outbound egress restrictions
-- tenant-scoped audit isolation
+- bridge-level permission model
+- hardened sandboxing for local execution helpers
 
 ---
 
-## Notification Architecture
+## UI Architecture Direction
 
-### Target State
-- Web Push
-- Slack
-- Email
-- Webhook escalation
+### Target state
 
-### Current State
-- Web Push API support is implemented
-- other channels remain roadmap items
+The long-term UI should prioritize these surfaces:
 
----
-
-## UI Architecture
-
-### Target State
-- Dashboard
-- Approval Queue
-- Execution Timeline
-- Kanban Board
+- Inbox
+- Agents
+- Approvals
+- Tasks
+- Timeline
 - Settings
-- Terminal fallback
 
-### Current State
+The inbox should become the primary surface because the core job is active communication and intervention across multiple agents.
+
+### Current state
+
+The current UI is centered on:
+
 - Dashboard
 - Approval Queue
 - Agent Detail
-- Session Timeline
-- Active Workflows widget
+- Timeline
+- Kanban
+- Settings
 
----
-
-## Orchestration Framework Position
-
-Code Shepherd is **framework-agnostic**. It orchestrates agent sessions rather than forcing one internal agent framework.
-
-| Framework | Strength | Assessment |
-|-----------|----------|------------|
-| **LangGraph** | Cyclical graphs with checkpoints | Strong candidate for complex workflow logic inside agents |
-| **CrewAI** | Role-based agent swarms | Good for rapid prototyping, less production control |
-| **AutoGen** | Conversation-driven collaboration | Better for research than production orchestration |
-| **OpenAI Agents SDK** | Native handoffs + Temporal integration | Strong option, but comes with vendor lock-in risk |
-| **LlamaIndex** | Data-centric RAG orchestration | Complementary, not a session orchestrator |
-
----
-
-## Scalability Notes
-
-- SQLite is acceptable for solo usage and beta validation
-- PostgreSQL should be introduced before team/multi-tenant rollout
-- Temporal workers can scale horizontally as workflow volume grows
-- PWA delivery can scale through standard static hosting/CDN patterns
+This is a strong prototype base, but it still reflects the earlier approval-first framing.
 
 ---
 
 ## Near-Term Architecture Priorities
 
-Before beta, architecture work should focus on:
-
-1. workflow hardening in [`code-shepherd/packages/relay/src/workflows/approvalWorkflow.ts`](code-shepherd/packages/relay/src/workflows/approvalWorkflow.ts)
-2. stronger policy enforcement in [`code-shepherd/packages/relay/src/middleware/riskPolicy.ts`](code-shepherd/packages/relay/src/middleware/riskPolicy.ts)
-3. tests and CI from [`code-shepherd/docs/planning/remaining-tasks.md`](code-shepherd/docs/planning/remaining-tasks.md)
-4. execution-timeline and workflow behavior validation end-to-end
+1. formalize the adapter and bridge model in shared contracts and docs
+2. introduce conversation and message entities before deeper UI work
+3. define capability tiers so every integration has a realistic support level
+4. embed approvals into conversation-centric flows
+5. keep audit and workflow semantics aligned with the new inbox-first product model
 
 ---
 
-## Future Architecture Considerations
+## Summary
 
-- Kanban-backed task orchestration
-- Git worktree isolation
-- WebAssembly terminal fallback
-- Team steering modes
-- RBAC and team management
-- tenant-scoped audit partitions
-- on-prem deployment model
+Code Shepherd should be understood as:
+
+- **not** a new model
+- **not** a replacement IDE
+- **not** a single-agent dashboard
+
+It is a **control plane for many existing agents**, connected through native integrations, bridges, plugins, local helpers, and direct sessions, with unified communication, approvals, and operational visibility.

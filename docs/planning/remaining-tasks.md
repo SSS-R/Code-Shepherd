@@ -1,162 +1,175 @@
 # Code Shepherd — Remaining Tasks
 
-> **Status:** Phase 0 ✅ | Phase 1 ✅ | Phase 2 ⏳ | Phase 3 ⏳
-> **Owner:** Rafi + Antigravity (no more Lyra)
-> **Goal:** Ship a monetizable MVP that proves the Killer Loop end-to-end.
+> **Status:** Architecture reset in progress
+> **Goal:** Reframe Code Shepherd as a unified multi-agent communication and control plane
 
 ---
 
-## What's Already Done
+## What is already true in the repo
 
-| Feature | Phase | Status |
-|---------|-------|--------|
-| Monorepo scaffold (`relay`, `ui`, `shared`) | P0 | ✅ |
-| Relay Server (Express + Temporal + SQLite) | P0 | ✅ |
-| Agent Registry + Heartbeat API | P0 | ✅ |
-| Approval Queue API (POST/GET/PATCH) | P0 | ✅ |
-| Push Notifications (Web Push + Service Worker) | P0 | ✅ |
-| Mobile Dashboard (agent cards, stats) | P0 | ✅ |
-| Append-Only Audit Log | P0 | ✅ |
-| Approval-Ready Summaries | P1 | ✅ |
-| Diff Preview (inline code diff) | P1 | ✅ |
-| Rejection Reason Capture | P1 | ✅ |
-| Session Timeline (agent history) | P1 | ✅ |
-| Active Workflows Dashboard (Temporal queries) | P1 | ✅ |
-| Agent-side SDK source | P1 | ✅ |
+These foundations already exist and should be preserved:
+
+- monorepo structure for relay, UI, shared types, and SDK
+- agent registration and heartbeat APIs
+- approval request and decision flow
+- risk scoring foundation
+- audit and timeline foundation
+- realtime event broadcasting foundation
+- local auth and team scaffolding
+- task and workflow scaffolding
+
+These are valuable because they form the operational backbone for the larger product direction.
 
 ---
 
-## What Remains (Prioritized by Revenue Impact)
+## What changes in product direction
 
-### 🔴 CRITICAL — Must Ship Before First Users
+Code Shepherd is no longer being treated as an approvals-only mobile dashboard.
 
-These are the features that complete the "Killer Loop" and make the product usable enough to charge for.
+The new primary goal is:
 
-#### 1. UI Overhaul — Premium Mobile-First Design
-**Why:** Current UI is functional but not premium. First impressions decide if users pay $19/mo.
-- [ ] Replace all emoji icons with SVG (Lucide React)
-- [ ] Implement proper design system (color tokens, type scale, spacing)
-- [ ] Swipe-to-approve gesture on approval cards
-- [ ] Proper loading skeletons (not spinners)
-- [ ] Bottom navigation with 4 tabs (Dashboard, Approvals, Timeline, Settings)
-- [ ] Responsive: test at 375px, 768px, 1024px, 1440px
-- [ ] Dark mode by default with proper contrast ratios (4.5:1 AA)
-- [ ] `prefers-reduced-motion` respected
-- **Estimated effort:** 2–3 sessions
+> connect many existing agents from IDEs and local systems into one place so the user can communicate with them, control them, approve risky actions, and manage them simultaneously from any device.
 
-#### 2. Agent-Side SDK (`@code-shepherd/sdk`)
-**Why:** Without this, no agent can actually connect. This enables the entire product.
-- [x] Create `packages/sdk/` with `client.ts`, `heartbeat.ts`, `approvals.ts`
-- [x] `Code Shepherd.register({ name, capabilities })` → POST /agents
-- [x] Auto-heartbeat every 30s → POST /agents/:id/heartbeat
-- [x] `Code Shepherd.requestApproval({ action_type, details })` → POST /approvals
-- [x] Wait for approval decision via polling helper
-- [ ] Publish to npm as `@code-shepherd/sdk`
-- **Estimated effort:** 1–2 sessions
+That means the next work should prioritize:
 
-#### 3. Risk Policy Engine
-**Why:** Auto-approving everything defeats the purpose. Users need trust.
-- [ ] Create `packages/relay/src/security/policies.ts`
-- [x] Block auto-approval for: secrets/env files, `rm -rf`, production branch merges, infra changes
-- [x] Risk scoring: `low` / `medium` / `high` / `critical` based on action type + file path
-- [ ] Configurable rules (JSON/YAML policy file)
-- **Estimated effort:** 1 session
-
-#### 4. Approval Timeout & Escalation
-**Why:** Agents can't wait forever. Unattended approvals need a fallback.
-- [x] Configurable timeout per risk level (e.g., low=5min, high=30min, critical=never)
-- [x] Auto-reject on timeout with audit log entry
-- [ ] Optional: escalate to fallback contact (email/webhook)
-- **Estimated effort:** 1 session
-
-#### 5. Execution Timeline Screen (Full)
-**Why:** Users need to search and filter past actions — not just see a list.
-- [ ] Create `packages/ui/src/screens/ExecutionTimeline.tsx`
-- [ ] Filters: date range, agent, action type, outcome
-- [ ] Searchable by keyword
-- [ ] CSV/JSON export
-- [ ] Add to bottom nav
-- **Estimated effort:** 1 session
+- conversations
+- message routing
+- adapters and bridges
+- capability tiers
+- multi-agent control UX
 
 ---
 
-### 🟡 HIGH — Ship Within 2 Weeks of Launch
+## Priority order
 
-These features make the product competitive and differentiate it from Vibe Kanban / Code Shepherd.ai.
+## Phase 1 — Product and data-model alignment
 
-#### 6. Kanban Task Board
-**Why:** This is Phase 2's centerpiece. Users need to assign and track agent work.
-- [ ] Create `packages/relay/src/routes/tasks.ts` (CRUD API)
-- [ ] States: `Queued → In Progress → Blocked → Done → Failed`
-- [ ] Create `packages/ui/src/screens/KanbanBoard.tsx`
-- [ ] Drag-and-drop (use `@dnd-kit/core` or similar)
-- [ ] Assign tasks to specific agents
-- [ ] Priority levels (P0–P3) + color-coded labels
-- [ ] Backed by Temporal (durable task state)
-- **Estimated effort:** 3–4 sessions
+### Critical
+- [ ] Define canonical entities for `Agent`, `Adapter`, `Conversation`, `Message`, `Command`, and `Approval`
+- [ ] Define capability tiers for monitor, approval, chat, and steering modes
+- [ ] Decide how approvals appear inside conversations while still supporting a separate approval queue
+- [ ] Define the normalized adapter contract for native integrations and custom bridges
+- [ ] Update shared documentation so all future implementation follows the same product center
 
-#### 7. WebSocket Real-Time Updates
-**Why:** Currently the UI polls. Real-time updates make it feel alive.
-- [x] Add `ws` to relay server
-- [x] Broadcast events: agent status change, new approval, workflow update
-- [x] UI subscribes and updates in real-time (no refresh needed)
-- **Estimated effort:** 1 session
-
-#### 8. Settings Screen
-**Why:** Users need to configure notifications, policies, and API keys.
-- [ ] Create `packages/ui/src/screens/Settings.tsx`
-- [ ] Notification preferences (push on/off, risk level threshold)
-- [ ] Policy editor (which actions require approval)
-- [ ] API key display (for SDK integration)
-- [ ] About / version info
-- **Estimated effort:** 1 session
+### Outcome
+After this phase, the repo should have a stable product language and system model.
 
 ---
 
-### 🟢 MEDIUM — Ship Before Team Features
+## Phase 2 — Adapter and bridge foundation
 
-#### 9. Task Dependencies
-- [x] "Blocked by" relationships between tasks
-- [x] Visual dependency chain on Kanban
-- **Estimated effort:** 1 session
+### Critical
+- [ ] Design adapter interfaces for IDE-native agents, MCP agents, and custom bridges
+- [ ] Define connector onboarding flow for plugin install, helper process install, or command-based setup
+- [ ] Support direct-session integrations such as the OpenClaw main session path
+- [ ] Define heartbeat, reconnect, and offline semantics for bridge-connected agents
+- [ ] Define capability negotiation so each integration advertises what it can actually do
 
-#### 10. Git Worktree Isolation
-- [x] Auto-create isolated git worktree per task
-- [x] tmux/terminal session per agent
-- **Estimated effort:** 2 sessions
-
-#### 11. WebAssembly Terminal (ghostty-web fallback)
-- [x] Embedded terminal for when approval summaries aren't enough
-- [x] SSH into agent environment
-- **Estimated effort:** 2–3 sessions
+### Outcome
+After this phase, Code Shepherd can connect many types of external agents realistically.
 
 ---
 
-### 🔵 FUTURE — Phase 3 (Team/Enterprise)
+## Phase 3 — Inbox and communication surface
 
-| Feature | Priority |
-|---------|----------|
-| User Auth (email/password + OAuth) | ✅ foundation added |
-| Team Management (invite, seats) | ✅ foundation added |
-| RBAC (Admin, Developer, Viewer) | ✅ foundation added |
-| Propose-and-Approve Steering | 🟡 |
-| Compliance Dashboard | 🟡 |
-| SSO / SAML / OIDC | 🟡 |
-| On-Premises Deployment | 🟢 |
+### Critical
+- [ ] Add a first-class inbox model to the UI and backend design
+- [ ] Create conversation threads per agent or per task context
+- [ ] Add message send and receive flows through the relay
+- [ ] Support one-agent and multi-agent selection flows
+- [ ] Decide how live status, agent replies, and system events appear in a shared thread model
 
----
-
-## Recommended Build Order (Sprint Plan)
-
-| Sprint | Features | Sessions | Milestone |
-|--------|----------|----------|-----------|
-| **Sprint 1** | UI Overhaul + SDK | 4 | Killer Loop works end-to-end |
-| **Sprint 2** | Risk Engine + Timeout + Timeline | 3 | Product is trustworthy |
-| **Sprint 3** | Kanban + WebSocket + Settings | 5 | Product is operational |
-| **Sprint 4** | Polish + Deploy + Launch | 2 | First users 🚀 |
-
-**Total estimated sessions to MVP launch: ~14 sessions**
+### Outcome
+After this phase, the product finally delivers the core user promise of talking to many agents from one place.
 
 ---
 
-*This is a living document. Update as features are completed.*
+## Phase 4 — Embedded approvals and remote intervention
+
+### Critical
+- [ ] Keep approval queue support for fast triage
+- [ ] Also render approval requests inside the related conversation or task thread
+- [ ] Support reject with reason, revise instruction, and resume actions from the same control surface
+- [ ] Define how approval decisions map back into bridge-specific agent behavior
+- [ ] Harden workflow pause and resume semantics for disconnected sessions
+
+### Outcome
+After this phase, approvals become part of the communication workflow instead of a separate product island.
+
+---
+
+## Phase 5 — Parallel multi-agent operations
+
+### Critical
+- [ ] Support sending tasks to multiple agents in parallel
+- [ ] Support viewing several active sessions at once
+- [ ] Define task assignment and ownership across agents
+- [ ] Align Kanban with conversation and approval flows instead of keeping it isolated
+- [ ] Preserve audit trace across multi-agent coordination events
+
+### Outcome
+After this phase, Code Shepherd becomes an operational hub instead of a single-thread monitor.
+
+---
+
+## Phase 6 — Connector hardening and SaaS readiness
+
+### Critical
+- [ ] Add connector trust and permission model
+- [ ] Define secure registration and revocation for local bridges
+- [ ] Improve audit completeness across messages, approvals, tasks, and reconnects
+- [ ] Prepare team-safe multi-user and organization-level governance
+- [ ] Separate local-prototype assumptions from hosted SaaS deployment assumptions
+
+### Outcome
+After this phase, the architecture is credible as a cross-agent SaaS control plane.
+
+---
+
+## Immediate next markdown-to-code handoff
+
+Before writing new product code, the implementation plan should follow this sequence:
+
+1. define shared types for conversations, messages, adapters, and capability tiers
+2. design relay routes for communication flows
+3. redesign UI navigation around inbox, agents, approvals, timeline, tasks, and settings
+4. decide the first connector target and bridge strategy
+5. implement one end-to-end communication slice before broad connector expansion
+
+---
+
+## Recommended first implementation slice
+
+The smallest useful next build slice is:
+
+- one conversation model
+- one message route
+- one agent-thread UI
+- one adapter contract
+- one real connector path or bridge proof of concept
+
+This should be done before broad polishing or deeper enterprise work.
+
+---
+
+## Notable de-prioritization for now
+
+These items still matter, but they should not lead the roadmap until communication is first-class:
+
+- cosmetic UI polish without inbox functionality
+- enterprise compliance surfaces before connector usability
+- advanced worktree automation before agent communication is unified
+- broad marketplace support before the base adapter model is stable
+
+---
+
+## Working rule for future tasks
+
+Every new feature proposal should answer:
+
+1. does it improve unified communication with existing agents
+2. does it improve remote control or intervention
+3. does it improve simultaneous multi-agent coordination
+4. does it improve auditability and safe operation
+
+If not, it is probably a secondary priority.
