@@ -1,4 +1,4 @@
-# AgentOps — Remaining Tasks
+# Code Shepherd — Remaining Tasks
 
 > **Status:** Phase 0 ✅ | Phase 1 ✅ | Phase 2 ⏳ | Phase 3 ⏳
 > **Owner:** Rafi + Antigravity (no more Lyra)
@@ -44,14 +44,14 @@ These are the features that complete the "Killer Loop" and make the product usab
 - [ ] `prefers-reduced-motion` respected
 - **Estimated effort:** 2–3 sessions
 
-#### 2. Agent-Side SDK (`@agentops/sdk`)
+#### 2. Agent-Side SDK (`@code-shepherd/sdk`)
 **Why:** Without this, no agent can actually connect. This enables the entire product.
 - [x] Create `packages/sdk/` with `client.ts`, `heartbeat.ts`, `approvals.ts`
-- [x] `AgentOps.register({ name, capabilities })` → POST /agents
+- [x] `Code Shepherd.register({ name, capabilities })` → POST /agents
 - [x] Auto-heartbeat every 30s → POST /agents/:id/heartbeat
-- [x] `AgentOps.requestApproval({ action_type, details })` → POST /approvals
+- [x] `Code Shepherd.requestApproval({ action_type, details })` → POST /approvals
 - [x] Wait for approval decision via polling helper
-- [ ] Publish to npm as `@agentops/sdk`
+- [ ] Publish to npm as `@code-shepherd/sdk`
 - **Estimated effort:** 1–2 sessions
 
 #### 3. Risk Policy Engine
@@ -82,7 +82,7 @@ These are the features that complete the "Killer Loop" and make the product usab
 
 ### 🟡 HIGH — Ship Within 2 Weeks of Launch
 
-These features make the product competitive and differentiate it from Vibe Kanban / AgentOps.ai.
+These features make the product competitive and differentiate it from Vibe Kanban / Code Shepherd.ai.
 
 #### 6. Kanban Task Board
 **Why:** This is Phase 2's centerpiece. Users need to assign and track agent work.

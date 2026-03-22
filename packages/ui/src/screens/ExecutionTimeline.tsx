@@ -28,7 +28,7 @@ export default function ExecutionTimeline() {
         const url = URL.createObjectURL(blob)
         const anchor = document.createElement('a')
         anchor.href = url
-        anchor.download = 'agentops-timeline.json'
+        anchor.download = 'code-shepherd-timeline.json'
         anchor.click()
         URL.revokeObjectURL(url)
     }

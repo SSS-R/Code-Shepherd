@@ -124,7 +124,7 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
 
       if (workflowClient) {
         void workflowClient.start(approvalRequestWorkflow, {
-          taskQueue: process.env.TEMPORAL_TASK_QUEUE || 'agentops-queue',
+          taskQueue: process.env.TEMPORAL_TASK_QUEUE || 'code-shepherd-queue',
           workflowId: `approval-${id}`,
           args: [{
             approvalId: id,
@@ -140,7 +140,7 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
         });
       }
 
-      void sendPushNotification(db, vapidKeys, 'AgentOps Approval Required', `${summary} (${resolvedRiskLevel} risk)`, {
+      void sendPushNotification(db, vapidKeys, 'CodeShepherd Approval Required', `${summary} (${resolvedRiskLevel} risk)`, {
         approvalId: id,
         agentId: agent_id,
         actionType: action_type,

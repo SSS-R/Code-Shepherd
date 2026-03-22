@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This guide is for local QA, design review, and early beta validation of the current AgentOps prototype.
+This guide is for local QA, design review, and early beta validation of the current Code Shepherd prototype.
 
 It explains:
 
@@ -33,11 +33,11 @@ Focus on validating:
 
 ## Initial setup
 
-From [`agentops/package.json`](../package.json), this is an npm workspace monorepo.
+From [`code-shepherd/package.json`](../package.json), this is an npm workspace monorepo.
 
 ### 1. Install dependencies
 
-From the `agentops` repo root:
+From the `code-shepherd` repo root:
 
 ```bash
 npm install
@@ -45,7 +45,7 @@ npm install
 
 ### 2. Create local environment file
 
-Copy [`agentops/.env.example`](../.env.example) to `.env`.
+Copy [`code-shepherd/.env.example`](../.env.example) to `.env`.
 
 Default values are suitable for local testing:
 
@@ -54,13 +54,13 @@ PORT=3000
 DATABASE_PATH=./relay.db
 TEMPORAL_ADDRESS=localhost:7233
 TEMPORAL_NAMESPACE=default
-TEMPORAL_TASK_QUEUE=agentops-queue
+TEMPORAL_TASK_QUEUE=code-shepherd-queue
 NODE_ENV=development
 ```
 
 ### 3. Optional VAPID setup for push tests
 
-If push notification testing is in scope, generate keys from [`agentops/packages/relay/src/utils/vapidKeys.ts`](../packages/relay/src/utils/vapidKeys.ts:1):
+If push notification testing is in scope, generate keys from [`code-shepherd/packages/relay/src/utils/vapidKeys.ts`](../packages/relay/src/utils/vapidKeys.ts:1):
 
 ```bash
 cd packages/relay && npx ts-node src/utils/vapidKeys.ts
@@ -76,12 +76,12 @@ Recommended for QA:
 
 ```bash
 npm run build:relay
-npm run start --workspace=@agentops/relay
+npm run start --workspace=@code-shepherd/relay
 ```
 
 Why this matters:
 
-- [`agentops/packages/relay/package.json`](../packages/relay/package.json) uses `tsc --watch` for `dev`, which compiles but does not itself launch the Node server
+- [`code-shepherd/packages/relay/package.json`](../packages/relay/package.json) uses `tsc --watch` for `dev`, which compiles but does not itself launch the Node server
 - building then starting is the clearest way to validate the runnable relay for QA
 
 Expected relay URLs:
@@ -101,7 +101,7 @@ Expected UI URL:
 
 - `http://localhost:5173`
 
-The UI expects the relay at `http://localhost:3000`, as seen in [`agentops/packages/ui/src/App.tsx`](../packages/ui/src/App.tsx:21) and related screen fetch calls.
+The UI expects the relay at `http://localhost:3000`, as seen in [`code-shepherd/packages/ui/src/App.tsx`](../packages/ui/src/App.tsx:21) and related screen fetch calls.
 
 ## Expected startup behavior
 
@@ -115,7 +115,7 @@ You should be able to:
 
 ### Temporal expectation
 
-The relay attempts a Temporal connection in [`agentops/packages/relay/src/index.ts`](../packages/relay/src/index.ts:50).
+The relay attempts a Temporal connection in [`code-shepherd/packages/relay/src/index.ts`](../packages/relay/src/index.ts:50).
 
 If Temporal is not running:
 
@@ -163,7 +163,7 @@ After demo seed:
 
 ## Signup/login/team flow
 
-The local collaboration prototype is available from [`agentops/packages/relay/src/routes/auth.ts`](../packages/relay/src/routes/auth.ts:9) and [`agentops/packages/ui/src/screens/Settings.tsx`](../packages/ui/src/screens/Settings.tsx:17).
+The local collaboration prototype is available from [`code-shepherd/packages/relay/src/routes/auth.ts`](../packages/relay/src/routes/auth.ts:9) and [`code-shepherd/packages/ui/src/screens/Settings.tsx`](../packages/ui/src/screens/Settings.tsx:17).
 
 Testers can:
 
@@ -193,7 +193,7 @@ Current expectations:
 - agents can request approvals
 - approvals can be reviewed from the UI
 
-The SDK source is in [`agentops/packages/sdk/src/client.ts`](../packages/sdk/src/client.ts:1) and related files.
+The SDK source is in [`code-shepherd/packages/sdk/src/client.ts`](../packages/sdk/src/client.ts:1) and related files.
 
 ### What testers should expect from real IDE integrations
 
@@ -210,7 +210,7 @@ That means:
 
 Do not report these as bugs by default:
 
-- “I opened VS Code and AgentOps did not auto-connect”
+- “I opened VS Code and Code Shepherd did not auto-connect”
 - “No real coding agent appeared without registering through the relay”
 - “Temporal-powered resume behavior was limited while Temporal was offline”
 

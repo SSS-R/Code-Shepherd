@@ -1,19 +1,19 @@
 import {
     AgentHeartbeatResponse,
-    AgentOpsClientOptions,
-    AgentOpsRegistrationOptions,
+    CodeShepherdClientOptions,
+    CodeShepherdRegistrationOptions,
     AgentRegistrationResponse,
     ApprovalDecisionResponse,
     ApprovalRecord,
     ApprovalRequestPayload,
     WaitForApprovalOptions,
-} from '@agentops/shared';
+} from '@code-shepherd/shared';
 
 function createId(prefix: string): string {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-export class AgentOpsClient {
+export class CodeShepherdClient {
     private readonly baseUrl: string;
     private readonly fetchImpl: typeof fetch;
     private readonly defaultHeartbeatIntervalMs: number;
@@ -21,7 +21,7 @@ export class AgentOpsClient {
     private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
     private registeredAgentId: string | null;
 
-    constructor(options: AgentOpsClientOptions) {
+    constructor(options: CodeShepherdClientOptions) {
         this.baseUrl = options.baseUrl.replace(/\/$/, '');
         this.fetchImpl = options.fetchImpl ?? fetch;
         this.defaultHeartbeatIntervalMs = options.heartbeatIntervalMs ?? 30_000;
@@ -33,7 +33,7 @@ export class AgentOpsClient {
         return this.registeredAgentId;
     }
 
-    async register(options: AgentOpsRegistrationOptions): Promise<AgentRegistrationResponse> {
+    async register(options: CodeShepherdRegistrationOptions): Promise<AgentRegistrationResponse> {
         const payload = {
             id: options.id ?? this.registeredAgentId ?? createId('agent'),
             name: options.name,
@@ -63,7 +63,7 @@ export class AgentOpsClient {
         this.stopHeartbeat();
         this.heartbeatTimer = setInterval(() => {
             void this.heartbeat(resolvedAgentId).catch((error: unknown) => {
-                console.error('AgentOps heartbeat failed:', error);
+                console.error('CodeShepherd heartbeat failed:', error);
             });
         }, intervalMs);
     }
@@ -123,7 +123,7 @@ export class AgentOpsClient {
         const response = await this.fetchImpl(`${this.baseUrl}${path}`, init);
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`AgentOps request failed (${response.status}): ${errorText}`);
+            throw new Error(`CodeShepherd request failed (${response.status}): ${errorText}`);
         }
 
         return response.json() as Promise<T>;

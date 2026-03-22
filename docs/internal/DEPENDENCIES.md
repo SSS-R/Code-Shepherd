@@ -1,4 +1,4 @@
-# Dependencies: AgentOps
+# Dependencies: Code Shepherd
 
 ## Root Workspace
 
@@ -6,7 +6,7 @@
 |------------|---------|
 | npm workspaces | Monorepo package linking |
 
-## @agentops/relay
+## @code-shepherd/relay
 
 | Dependency | Purpose |
 |------------|---------|
@@ -17,7 +17,7 @@
 | @temporalio/worker | Temporal.io workflow worker |
 | node:test | Built-in Node.js test runner for relay coverage |
 
-## @agentops/ui
+## @code-shepherd/ui
 
 | Dependency | Purpose |
 |------------|---------|
@@ -26,13 +26,13 @@
 | vite | Build tool |
 | @vitejs/plugin-react | Vite React plugin |
 
-## @agentops/sdk
+## @code-shepherd/sdk
 
 | Dependency | Purpose |
 |------------|---------|
 | (none yet) | Agent-side SDK (TBD) |
 
-## @agentops/shared
+## @code-shepherd/shared
 
 | Dependency | Purpose |
 |------------|---------|

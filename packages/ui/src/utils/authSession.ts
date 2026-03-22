@@ -6,7 +6,7 @@ export interface StoredSession {
     email?: string;
 }
 
-const SESSION_KEY = 'agentops.session';
+const SESSION_KEY = 'code-shepherd.session';
 
 export function loadSession(): StoredSession | null {
     try {

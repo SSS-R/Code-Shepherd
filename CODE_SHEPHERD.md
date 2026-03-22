@@ -1,10 +1,10 @@
-# AgentOps — Product Roadmap
+# Code Shepherd — Product Roadmap
 
 **Version:** 2.0 | **Date:** March 18, 2026 | **Status:** Pre-Launch
 
 > **The control plane for AI coding agents.**
 
-AgentOps gives developers a mobile-first command surface to monitor agents, approve risky actions, recover interrupted workflows, and maintain a searchable audit trail across every session. Instead of babysitting terminals, developers get durable, policy-aware control over AI work in progress.
+Code Shepherd gives developers a mobile-first command surface to monitor agents, approve risky actions, recover interrupted workflows, and maintain a searchable audit trail across every session. Instead of babysitting terminals, developers get durable, policy-aware control over AI work in progress.
 
 ---
 
@@ -78,7 +78,7 @@ A **mobile-first Progressive Web App (PWA)** connecting to any MCP-compatible AI
 │  │ (Home)   │  │  Queue   │  │ Timeline │  │    Board      │    │
 │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └───────┬───────┘    │
 │  ┌────┴──────────────┴─────────────┴────────────────┴────────┐   │
-│  │     AgentOps API Client + WebAssembly Terminal (fallback)  │   │
+│  │     Code Shepherd API Client + WebAssembly Terminal (fallback)  │   │
 │  └──────────────────────────┬────────────────────────────────┘   │
 └─────────────────────────────┼────────────────────────────────────┘
                               │  HTTPS / WSS
@@ -129,7 +129,7 @@ A **mobile-first Progressive Web App (PWA)** connecting to any MCP-compatible AI
 
 ### Orchestration Framework Evaluation
 
-AgentOps is **framework-agnostic** — we orchestrate agent *sessions* (registration, heartbeats, approvals, audit) via Temporal.io. Developers can use any framework inside their agents:
+Code Shepherd is **framework-agnostic** — we orchestrate agent *sessions* (registration, heartbeats, approvals, audit) via Temporal.io. Developers can use any framework inside their agents:
 
 | Framework | Strength | Our Assessment |
 |-----------|----------|----------------|
@@ -163,7 +163,7 @@ The roadmap is structured around four phases. Each phase proves one thing before
 | **Push Notifications** | Web Push via Service Worker. Android + Desktop Chrome/Edge primary. Slack/Discord as fallback. | 🔴 Critical |
 | **Mobile Dashboard** | Agent status (Online / Busy / Stalled / Offline). Approval Queue. Swipe-to-approve cards. | 🔴 Critical |
 | **Append-Only Audit Log** | Every agent action, approval, and system event logged with timestamp, agent ID, action type, outcome | 🔴 Critical |
-| **Agent-Side SDK** | `@agentops/sdk` — npm package agents import to register, send heartbeats, request approvals | 🟡 High |
+| **Agent-Side SDK** | `@code-shepherd/sdk` — npm package agents import to register, send heartbeats, request approvals | 🟡 High |
 
 **Phase 0 Deliverable:** A developer installs the SDK, registers 2 agents, walks away from their desk. One agent requests a risky approval. Their phone buzzes. They swipe approve. The workflow resumes. If their server crashes mid-session, the workflow resumes exactly where it left off.
 
@@ -221,7 +221,7 @@ The roadmap is structured around four phases. Each phase proves one thing before
 | **Tenant-Scoped Audit Partitions** | Each team's logs are strictly isolated | 🟢 Medium |
 | **On-Premises Deployment** | Self-hosted option for enterprises that cannot use cloud | 🟢 Medium |
 
-**Phase 3 Deliverable:** A 5-person engineering team uses AgentOps with GitHub SSO. The engineering manager can view all agents, audit all AI-generated code, and track review discipline. Nothing runs on production infrastructure without a logged human approval.
+**Phase 3 Deliverable:** A 5-person engineering team uses Code Shepherd with GitHub SSO. The engineering manager can view all agents, audit all AI-generated code, and track review discipline. Nothing runs on production infrastructure without a logged human approval.
 
 ---
 
@@ -248,9 +248,9 @@ The roadmap is structured around four phases. Each phase proves one thing before
 ## 6. Project Structure (Monorepo)
 
 ```
-agentops/
+code-shepherd/
 ├── packages/
-│   ├── relay/                    # AgentOps Relay Server
+│   ├── relay/                    # Code Shepherd Relay Server
 │   │   ├── src/
 │   │   │   ├── routes/
 │   │   │   │   ├── agents.ts     # Registration & heartbeat
@@ -297,7 +297,7 @@ agentops/
 │   │   ├── package.json
 │   │   └── vite.config.ts
 │   │
-│   ├── sdk/                      # @agentops/sdk (npm package)
+│   ├── sdk/                      # @code-shepherd/sdk (npm package)
 │   │   ├── src/
 │   │   │   ├── client.ts
 │   │   │   ├── heartbeat.ts
@@ -331,11 +331,11 @@ Our differentiation is not "they don't do audit logs." They do. Our differentiat
 
 > **They optimize agent development visibility. We optimize mobile intervention, resumable execution, and policy-governed human approval for coding agents.**
 
-| Product | What They Do Well | The Gap AgentOps Fills |
+| Product | What They Do Well | The Gap Code Shepherd Fills |
 |---------|------------------|----------------------|
 | **Langfuse** | Open-source LLM tracing, evals, prompt management. Self-hostable. ~15% overhead. | They trace LLM calls. We govern agent workflows and own the approval loop. |
 | **LangSmith** | Deep LangChain/LangGraph debugging, near-zero overhead. | Ecosystem lock-in. No mobile, no approval workflow, no durable execution. |
-| **AgentOps.ai** | Agent session replays, cost/token tracking. Cloud-only. ~12% overhead. | No mobile-first, no push approvals, no durable state, no self-hosting. |
+| **Code Shepherd.ai** | Agent session replays, cost/token tracking. Cloud-only. ~12% overhead. | No mobile-first, no push approvals, no durable state, no self-hosting. |
 | **Portkey** | LLM gateway, provider routing, guardrails, budget enforcement. | API gateway layer. No task board, no mobile control, no approval system. |
 | **Maxim AI** | Pre-release simulation, span evaluation, edge-case-to-test conversion. | Testing-focused. No real-time orchestration, no mobile UI. |
 | **Vibe Kanban / KanVibe** | AI agent Kanban, worktree isolation, browser terminal, review flows. | Closest competitor. No mobile-first, no push notifications, no durable execution. |
@@ -449,7 +449,7 @@ Traditional SEO (keyword density, backlinks) still matters for Google. But gener
 | Content Type | Examples |
 |-------------|---------|
 | **Category pages** | "AI coding agent control plane", "mobile approvals for AI agents", "audit trail for coding agents" |
-| **Comparison pages** | "AgentOps vs Vibe Kanban", "AgentOps vs AgentOps.ai", "Temporal vs queue-based orchestration" |
+| **Comparison pages** | "Code Shepherd vs Vibe Kanban", "Code Shepherd vs Code Shepherd.ai", "Temporal vs queue-based orchestration" |
 | **Integration pages** | "Claude Code mobile approvals", "Antigravity remote approvals", "Cline audit trail setup" |
 | **Research pages** | "approval latency benchmark", "crash-recovery benchmark", "risky action categories in AI coding" |
 | **Security pages** | "MCP risk policy templates", "secure tool registry design", "approval gates for destructive commands" |
@@ -462,7 +462,7 @@ Traditional SEO (keyword density, backlinks) still matters for Google. But gener
 
 ### Phase 2: Thought Leadership (Month 3–6)
 - Integration guides for Claude Code, Antigravity, Cursor, Cline
-- Pitch to Engineering Managers: *"Your team's AI review discipline is decaying. AgentOps makes it measurable and enforceable."*
+- Pitch to Engineering Managers: *"Your team's AI review discipline is decaying. Code Shepherd makes it measurable and enforceable."*
 - Partner with MCP ecosystem projects
 - Publish approval latency and crash-recovery benchmarks
 

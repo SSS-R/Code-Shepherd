@@ -62,7 +62,7 @@ export interface ApprovalDecisionResponse {
     decision_reason?: string;
     message: string;
 }
-export interface AgentOpsClientOptions {
+export interface CodeShepherdClientOptions {
     baseUrl: string;
     agentId?: string;
     heartbeatIntervalMs?: number;
@@ -73,7 +73,7 @@ export interface WaitForApprovalOptions {
     timeoutMs?: number;
     pollIntervalMs?: number;
 }
-export interface AgentOpsRegistrationOptions {
+export interface CodeShepherdRegistrationOptions {
     id?: string;
     name: string;
     capabilities?: string[];

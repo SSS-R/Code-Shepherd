@@ -1,6 +1,6 @@
-import { AgentOpsClient } from './client';
+import { CodeShepherdClient } from './client';
 
-export function startAgentHeartbeat(client: AgentOpsClient, intervalMs?: number, agentId?: string): () => void {
+export function startAgentHeartbeat(client: CodeShepherdClient, intervalMs?: number, agentId?: string): () => void {
     client.startHeartbeat(agentId, intervalMs);
     return () => client.stopHeartbeat();
 }

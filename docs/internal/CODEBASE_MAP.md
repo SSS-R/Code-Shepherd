@@ -1,4 +1,4 @@
-# Codebase Map: AgentOps
+# Codebase Map: Code Shepherd
 
 ## Project Type
 
@@ -25,7 +25,7 @@ Monorepo - Agent Orchestration Platform
 ## Directory Structure
 
 ```
-agentops/
+code-shepherd/
 ├── package.json              # Root workspace config
 ├── tsconfig.json             # Shared TypeScript config
 ├── README.md

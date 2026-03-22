@@ -1,5 +1,5 @@
 /**
- * AgentOps Relay Server
+ * CodeShepherd Relay Server
  * Express + TypeScript server with SQLite and Temporal.io integration
  */
 
@@ -27,7 +27,7 @@ const PORT = process.env.PORT || 3000;
 const DATABASE_PATH = process.env.DATABASE_PATH || './relay.db';
 const TEMPORAL_ADDRESS = process.env.TEMPORAL_ADDRESS || 'localhost:7233';
 const TEMPORAL_NAMESPACE = process.env.TEMPORAL_NAMESPACE || 'default';
-const TEMPORAL_TASK_QUEUE = process.env.TEMPORAL_TASK_QUEUE || 'agentops-queue';
+const TEMPORAL_TASK_QUEUE = process.env.TEMPORAL_TASK_QUEUE || 'code-shepherd-queue';
 
 // Get VAPID keys for Web Push
 const vapidKeys = getVapidKeys();

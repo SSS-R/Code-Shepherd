@@ -2,7 +2,7 @@
 
 // Service Worker for Web Push Notifications
 
-const CACHE_NAME = 'agentops-v1'
+const CACHE_NAME = 'code-shepherd-v1'
 
 // Install event - cache assets
 self.addEventListener('install', (event) => {
@@ -62,7 +62,7 @@ self.addEventListener('push', (event) => {
   }
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'AgentOps', options)
+    self.registration.showNotification(data.title || 'Code Shepherd', options)
   )
 })
 

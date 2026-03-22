@@ -35,7 +35,7 @@ function App() {
                 AO
               </div>
               <div>
-                <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">AgentOps</h1>
+                <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">CodeShepherd</h1>
                 <p className="text-xs text-[var(--text-secondary)] mt-0.5">Command center for AI coding agents</p>
               </div>
             </div>

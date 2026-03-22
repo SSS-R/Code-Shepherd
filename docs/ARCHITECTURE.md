@@ -1,10 +1,10 @@
-# Architecture: AgentOps
+# Architecture: Code Shepherd
 
 ## Document Scope
 
 This document describes two things clearly:
 
-1. **Target Architecture** — the intended system from [`agentops/AgentOPS.md`](agentops/AgentOPS.md)
+1. **Target Architecture** — the intended system from [`code-shepherd/CODE_SHEPHERD.md`](code-shepherd/CODE_SHEPHERD.md)
 2. **Current Prototype Reality** — what the repository currently implements
 
 This separation prevents roadmap goals from being mistaken for completed implementation.
@@ -13,7 +13,7 @@ This separation prevents roadmap goals from being mistaken for completed impleme
 
 ## System Overview
 
-AgentOps is a **mobile-first control plane for AI coding agents** with durable execution, approval workflows, and searchable audit history.
+Code Shepherd is a **mobile-first control plane for AI coding agents** with durable execution, approval workflows, and searchable audit history.
 
 **Core Insight:** The developer's phone is always with them. If agents can push approval requests to a mobile app and resume cleanly after human decisions, developers can govern agent work from anywhere.
 
@@ -21,7 +21,7 @@ AgentOps is a **mobile-first control plane for AI coding agents** with durable e
 
 ## Target Architecture
 
-The target architecture in [`agentops/AgentOPS.md`](agentops/AgentOPS.md) is:
+The target architecture in [`code-shepherd/CODE_SHEPHERD.md`](code-shepherd/CODE_SHEPHERD.md) is:
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
@@ -31,7 +31,7 @@ The target architecture in [`agentops/AgentOPS.md`](agentops/AgentOPS.md) is:
 │  │ (Home)   │  │  Queue   │  │ Timeline │  │    Board      │    │
 │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └───────┬───────┘    │
 │  ┌────┴──────────────┴─────────────┴────────────────┴────────┐   │
-│  │     AgentOps API Client + WebAssembly Terminal (fallback)  │   │
+│  │     Code Shepherd API Client + WebAssembly Terminal (fallback)  │   │
 │  └──────────────────────────┬────────────────────────────────┘   │
 └─────────────────────────────┼────────────────────────────────────┘
                               │  HTTPS / WSS
@@ -123,7 +123,7 @@ The repository currently implements a **working prototype subset** of the target
 7. Agent resumes, halts, or times out depending on workflow logic
 8. Audit events are recorded for the full interaction path
 
-This matches the killer loop defined in [`agentops/AgentOPS.md`](agentops/AgentOPS.md), even though some target-state subsystems are still partial.
+This matches the killer loop defined in [`code-shepherd/CODE_SHEPHERD.md`](code-shepherd/CODE_SHEPHERD.md), even though some target-state subsystems are still partial.
 
 ---
 
@@ -146,7 +146,7 @@ This matches the killer loop defined in [`agentops/AgentOPS.md`](agentops/AgentO
 
 ### Target Security Model
 
-The target model from [`agentops/AgentOPS.md`](agentops/AgentOPS.md) includes:
+The target model from [`code-shepherd/CODE_SHEPHERD.md`](code-shepherd/CODE_SHEPHERD.md) includes:
 - trusted tool registry
 - schema validation
 - risk scoring
@@ -207,7 +207,7 @@ The following are **not yet implemented as full architecture components** and sh
 
 ## Orchestration Framework Position
 
-AgentOps is **framework-agnostic**. It orchestrates agent sessions rather than forcing one internal agent framework.
+Code Shepherd is **framework-agnostic**. It orchestrates agent sessions rather than forcing one internal agent framework.
 
 | Framework | Strength | Assessment |
 |-----------|----------|------------|
@@ -232,9 +232,9 @@ AgentOps is **framework-agnostic**. It orchestrates agent sessions rather than f
 
 Before beta, architecture work should focus on:
 
-1. workflow hardening in [`agentops/packages/relay/src/workflows/approvalWorkflow.ts`](agentops/packages/relay/src/workflows/approvalWorkflow.ts)
-2. stronger policy enforcement in [`agentops/packages/relay/src/middleware/riskPolicy.ts`](agentops/packages/relay/src/middleware/riskPolicy.ts)
-3. tests and CI from [`agentops/docs/planning/remaining-tasks.md`](agentops/docs/planning/remaining-tasks.md)
+1. workflow hardening in [`code-shepherd/packages/relay/src/workflows/approvalWorkflow.ts`](code-shepherd/packages/relay/src/workflows/approvalWorkflow.ts)
+2. stronger policy enforcement in [`code-shepherd/packages/relay/src/middleware/riskPolicy.ts`](code-shepherd/packages/relay/src/middleware/riskPolicy.ts)
+3. tests and CI from [`code-shepherd/docs/planning/remaining-tasks.md`](code-shepherd/docs/planning/remaining-tasks.md)
 4. execution-timeline and workflow behavior validation end-to-end
 
 ---

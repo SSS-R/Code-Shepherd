@@ -1,6 +1,6 @@
-# AgentOps — Backend API Specification
+# Code Shepherd — Backend API Specification
 
-> **Base URL:** `http://localhost:3000` (dev) · `https://api.agentops.dev` (prod)
+> **Base URL:** `http://localhost:3000` (dev) · `https://api.code-shepherd.dev` (prod)
 > **Protocol:** REST over HTTPS · **Format:** JSON
 > **Auth:** Bearer JWT (Phase 3) · Currently unauthenticated (Phase 0-2)
 

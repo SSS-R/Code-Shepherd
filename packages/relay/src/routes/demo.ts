@@ -14,7 +14,7 @@ export function createDemoRoutes(db: Database): ReturnType<typeof require>['Rout
             const approvalId = `approval-demo-${randomUUID()}`;
 
             db.prepare('INSERT INTO users (id, email, password_hash, name) VALUES (?, ?, ?, ?)')
-                .run(userId, 'demo@agentops.dev', 'demo-password', 'Demo User');
+                .run(userId, 'demo@code-shepherd.dev', 'demo-password', 'Demo User');
             db.prepare('INSERT INTO teams (id, name, created_by) VALUES (?, ?, ?)')
                 .run(teamId, 'Demo Team', userId);
             db.prepare('INSERT INTO team_members (id, team_id, user_id, role) VALUES (?, ?, ?, ?)')
@@ -29,7 +29,7 @@ export function createDemoRoutes(db: Database): ReturnType<typeof require>['Rout
                 .run('approval_requested', JSON.stringify({ action_type: 'file_write', source: 'demo-seed' }), agentId, approvalId, teamId);
 
             return res.status(201).json({
-                user: { id: userId, email: 'demo@agentops.dev', name: 'Demo User' },
+                user: { id: userId, email: 'demo@code-shepherd.dev', name: 'Demo User' },
                 team: { id: teamId, name: 'Demo Team', role: 'Admin' },
                 agent: { id: agentId, name: 'Demo Agent' },
                 task: { id: taskId },

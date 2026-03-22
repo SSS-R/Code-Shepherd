@@ -1,4 +1,4 @@
-export { AgentOpsClient } from './client';
+export { CodeShepherdClient } from './client';
 export { startAgentHeartbeat } from './heartbeat';
 export { requestApprovalAndWait } from './approvals';
-export * from '@agentops/shared';
+export * from '@code-shepherd/shared';

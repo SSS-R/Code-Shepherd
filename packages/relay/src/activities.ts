@@ -1,5 +1,5 @@
 /**
- * Temporal.io Activities for AgentOps
+ * Temporal.io Activities for CodeShepherd
  */
 
 export async function processAgentTask(agentId: number, task: string): Promise<string> {

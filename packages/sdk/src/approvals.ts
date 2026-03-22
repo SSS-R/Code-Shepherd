@@ -1,5 +1,5 @@
-import { ApprovalActionDetails, ApprovalDecisionResponse, RiskLevel, WaitForApprovalOptions } from '@agentops/shared';
-import { AgentOpsClient } from './client';
+import { ApprovalActionDetails, ApprovalDecisionResponse, RiskLevel, WaitForApprovalOptions } from '@code-shepherd/shared';
+import { CodeShepherdClient } from './client';
 
 export interface RequestApprovalOptions {
     action_type: string;
@@ -11,7 +11,7 @@ export interface RequestApprovalOptions {
 }
 
 export async function requestApprovalAndWait(
-    client: AgentOpsClient,
+    client: CodeShepherdClient,
     approval: RequestApprovalOptions,
     waitOptions?: WaitForApprovalOptions
 ): Promise<ApprovalDecisionResponse> {

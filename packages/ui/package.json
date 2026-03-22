@@ -1,8 +1,8 @@
 {
-  "name": "@agentops/ui",
+  "name": "@code-shepherd/ui",
   "version": "1.0.0",
   "type": "module",
-  "description": "React PWA for AgentOps",
+  "description": "React PWA for Code Shepherd",
   "scripts": {
     "build": "vite build",
     "dev": "vite",

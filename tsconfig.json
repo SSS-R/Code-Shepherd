@@ -24,7 +24,7 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@agentops/*": ["packages/*/src"]
+      "@code-shepherd/*": ["packages/*/src"]
     }
   },
   "exclude": ["node_modules", "dist", "**/*.test.ts"]

@@ -16,7 +16,7 @@ export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: s
 
   // Configure VAPID keys
   webPush.setVapidDetails(
-    'mailto:admin@agentops.dev',
+    'mailto:admin@code-shepherd.dev',
     vapidKeys.publicKey,
     vapidKeys.privateKey
   );
@@ -165,7 +165,7 @@ export async function sendPushNotification(
   data?: Record<string, unknown>
 ): Promise<{ success: number; failed: number }> {
   webPush.setVapidDetails(
-    'mailto:admin@agentops.dev',
+    'mailto:admin@code-shepherd.dev',
     vapidKeys.publicKey,
     vapidKeys.privateKey
   );

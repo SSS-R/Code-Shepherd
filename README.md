@@ -1,15 +1,15 @@
-# AgentOps
+# Code Shepherd
 
 > Mobile-first control plane for AI coding agents: approvals, audit history, agent visibility, and workflow state in one local-first prototype.
 
-[![Status](https://img.shields.io/badge/status-phase%201%20prototype-blue)](./AgentOPS.md)
+[![Status](https://img.shields.io/badge/status-phase%201%20prototype-blue)](./CODE_SHEPHERD.md)
 [![UI](https://img.shields.io/badge/ui-react%20pwa-61dafb)](./packages/ui)
 [![Relay](https://img.shields.io/badge/relay-express%20%2B%20temporal-111827)](./packages/relay)
 [![SDK](https://img.shields.io/badge/sdk-typescript-3178c6)](./packages/sdk)
 
 ## What this repo currently is
 
-AgentOps is a monorepo prototype for supervising coding agents from a browser or phone-sized PWA.
+Code Shepherd is a monorepo prototype for supervising coding agents from a browser or phone-sized PWA.
 
 The current implementation is centered on the approval loop:
 
@@ -22,7 +22,7 @@ The current implementation is centered on the approval loop:
 
 This repo already includes working UI screens, relay APIs, a local SQLite-backed datastore, realtime broadcasts, auth/team scaffolding, demo seeding, and an SDK package.
 
-This repo does **not** yet represent the full long-term vision described in [`AgentOPS.md`](./AgentOPS.md). Some planned features remain partial or prototype-grade.
+This repo does **not** yet represent the full long-term vision described in [`CODE_SHEPHERD.md`](./CODE_SHEPHERD.md). Some planned features remain partial or prototype-grade.
 
 ## Current state at a glance
 
@@ -58,7 +58,7 @@ This repo does **not** yet represent the full long-term vision described in [`Ag
 ## Monorepo layout
 
 ```text
-agentops/
+code-shepherd/
 ├── packages/
 │   ├── relay/   # Express relay, SQLite persistence, Temporal hooks, APIs
 │   ├── ui/      # React + Vite PWA
@@ -68,7 +68,7 @@ agentops/
 │   ├── ARCHITECTURE.md
 │   ├── internal/
 │   └── planning/
-├── AgentOPS.md
+├── CODE_SHEPHERD.md
 ├── README.md
 └── .env.example
 ```
@@ -77,10 +77,10 @@ agentops/
 
 | Package | Purpose | Notes |
 |---|---|---|
-| `@agentops/relay` | Express API, SQLite persistence, Temporal worker/client wiring, websocket broadcasts | Main backend runtime |
-| `@agentops/ui` | Mobile-first React PWA for dashboards, approvals, timeline, kanban, settings | Connects to `http://localhost:3000` |
-| `@agentops/sdk` | TypeScript helper package for agent registration, heartbeat, and approval flow | Local package, not published yet |
-| `@agentops/shared` | Shared types | Workspace dependency |
+| `@code-shepherd/relay` | Express API, SQLite persistence, Temporal worker/client wiring, websocket broadcasts | Main backend runtime |
+| `@code-shepherd/ui` | Mobile-first React PWA for dashboards, approvals, timeline, kanban, settings | Connects to `http://localhost:3000` |
+| `@code-shepherd/sdk` | TypeScript helper package for agent registration, heartbeat, and approval flow | Local package, not published yet |
+| `@code-shepherd/shared` | Shared types | Workspace dependency |
 
 ## Main user-visible surfaces in the current prototype
 
@@ -148,7 +148,7 @@ PORT=3000
 DATABASE_PATH=./relay.db
 TEMPORAL_ADDRESS=localhost:7233
 TEMPORAL_NAMESPACE=default
-TEMPORAL_TASK_QUEUE=agentops-queue
+TEMPORAL_TASK_QUEUE=code-shepherd-queue
 ```
 
 For push notifications, generate VAPID keys with:
@@ -175,7 +175,7 @@ For an actual running server build, use:
 
 ```bash
 npm run build:relay
-npm run start --workspace=@agentops/relay
+npm run start --workspace=@code-shepherd/relay
 ```
 
 ### Terminal 2: UI
@@ -218,7 +218,7 @@ That means:
 
 | File | Purpose |
 |---|---|
-| [`AgentOPS.md`](./AgentOPS.md) | Product vision and broader roadmap |
+| [`CODE_SHEPHERD.md`](./CODE_SHEPHERD.md) | Product vision and broader roadmap |
 | [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Target architecture vs current prototype reality |
 | [`docs/internal/PROJECT_MEMORY.md`](./docs/internal/PROJECT_MEMORY.md) | Ongoing project context and decisions |
 | [`docs/planning/remaining-tasks.md`](./docs/planning/remaining-tasks.md) | Remaining work and roadmap slices |

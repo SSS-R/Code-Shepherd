@@ -1,7 +1,7 @@
 {
-  "name": "@agentops/relay",
+  "name": "@code-shepherd/relay",
   "version": "1.0.0",
-  "description": "Express.js server for AgentOps",
+  "description": "Express.js server for Code Shepherd",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

@@ -1,5 +1,5 @@
 {
-  "name": "agentops-monorepo",
+  "name": "code-shepherd-monorepo",
   "version": "1.0.0",
   "private": true,
   "description": "The control plane for AI coding agents",
@@ -8,15 +8,15 @@
   ],
   "scripts": {
     "install:all": "npm install",
-    "build": "npm run build --workspace=@agentops/shared && npm run build --workspace=@agentops/relay && npm run build --workspace=@agentops/sdk && npm run build --workspace=@agentops/ui",
-    "build:relay": "npm run build --workspace=@agentops/relay",
-    "build:ui": "npm run build --workspace=@agentops/ui",
+    "build": "npm run build --workspace=@code-shepherd/shared && npm run build --workspace=@code-shepherd/relay && npm run build --workspace=@code-shepherd/sdk && npm run build --workspace=@code-shepherd/ui",
+    "build:relay": "npm run build --workspace=@code-shepherd/relay",
+    "build:ui": "npm run build --workspace=@code-shepherd/ui",
     "dev": "npm run dev --workspaces --if-present",
-    "dev:relay": "npm run dev --workspace=@agentops/relay",
-    "dev:ui": "npm run dev --workspace=@agentops/ui",
+    "dev:relay": "npm run dev --workspace=@code-shepherd/relay",
+    "dev:ui": "npm run dev --workspace=@code-shepherd/ui",
     "test": "npm run test --workspaces --if-present",
-    "test:relay": "npm run test --workspace=@agentops/relay",
-    "test:ui": "npm run test --workspace=@agentops/ui",
+    "test:relay": "npm run test --workspace=@code-shepherd/relay",
+    "test:ui": "npm run test --workspace=@code-shepherd/ui",
     "lint": "npm run lint --workspaces --if-present",
     "clean": "node -e \"const fs=require('fs');['packages/relay/dist','packages/ui/dist','packages/sdk/dist','packages/shared/dist','node_modules'].forEach((p)=>fs.rmSync(p,{recursive:true,force:true}));\""
   },
@@ -27,7 +27,7 @@
     "mcp",
     "developer-tools"
   ],
-  "author": "AgentOps Team",
+  "author": "Code Shepherd Team",
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0",
@@ -35,12 +35,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SSS-R/agentops.git"
+    "url": "git+https://github.com/SSS-R/code-shepherd.git"
   },
   "bugs": {
-    "url": "https://github.com/SSS-R/agentops/issues"
+    "url": "https://github.com/SSS-R/code-shepherd/issues"
   },
-  "homepage": "https://github.com/SSS-R/agentops#readme",
+  "homepage": "https://github.com/SSS-R/code-shepherd#readme",
   "dependencies": {
     "lucide-react": "^0.577.0"
   }

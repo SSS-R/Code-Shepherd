@@ -1,5 +1,5 @@
 /**
- * Temporal.io Workflows for AgentOps
+ * Temporal.io Workflows for CodeShepherd
  */
 
 import { proxyActivities } from '@temporalio/workflow';

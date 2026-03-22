@@ -1,4 +1,4 @@
-# Project Memory: AgentOps
+# Project Memory: Code Shepherd
 
 **Created:** 2026-03-17  
 **Type:** Monorepo — Agent Orchestration Platform  
@@ -11,7 +11,7 @@
 
 **The control plane for AI coding agents.**
 
-AgentOps gives developers a mobile-first command surface to:
+Code Shepherd gives developers a mobile-first command surface to:
 - Monitor agents from anywhere
 - Approve risky actions with one tap
 - Recover interrupted workflows
@@ -118,23 +118,23 @@ Developer approves from phone → Workflow resumes → Logged to audit trail
 | Commit | Description |
 |--------|-------------|
 | `25ddcd9` | Phase 0 complete - Agent Registry, Approval Queue, Push Notifications, Mobile PWA |
-| `4e84656` | docs: Update all markdown files based on AgentOPS.md roadmap |
+| `4e84656` | docs: Update all markdown files based on CODE_SHEPHERD.md roadmap |
 | `a0b7ff0` | chore: Initialize monorepo with all bootstrap files (7/7) |
 
 ---
 
 ## References
 
-- [Full Roadmap](AgentOPS.md)
+- [Full Roadmap](CODE_SHEPHERD.md)
 - [Architecture Details](ARCHITECTURE.md)
 - [Codebase Map](CODEBASE_MAP.md)
-markdown files based on AgentOPS.md roadmap |
+markdown files based on CODE_SHEPHERD.md roadmap |
 | `a0b7ff0` | chore: Initialize monorepo with all bootstrap files (7/7) |
 
 ---
 
 ## References
 
-- [Full Roadmap](AgentOPS.md)
+- [Full Roadmap](CODE_SHEPHERD.md)
 - [Architecture Details](ARCHITECTURE.md)
 - [Codebase Map](CODEBASE_MAP.md)

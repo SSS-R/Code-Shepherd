@@ -1,13 +1,13 @@
-# AgentOps — UI/UX Design System
+# Code Shepherd — UI/UX Design System
 
 > **Mobile-first PWA** · **Dark mode default** · **Developer tool aesthetic**
-> Based on UI/UX Pro Max skill analysis + AgentOPS.md product vision.
+> Based on UI/UX Pro Max skill analysis + CODE_SHEPHERD.md product vision.
 
 ---
 
 ## Design Philosophy
 
-AgentOps is a **command center**, not a dashboard. Every pixel should communicate status, urgency, and control. The developer should glance at their phone for 3 seconds and know exactly what their agents are doing.
+Code Shepherd is a **command center**, not a dashboard. Every pixel should communicate status, urgency, and control. The developer should glance at their phone for 3 seconds and know exactly what their agents are doing.
 
 **Core Principles:**
 1. **Glanceable** — Status at a glance. No scrolling to understand state.

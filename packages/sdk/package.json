@@ -1,7 +1,7 @@
 {
-  "name": "@agentops/sdk",
+  "name": "@code-shepherd/sdk",
   "version": "1.0.0",
-  "description": "Agent-side npm package for AgentOps",
+  "description": "Agent-side npm package for Code Shepherd",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -10,7 +10,7 @@
     "test": "echo \"No tests yet\""
   },
   "dependencies": {
-    "@agentops/shared": "^1.0.0"
+    "@code-shepherd/shared": "^1.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
