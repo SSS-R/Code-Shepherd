@@ -43,7 +43,7 @@ export default function SessionTimeline({ events, agentId, limit = 50 }: Session
     switch (category) {
       case 'approval': return 'border-blue-500 bg-blue-500/10';
       case 'tool': return 'border-purple-500 bg-purple-500/10';
-      default: return 'border-slate-500 bg-slate-500/10';
+      default: return 'border-[var(--border-subtle)] bg-slate-500/10';
     }
   };
 
@@ -64,7 +64,7 @@ export default function SessionTimeline({ events, agentId, limit = 50 }: Session
       <div className="glass rounded-xl p-8 text-center">
         <div className="text-4xl mb-3">📜</div>
         <p className="text-slate-400">No session events yet</p>
-        <p className="text-sm text-slate-500 mt-1">Agent activity will appear here</p>
+        <p className="text-sm text-[var(--text-muted)] mt-1">Agent activity will appear here</p>
       </div>
     );
   }
@@ -92,7 +92,7 @@ export default function SessionTimeline({ events, agentId, limit = 50 }: Session
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-semibold text-white">
+                  <span className="text-sm font-semibold text-[var(--text-primary)]">
                     {formatEventType(event.event_type)}
                   </span>
                   <span className="text-xs text-slate-400">
@@ -110,7 +110,7 @@ export default function SessionTimeline({ events, agentId, limit = 50 }: Session
 
                 {/* Expanded Details */}
                 {expandedEvent === event.id && (
-                  <div className="mt-3 pt-3 border-t border-white/10 animate-fade-in">
+                  <div className="mt-3 pt-3 border-t border-[var(--border-subtle)] animate-fade-in">
                     <div className="text-xs text-slate-300">
                       <div className="mb-2">
                         <span className="font-semibold">Event Type:</span> {event.event_type}

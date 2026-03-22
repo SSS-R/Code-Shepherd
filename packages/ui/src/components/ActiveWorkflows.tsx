@@ -56,16 +56,16 @@ export default function ActiveWorkflows() {
     if (loading) {
         return (
             <div className="glass rounded-xl p-6 animate-pulse">
-                <div className="h-5 w-40 rounded bg-white/8" />
-                <div className="mt-4 h-20 rounded-xl bg-white/8" />
+                <div className="h-5 w-40 rounded bg-[var(--border-subtle)]" />
+                <div className="mt-4 h-20 rounded-xl bg-[var(--border-subtle)]" />
             </div>
         )
     }
 
     if (workflows.length === 0) {
         return (
-            <div className="glass rounded-xl p-8 text-center border border-dashed border-white/10">
-                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl border border-white/10 bg-slate-950 text-amber-300">
+            <div className="glass rounded-xl p-8 text-center border border-dashed border-[var(--border-subtle)]">
+                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] text-[var(--accent-warning)]">
                     <Pause size={18} />
                 </div>
                 <p className="text-[var(--text-primary)]">No active workflows</p>
@@ -77,17 +77,17 @@ export default function ActiveWorkflows() {
     return (
         <div className="space-y-3">
             {workflows.map((workflow) => (
-                <div key={workflow.workflowId} className="glass rounded-xl p-5 border border-white/8 transition-all duration-200 hover:-translate-y-[1px] hover:border-white/12">
+                <div key={workflow.workflowId} className="glass rounded-xl p-5 border border-[var(--border-subtle)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--border-subtle)]">
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-3 flex-wrap mb-2">
                                 <div className="inline-flex items-center gap-2 text-[15px] font-semibold text-[var(--text-primary)]">
-                                    {workflow.status === 'running' ? <Loader2 size={16} className="animate-spin text-blue-400" /> : <Pause size={16} className="text-amber-400" />}
+                                    {workflow.status === 'running' ? <Loader2 size={16} className="animate-spin text-[var(--accent-info)]" /> : <Pause size={16} className="text-[var(--accent-warning)]" />}
                                     {workflow.workflowType}
                                 </div>
                                 <span className={`rounded-full px-3 py-1 text-[13px] font-medium border ${workflow.status === 'running'
-                                    ? 'bg-blue-500/10 text-blue-300 border-blue-500/20'
-                                    : 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                                    ? 'bg-blue-500/10 text-[var(--accent-info)] border-blue-500/20'
+                                    : 'bg-amber-500/10 text-[var(--accent-warning)] border-amber-500/20'
                                     }`}>
                                     {workflow.status}
                                 </span>

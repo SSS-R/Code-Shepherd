@@ -101,8 +101,8 @@ export default function ApprovalQueue() {
         return (
             <div className="space-y-6 animate-pulse">
                 <div className="glass rounded-xl p-8">
-                    <div className="h-4 w-28 rounded bg-white/8" />
-                    <div className="mt-4 h-8 w-3/4 rounded bg-white/8" />
+                    <div className="h-4 w-28 rounded bg-[var(--border-subtle)]" />
+                    <div className="mt-4 h-8 w-3/4 rounded bg-[var(--border-subtle)]" />
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     {Array.from({ length: 3 }).map((_, index) => <div key={index} className="glass h-28 rounded-xl" />)}
@@ -116,7 +116,7 @@ export default function ApprovalQueue() {
             <section className="glass rounded-xl p-6 md:p-8">
                 <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                     <div className="max-w-2xl space-y-3">
-                        <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[13px] font-medium text-blue-300">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[13px] font-medium text-[var(--accent-info)]">
                             <BellRing size={14} /> Approvals
                         </div>
                         <h2 className="text-[28px] font-bold tracking-tight text-[var(--text-primary)] md:text-[32px]">
@@ -134,7 +134,7 @@ export default function ApprovalQueue() {
                                 <div className="text-3xl font-bold text-[var(--text-primary)]">{stats.pending}</div>
                                 <div className="text-[13px] text-[var(--text-muted)]">pending decisions</div>
                             </div>
-                            <div className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[13px] font-medium text-blue-300">
+                            <div className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[13px] font-medium text-[var(--accent-info)]">
                                 {stats.approved + stats.rejected} resolved this session
                             </div>
                         </div>
@@ -155,8 +155,8 @@ export default function ApprovalQueue() {
                 </div>
 
                 {approvals.length === 0 ? (
-                    <div className="glass rounded-xl border border-dashed border-white/10 p-16 text-center">
-                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-white/10 bg-slate-950 text-green-400">
+                    <div className="glass rounded-xl border border-dashed border-[var(--border-subtle)] p-16 text-center">
+                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] text-[var(--accent-success)]">
                             <Check size={28} />
                         </div>
                         <p className="text-[18px] font-semibold text-[var(--text-primary)]">No pending approvals</p>
@@ -194,7 +194,7 @@ function StatCard({ label, value, icon, borderClass }: { label: string; value: n
     return (
         <div className={`glass rounded-xl border ${borderClass} p-5`}>
             <div className="mb-4 flex items-center justify-between">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-slate-950 text-blue-300">{icon}</div>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] text-[var(--accent-info)]">{icon}</div>
                 <div className="text-[13px] text-[var(--text-muted)]">State</div>
             </div>
             <div className="text-3xl font-bold text-[var(--text-primary)]">{value}</div>
@@ -229,10 +229,10 @@ function ApprovalCard({
     const riskBadge = getRiskBadge(approval.risk_level)
 
     return (
-        <div className="glass rounded-xl border border-white/8 p-5 transition-all duration-200 hover:-translate-y-[1px] hover:border-white/12" style={{ animationDelay: `${index * 40}ms` }}>
+        <div className="glass rounded-xl border border-[var(--border-subtle)] p-5 transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--border-subtle)]" style={{ animationDelay: `${index * 40}ms` }}>
             <div className="mb-4 flex items-start justify-between gap-4">
                 <div className="flex gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-slate-950 text-blue-300">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] text-[var(--accent-info)]">
                         <FilePenLine size={18} />
                     </div>
                     <div>
@@ -273,21 +273,21 @@ function ApprovalCard({
                         <textarea
                             value={rejectReason}
                             onChange={(e) => setRejectReason(e.target.value)}
-                            className="surface-panel w-full rounded-xl p-3 text-[15px] text-white placeholder-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
+                            className="surface-panel w-full rounded-xl p-3 text-[15px] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
                             rows={3}
                             placeholder="Explain the rejection reason"
                             autoFocus
                         />
-                        {showReasonError && <p className="mt-1 text-[13px] text-red-400">Rejection reason is required.</p>}
+                        {showReasonError && <p className="mt-1 text-[13px] text-[var(--accent-danger)]">Rejection reason is required.</p>}
                     </div>
                     <div className="flex gap-3">
-                        <button onClick={() => onRejectConfirm(approval.id)} className="rounded-lg border border-red-500/30 bg-red-600/20 px-4 py-3 text-sm font-medium text-red-400">Confirm Reject</button>
+                        <button onClick={() => onRejectConfirm(approval.id)} className="rounded-lg border border-red-500/30 bg-red-600/20 px-4 py-3 text-sm font-medium text-[var(--accent-danger)]">Confirm Reject</button>
                         <button onClick={onRejectCancel} className="btn-secondary rounded-lg px-4 py-3 text-sm font-medium">Cancel</button>
                     </div>
                 </div>
             ) : (
                 <div className="flex gap-3">
-                    <button onClick={() => onRejectClick(approval.id)} className="rounded-lg border border-red-500/30 bg-red-600/20 px-4 py-3 text-sm font-medium text-red-400 inline-flex items-center gap-2"><X size={16} /> Reject</button>
+                    <button onClick={() => onRejectClick(approval.id)} className="rounded-lg border border-red-500/30 bg-red-600/20 px-4 py-3 text-sm font-medium text-[var(--accent-danger)] inline-flex items-center gap-2"><X size={16} /> Reject</button>
                     <button onClick={() => onApprove(approval.id)} className="btn-primary rounded-lg px-4 py-3 text-sm font-medium inline-flex items-center gap-2"><Check size={16} /> Approve</button>
                 </div>
             )}
@@ -298,13 +298,13 @@ function ApprovalCard({
 function getRiskBadge(level: string): string {
     switch (level) {
         case 'critical':
-            return 'bg-red-500/10 text-red-300 border-red-500/20'
+            return 'bg-red-500/10 text-[var(--accent-danger)] border-red-500/20'
         case 'high':
-            return 'bg-red-500/10 text-red-300 border-red-500/20'
+            return 'bg-red-500/10 text-[var(--accent-danger)] border-red-500/20'
         case 'medium':
-            return 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+            return 'bg-amber-500/10 text-[var(--accent-warning)] border-amber-500/20'
         default:
-            return 'bg-blue-500/10 text-blue-300 border-blue-500/20'
+            return 'bg-blue-500/10 text-[var(--accent-info)] border-blue-500/20'
     }
 }
 
@@ -312,10 +312,10 @@ function getRiskIcon(level: string) {
     switch (level) {
         case 'critical':
         case 'high':
-            return <ShieldX size={16} className="text-red-400" />
+            return <ShieldX size={16} className="text-[var(--accent-danger)]" />
         case 'medium':
-            return <ShieldAlert size={16} className="text-amber-400" />
+            return <ShieldAlert size={16} className="text-[var(--accent-warning)]" />
         default:
-            return <Shield size={16} className="text-blue-400" />
+            return <Shield size={16} className="text-[var(--accent-info)]" />
     }
 }

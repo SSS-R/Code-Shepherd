@@ -47,9 +47,9 @@ export default function ExecutionTimeline() {
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="Search by action, agent, or event text"
-                        className="surface-panel rounded-lg px-4 py-3 text-[15px] text-white placeholder-[var(--text-muted)] focus:outline-none"
+                        className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none"
                     />
-                    <select value={limit} onChange={(e) => setLimit(Number(e.target.value))} className="surface-panel rounded-lg px-4 py-3 text-[15px] text-white">
+                    <select value={limit} onChange={(e) => setLimit(Number(e.target.value))} className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]">
                         <option value={50}>50 events</option>
                         <option value={100}>100 events</option>
                         <option value={250}>250 events</option>

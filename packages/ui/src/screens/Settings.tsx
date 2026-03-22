@@ -155,10 +155,10 @@ export default function Settings() {
             <section className="grid gap-4 lg:grid-cols-2">
                 <div className="glass rounded-xl p-5 space-y-3">
                     <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Create account / login</h3>
-                    <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-white" />
-                    <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-white" />
-                    <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-white" />
-                    <input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="Team name (optional)" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-white" />
+                    <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
+                    <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
+                    <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
+                    <input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="Team name (optional)" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
                     <div className="flex gap-3 flex-wrap">
                         <button onClick={() => void signUp()} className="btn-primary rounded-lg px-4 py-3 text-sm font-medium">Sign Up</button>
                         <button onClick={() => void login()} className="btn-secondary rounded-lg px-4 py-3 text-sm font-medium">Login</button>
@@ -174,7 +174,7 @@ export default function Settings() {
                         <button onClick={() => void loadTeams()} className="btn-secondary rounded-lg px-3 py-2 text-sm font-medium">Refresh</button>
                     </div>
                     {teams.length === 0 ? (
-                        <div className="rounded-lg border border-dashed border-white/10 p-4 text-[13px] text-[var(--text-muted)]">No teams loaded yet.</div>
+                        <div className="rounded-lg border border-dashed border-[var(--border-subtle)] p-4 text-[13px] text-[var(--text-muted)]">No teams loaded yet.</div>
                     ) : (
                         teams.map((team) => (
                             <div key={team.id} className="surface-panel rounded-lg p-4">
@@ -192,14 +192,14 @@ export default function Settings() {
                         <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Invite teammate</h3>
                         <button onClick={() => void loadInvitations()} className="btn-secondary rounded-lg px-3 py-2 text-sm font-medium">Refresh invites</button>
                     </div>
-                    <select value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)} className="surface-panel rounded-lg px-4 py-3 text-[15px] text-white">
+                    <select value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)} className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]">
                         <option value="">Select team</option>
                         {teams.map((team) => (
                             <option key={team.id} value={team.id}>{team.name}</option>
                         ))}
                     </select>
-                    <input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="Invite email" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-white" />
-                    <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className="surface-panel rounded-lg px-4 py-3 text-[15px] text-white">
+                    <input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="Invite email" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
+                    <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]">
                         <option value="Developer">Developer</option>
                         <option value="Viewer">Viewer</option>
                         <option value="Admin">Admin</option>
@@ -210,7 +210,7 @@ export default function Settings() {
                 <div className="glass rounded-xl p-5 space-y-3">
                     <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Invitations</h3>
                     {invitations.length === 0 ? (
-                        <div className="rounded-lg border border-dashed border-white/10 p-4 text-[13px] text-[var(--text-muted)]">No invitations loaded.</div>
+                        <div className="rounded-lg border border-dashed border-[var(--border-subtle)] p-4 text-[13px] text-[var(--text-muted)]">No invitations loaded.</div>
                     ) : (
                         invitations.map((invite) => (
                             <div key={invite.id} className="surface-panel rounded-lg p-4">

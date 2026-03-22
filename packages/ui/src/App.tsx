@@ -1,5 +1,5 @@
 import { ReactNode, useState, useEffect } from 'react'
-import { BellRing, History, LayoutDashboard, Settings as SettingsIcon } from 'lucide-react'
+import { Moon, Sun, BellRing, History, LayoutDashboard, Settings as SettingsIcon } from 'lucide-react'
 import Dashboard from './screens/Dashboard'
 import ApprovalQueue from './screens/ApprovalQueue'
 import AgentDetail from './screens/AgentDetail'
@@ -17,6 +17,21 @@ function App() {
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const session = loadSession()
 
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark') || window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return true; // Default to dark mode logic based on previous index.css
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
   useEffect(() => {
     fetch('http://localhost:3000/health')
       .then(res => res.json())
@@ -27,11 +42,11 @@ function App() {
   return (
     <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
       <div className="shadow-overlay" />
-      <header className="sticky top-0 z-20 border-b border-white/6 bg-[var(--bg-base)]/95 backdrop-blur-md">
+      <header className="sticky top-0 z-20 border-b border-[var(--border-subtle)] bg-[var(--bg-base)]/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-3">
-              <div className="surface-panel flex h-11 w-11 items-center justify-center rounded-xl text-sm font-semibold text-blue-300">
+              <div className="surface-panel flex h-11 w-11 items-center justify-center rounded-xl text-sm font-semibold text-[var(--accent-info)]">
                 AO
               </div>
               <div>
@@ -40,20 +55,28 @@ function App() {
               </div>
             </div>
           </div>
-          <div className="surface-panel rounded-full px-4 py-2 flex items-center gap-3 border border-white/8">
+          <div className="surface-panel rounded-full px-4 py-2 flex items-center gap-3 border border-[var(--border-subtle)]">
             <div className="flex items-center gap-2">
               <div className={`h-2.5 w-2.5 rounded-full ${isConnected ? 'status-online' : 'status-critical'}`} />
               <span className="text-sm font-medium text-[var(--text-primary)]">
                 {isConnected ? 'Connected' : 'Offline'}
               </span>
             </div>
-            <div className="h-4 w-px bg-white/8" />
-            <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300 border border-blue-500/20">
+            <div className="h-4 w-px bg-[var(--border-subtle)]" />
+            <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-[var(--accent-info)] border border-blue-500/20">
               Phase 1
             </span>
+            <div className="h-4 w-px bg-[var(--border-subtle)]" />
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="p-1.5 rounded-full hover:bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+              aria-label="Toggle theme"
+            >
+              {isDarkMode ? <Moon size={16} /> : <Sun size={16} />}
+            </button>
             {session?.teamId && (
               <>
-                <div className="h-4 w-px bg-white/8" />
+                <div className="h-4 w-px bg-[var(--border-subtle)]" />
                 <span className="rounded-full bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-300 border border-violet-500/20">
                   Team session
                 </span>
@@ -80,7 +103,7 @@ function App() {
         ) : null}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/6 bg-[var(--bg-base)]/95 backdrop-blur-md">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-[var(--border-subtle)] bg-[var(--bg-base)]/95 backdrop-blur-md">
         <div className="mx-auto max-w-3xl px-2">
           <div className="grid h-16 grid-cols-5 gap-1">
             <NavButton

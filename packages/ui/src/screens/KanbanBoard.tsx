@@ -148,24 +148,24 @@ export default function KanbanBoard() {
                         value={form.title}
                         onChange={(e) => setForm({ ...form, title: e.target.value })}
                         placeholder="Task title"
-                        className="surface-panel rounded-lg px-4 py-3 text-[15px] text-white placeholder-[var(--text-muted)] focus:outline-none"
+                        className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none"
                     />
                     <input
                         value={form.description}
                         onChange={(e) => setForm({ ...form, description: e.target.value })}
                         placeholder="Description"
-                        className="surface-panel rounded-lg px-4 py-3 text-[15px] text-white placeholder-[var(--text-muted)] focus:outline-none"
+                        className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none"
                     />
                     <input
                         value={form.labels}
                         onChange={(e) => setForm({ ...form, labels: e.target.value })}
                         placeholder="Labels (comma separated)"
-                        className="surface-panel rounded-lg px-4 py-3 text-[15px] text-white placeholder-[var(--text-muted)] focus:outline-none"
+                        className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none"
                     />
                     <select
                         value={form.priority}
                         onChange={(e) => setForm({ ...form, priority: e.target.value as Task['priority'] })}
-                        className="surface-panel rounded-lg px-4 py-3 text-[15px] text-white focus:outline-none"
+                        className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)] focus:outline-none"
                     >
                         <option value="P0">P0</option>
                         <option value="P1">P1</option>
@@ -176,7 +176,7 @@ export default function KanbanBoard() {
                         <select
                             value={form.blocked_by_task_id}
                             onChange={(e) => setForm({ ...form, blocked_by_task_id: e.target.value })}
-                            className="surface-panel flex-1 rounded-lg px-4 py-3 text-[15px] text-white focus:outline-none"
+                            className="surface-panel flex-1 rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)] focus:outline-none"
                         >
                             <option value="">No dependency</option>
                             {tasks.map((task) => (
@@ -186,7 +186,7 @@ export default function KanbanBoard() {
                         <select
                             value={form.assigned_agent_id}
                             onChange={(e) => setForm({ ...form, assigned_agent_id: e.target.value })}
-                            className="surface-panel flex-1 rounded-lg px-4 py-3 text-[15px] text-white focus:outline-none"
+                            className="surface-panel flex-1 rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)] focus:outline-none"
                         >
                             <option value="">Unassigned</option>
                             {agents.map((agent) => (
@@ -203,12 +203,12 @@ export default function KanbanBoard() {
                     <section key={column} className="glass rounded-xl p-4">
                         <div className="mb-4 flex items-center justify-between">
                             <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">{column}</h3>
-                            <span className="rounded-full bg-white/5 px-2 py-1 text-[13px] text-[var(--text-secondary)]">{columnTasks.length}</span>
+                            <span className="rounded-full bg-[var(--border-subtle)] px-2 py-1 text-[13px] text-[var(--text-secondary)]">{columnTasks.length}</span>
                         </div>
 
                         <div className="space-y-3">
                             {columnTasks.length === 0 ? (
-                                <div className="rounded-lg border border-dashed border-white/10 p-4 text-[13px] text-[var(--text-muted)]">No tasks</div>
+                                <div className="rounded-lg border border-dashed border-[var(--border-subtle)] p-4 text-[13px] text-[var(--text-muted)]">No tasks</div>
                             ) : (
                                 columnTasks.map((task) => (
                                     <article key={task.id} className="surface-panel rounded-lg p-4">
@@ -217,7 +217,7 @@ export default function KanbanBoard() {
                                             <select
                                                 value={task.priority}
                                                 onChange={(e) => void updateTask(task.id, { priority: e.target.value as Task['priority'] })}
-                                                className="rounded-full bg-blue-500/10 px-2 py-1 text-[13px] text-blue-300 border border-blue-500/20"
+                                                className="rounded-full bg-blue-500/10 px-2 py-1 text-[13px] text-[var(--accent-info)] border border-blue-500/20"
                                             >
                                                 <option value="P0">P0</option>
                                                 <option value="P1">P1</option>
@@ -228,14 +228,14 @@ export default function KanbanBoard() {
                                         {task.description && <p className="mt-2 text-[13px] text-[var(--text-secondary)]">{task.description}</p>}
                                         <div className="mt-3 flex flex-wrap gap-2">
                                             {task.labels.map((label) => (
-                                                <span key={label} className="rounded-full border border-white/8 bg-slate-950 px-2 py-1 text-[13px] text-[var(--text-secondary)]">{label}</span>
+                                                <span key={label} className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] px-2 py-1 text-[13px] text-[var(--text-secondary)]">{label}</span>
                                             ))}
                                         </div>
                                         <div className="mt-3 grid gap-2">
                                             <select
                                                 value={task.blocked_by_task_id || ''}
                                                 onChange={(e) => void updateTask(task.id, { blocked_by_task_id: e.target.value || null })}
-                                                className="surface-panel rounded-lg px-3 py-2 text-[13px] text-white"
+                                                className="surface-panel rounded-lg px-3 py-2 text-[13px] text-[var(--text-primary)]"
                                             >
                                                 <option value="">No dependency</option>
                                                 {tasks.filter((candidate) => candidate.id !== task.id).map((candidate) => (
@@ -245,14 +245,14 @@ export default function KanbanBoard() {
                                             <select
                                                 value={task.status}
                                                 onChange={(e) => void updateTask(task.id, { status: e.target.value as TaskStatus })}
-                                                className="surface-panel rounded-lg px-3 py-2 text-[13px] text-white"
+                                                className="surface-panel rounded-lg px-3 py-2 text-[13px] text-[var(--text-primary)]"
                                             >
                                                 {COLUMNS.map((status) => <option key={status} value={status}>{status}</option>)}
                                             </select>
                                             <select
                                                 value={task.assigned_agent_id || ''}
                                                 onChange={(e) => void updateTask(task.id, { assigned_agent_id: e.target.value || null })}
-                                                className="surface-panel rounded-lg px-3 py-2 text-[13px] text-white"
+                                                className="surface-panel rounded-lg px-3 py-2 text-[13px] text-[var(--text-primary)]"
                                             >
                                                 <option value="">Unassigned</option>
                                                 {agents.map((agent) => (
@@ -261,14 +261,14 @@ export default function KanbanBoard() {
                                             </select>
                                         </div>
                                         {task.blocked_by_task_id && (
-                                            <div className="mt-3 text-[13px] text-amber-300">Blocked by: {tasks.find((candidate) => candidate.id === task.blocked_by_task_id)?.title || task.blocked_by_task_id}</div>
+                                            <div className="mt-3 text-[13px] text-[var(--accent-warning)]">Blocked by: {tasks.find((candidate) => candidate.id === task.blocked_by_task_id)?.title || task.blocked_by_task_id}</div>
                                         )}
                                         <div className="mt-3 flex flex-wrap gap-2">
                                             <button onClick={() => void provisionRuntime(task.id)} className="btn-secondary rounded-lg px-3 py-2 text-[13px] font-medium">Provision Worktree</button>
                                             <button onClick={() => void activateTerminal(task.id)} className="btn-primary rounded-lg px-3 py-2 text-[13px] font-medium">Activate Terminal</button>
                                         </div>
                                         {runtimeByTask[task.id] && (
-                                            <div className="mt-3 rounded-lg border border-white/8 bg-slate-950/60 p-3 text-[13px] text-[var(--text-secondary)]">
+                                            <div className="mt-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] p-3 text-[13px] text-[var(--text-secondary)]">
                                                 <div>Worktree: {runtimeByTask[task.id].worktree_path}</div>
                                                 <div>Terminal: {runtimeByTask[task.id].terminal_session_id}</div>
                                                 <div>Status: {runtimeByTask[task.id].terminal_status}</div>
