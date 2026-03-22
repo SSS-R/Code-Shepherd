@@ -1,6 +1,6 @@
 # Code Shepherd — UI/UX Design System
 
-> **Mobile-first PWA** · **Dark mode default** · **Developer tool aesthetic**
+> **Mobile-first PWA** · **Day/Night mode support (Earth tones)** · **Developer tool aesthetic**
 > Based on UI/UX Pro Max skill analysis + CODE_SHEPHERD.md product vision.
 
 ---
@@ -19,18 +19,20 @@ Code Shepherd is a **command center**, not a dashboard. Every pixel should commu
 
 ## Color System
 
-### Semantic Tokens (Dark Mode Primary)
+Code Shepherd utilizes a unified **warm, earthy palette** that seamlessly supports **Day/Night mode toggling** for optimum contrast and viewing comfort.
 
-| Token | Hex | Usage |
-|-------|-----|-------|
-| `--bg-base` | `#0B1120` | App background (deep navy-black) |
-| `--bg-surface` | `#111827` | Cards, panels (slate-900) |
-| `--bg-surface-elevated` | `#1E293B` | Modals, popovers (slate-800) |
-| `--border-subtle` | `rgba(255,255,255,0.06)` | Card borders, dividers |
-| `--border-active` | `rgba(255,255,255,0.12)` | Hover/focus borders |
-| `--text-primary` | `#F1F5F9` | Headings, primary content (slate-100) |
-| `--text-secondary` | `#94A3B8` | Descriptions, metadata (slate-400) |
-| `--text-muted` | `#64748B` | Placeholders, timestamps (slate-500) |
+### Semantic Tokens (Day / Night Mode mappings)
+
+| Token | Light Mode | Dark Mode | Usage |
+|-------|------------|-----------|-------|
+| `--bg-base` | `#FFF0D1` (Off-white) | `#3B3030` (Deep Dark Brown) | App background |
+| `--bg-surface` | `#FFFFFF` (with shadow) | `#4a3b3b` | Cards, panels (`.glass`) |
+| `--bg-surface-elevated` | `#Fdfbf7` | `#544444` | Modals, popovers (`.surface-panel`) |
+| `--border-subtle` | `#e5d5c5` | `#664343` (Muted Warm Brown) | Card borders, dividers |
+| `--border-active` | `#d4bba3` | `#795757` (Muted Brown) | Hover/focus borders |
+| `--text-primary` | `#3B3030` | `#FFF0D1` | Headings, primary content |
+| `--text-secondary` | `#664343` | `#e2cbd2` | Descriptions, metadata |
+| `--text-muted` | `#8a6c6c` | `#b09898` | Placeholders, timestamps |
 
 ### Accent Colors
 
