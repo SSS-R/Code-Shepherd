@@ -14,6 +14,23 @@ interface Invitation {
     status: string
 }
 
+interface ConnectorRecord {
+    connector_id: string
+    connector_name: string
+    adapter_kind: string
+    transport: string
+    trust_status: string
+    scopes: string[]
+}
+
+interface ConnectorEventRecord {
+    id: string
+    connector_id: string
+    event_type: string
+    created_at: string
+    event_details: Record<string, unknown>
+}
+
 export default function Settings() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
@@ -25,6 +42,9 @@ export default function Settings() {
     const [inviteEmail, setInviteEmail] = useState('')
     const [inviteRole, setInviteRole] = useState('Developer')
     const [invitations, setInvitations] = useState<Invitation[]>([])
+    const [connectors, setConnectors] = useState<ConnectorRecord[]>([])
+    const [connectorEvents, setConnectorEvents] = useState<ConnectorEventRecord[]>([])
+    const [connectorForm, setConnectorForm] = useState({ connector_id: '', connector_name: '', adapter_kind: 'bridge', transport: 'http', scopes: 'messages,approvals' })
     const [sessionLabel, setSessionLabel] = useState('No session yet')
     const activeRole = teams.find((team) => team.id === selectedTeamId)?.role || loadSession()?.role || 'Developer'
 
@@ -142,6 +162,41 @@ export default function Settings() {
         setSessionLabel('No session yet')
     }
 
+    const loadConnectors = async () => {
+        const res = await fetch('http://localhost:3000/connectors', { headers: buildAuthHeaders() })
+        if (res.ok) setConnectors(await res.json())
+
+        const eventsRes = await fetch('http://localhost:3000/connectors/events', { headers: buildAuthHeaders() })
+        if (eventsRes.ok) setConnectorEvents(await eventsRes.json())
+    }
+
+    const trustConnector = async () => {
+        const res = await fetch('http://localhost:3000/connectors', {
+            method: 'POST',
+            headers: buildAuthHeaders(),
+            body: JSON.stringify({
+                ...connectorForm,
+                scopes: connectorForm.scopes.split(',').map((scope) => scope.trim()).filter(Boolean),
+            }),
+        })
+
+        if (res.ok) {
+            setConnectorForm({ connector_id: '', connector_name: '', adapter_kind: 'bridge', transport: 'http', scopes: 'messages,approvals' })
+            void loadConnectors()
+        }
+    }
+
+    const revokeConnector = async (connectorId: string) => {
+        const res = await fetch(`http://localhost:3000/connectors/${connectorId}/revoke`, {
+            method: 'POST',
+            headers: buildAuthHeaders(),
+        })
+
+        if (res.ok) {
+            void loadConnectors()
+        }
+    }
+
     return (
         <div className="space-y-6">
             <section className="glass rounded-xl p-6 md:p-8">
@@ -223,6 +278,54 @@ export default function Settings() {
                         ))
                     )}
                 </div>
+            </section>
+
+            <section className="grid gap-4 lg:grid-cols-2">
+                <div className="glass rounded-xl p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Trusted connectors</h3>
+                        <button onClick={() => void loadConnectors()} className="btn-secondary rounded-lg px-3 py-2 text-sm font-medium">Refresh</button>
+                    </div>
+                    <input value={connectorForm.connector_id} onChange={(e) => setConnectorForm({ ...connectorForm, connector_id: e.target.value })} placeholder="Connector ID" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
+                    <input value={connectorForm.connector_name} onChange={(e) => setConnectorForm({ ...connectorForm, connector_name: e.target.value })} placeholder="Connector name" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
+                    <div className="grid gap-3 md:grid-cols-2">
+                        <input value={connectorForm.adapter_kind} onChange={(e) => setConnectorForm({ ...connectorForm, adapter_kind: e.target.value })} placeholder="Adapter kind" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
+                        <input value={connectorForm.transport} onChange={(e) => setConnectorForm({ ...connectorForm, transport: e.target.value })} placeholder="Transport" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
+                    </div>
+                    <input value={connectorForm.scopes} onChange={(e) => setConnectorForm({ ...connectorForm, scopes: e.target.value })} placeholder="Scopes (comma separated)" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
+                    <button onClick={() => void trustConnector()} disabled={activeRole !== 'Admin'} className="btn-primary rounded-lg px-4 py-3 text-sm font-medium disabled:opacity-50">Trust connector</button>
+                </div>
+
+                <div className="glass rounded-xl p-5 space-y-3">
+                    <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Connector governance</h3>
+                    {connectors.length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-[var(--border-subtle)] p-4 text-[13px] text-[var(--text-muted)]">No connectors registered yet.</div>
+                    ) : connectors.map((connector) => (
+                        <div key={connector.connector_id} className="surface-panel rounded-lg p-4">
+                            <div className="text-[15px] font-medium text-[var(--text-primary)]">{connector.connector_name}</div>
+                            <div className="mt-1 text-[13px] text-[var(--text-secondary)]">{connector.connector_id} · {connector.adapter_kind} · {connector.transport}</div>
+                            <div className="mt-2 text-[13px] text-[var(--text-secondary)]">Scopes: {connector.scopes.join(', ') || 'none'}</div>
+                            <div className="mt-2 text-[13px] text-[var(--text-secondary)]">Status: {connector.trust_status}</div>
+                            <button onClick={() => void revokeConnector(connector.connector_id)} disabled={activeRole !== 'Admin' || connector.trust_status === 'revoked'} className="btn-secondary mt-3 rounded-lg px-3 py-2 text-sm font-medium disabled:opacity-50">Revoke connector</button>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            <section className="glass rounded-xl p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Connector event history</h3>
+                    <button onClick={() => void loadConnectors()} className="btn-secondary rounded-lg px-3 py-2 text-sm font-medium">Refresh history</button>
+                </div>
+                {connectorEvents.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-[var(--border-subtle)] p-4 text-[13px] text-[var(--text-muted)]">No connector events recorded yet.</div>
+                ) : connectorEvents.map((event) => (
+                    <div key={event.id} className="surface-panel rounded-lg p-4">
+                        <div className="text-[15px] font-medium text-[var(--text-primary)]">{event.connector_id}</div>
+                        <div className="mt-1 text-[13px] text-[var(--text-secondary)]">{event.event_type} · {new Date(event.created_at).toLocaleString()}</div>
+                        <div className="mt-2 text-[13px] text-[var(--text-secondary)]">{JSON.stringify(event.event_details)}</div>
+                    </div>
+                ))}
             </section>
         </div>
     )

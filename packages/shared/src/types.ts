@@ -288,6 +288,15 @@ export interface ConversationMessagesResponse {
     messages: MessageRecord[];
 }
 
+export interface AgentReplyPayload {
+    conversation_id: string;
+    agent_id: string;
+    content: string;
+    message_type?: Extract<MessageType, 'text' | 'status' | 'artifact' | 'event'>;
+    command_id?: string;
+    metadata?: Record<string, unknown>;
+}
+
 export interface CodeShepherdAdapterContext {
     relayBaseUrl: string;
     adapter: AgentAdapterDescriptor;

@@ -17,22 +17,32 @@ interface Stats {
     totalSessions: number
 }
 
+interface ParallelSession {
+    task_id: string
+    title: string
+    assigned_agent_id: string | null
+    terminal_status: string
+}
+
 export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) => void }) {
     const [agents, setAgents] = useState<Agent[]>([])
     const [loading, setLoading] = useState(true)
     const [stats, setStats] = useState<Stats>({ activeAgents: 0, pendingApprovals: 0, totalSessions: 0 })
+    const [parallelSessions, setParallelSessions] = useState<ParallelSession[]>([])
 
     useEffect(() => {
         Promise.all([
             fetch('http://localhost:3000/agents', { headers: buildAuthHeaders() }).then(res => res.json()),
-            fetch('http://localhost:3000/approvals/pending', { headers: buildAuthHeaders() }).then(res => res.json())
-        ]).then(([agentsData, approvalsData]) => {
+            fetch('http://localhost:3000/approvals/pending', { headers: buildAuthHeaders() }).then(res => res.json()),
+            fetch('http://localhost:3000/operations/parallel-sessions', { headers: buildAuthHeaders() }).then(res => res.json()).catch(() => [])
+        ]).then(([agentsData, approvalsData, sessionsData]) => {
             setAgents(agentsData)
             setStats({
                 activeAgents: agentsData.filter((a: Agent) => a.status === 'online').length,
                 pendingApprovals: approvalsData.length,
                 totalSessions: agentsData.length
             })
+            setParallelSessions(sessionsData)
             setLoading(false)
         }).catch(() => setLoading(false))
     }, [])
@@ -107,6 +117,27 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
                     <div className="text-[13px] text-[var(--text-secondary)]">Resume or inspect in progress flows</div>
                 </div>
                 <ActiveWorkflows />
+            </section>
+
+            <section className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Parallel Sessions</h3>
+                    <div className="text-[13px] text-[var(--text-secondary)]">Live task runtimes across multiple agents</div>
+                </div>
+                {parallelSessions.length === 0 ? (
+                    <div className="glass rounded-xl border border-dashed border-[var(--border-subtle)] p-6 text-[13px] text-[var(--text-muted)]">No live parallel sessions detected.</div>
+                ) : (
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {parallelSessions.map((session) => (
+                            <div key={session.task_id} className="glass rounded-xl p-5 border border-[var(--border-subtle)]">
+                                <div className="text-[15px] font-semibold text-[var(--text-primary)]">{session.title}</div>
+                                <div className="mt-2 text-[13px] text-[var(--text-secondary)]">Task: {session.task_id}</div>
+                                <div className="mt-1 text-[13px] text-[var(--text-secondary)]">Agent: {session.assigned_agent_id || 'unassigned'}</div>
+                                <div className="mt-3 inline-flex rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[13px] font-medium text-[var(--accent-info)]">{session.terminal_status}</div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </section>
         </div>
     )

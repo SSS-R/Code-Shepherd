@@ -339,5 +339,64 @@ export function createConversationRoutes(db: Database) {
         }
     });
 
+    router.post('/:id/replies', (req: Request, res: Response) => {
+        try {
+            const conversation = db.prepare(`
+        SELECT * FROM conversations WHERE id = ? AND (team_id IS ? OR team_id = ?)
+      `).get(req.params.id, req.auth?.teamId ?? null, req.auth?.teamId ?? null) as any;
+
+            if (!conversation) {
+                return res.status(404).json({ error: 'Conversation not found' });
+            }
+
+            const { agent_id, content, message_type, command_id, metadata } = req.body as {
+                agent_id?: string;
+                content?: string;
+                message_type?: 'text' | 'status' | 'artifact' | 'event';
+                command_id?: string;
+                metadata?: Record<string, unknown>;
+            };
+
+            if (!agent_id || !content) {
+                return res.status(400).json({ error: 'agent_id and content are required' });
+            }
+
+            const message = appendConversationMessage(db, {
+                conversationId: req.params.id,
+                senderType: 'agent',
+                senderId: agent_id,
+                content,
+                messageType: message_type ?? 'text',
+                commandId: command_id ?? null,
+                metadata,
+            });
+
+            if (command_id) {
+                db.prepare(`
+          UPDATE commands
+          SET status = 'completed', updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).run(command_id);
+            }
+
+            db.prepare(`
+        INSERT INTO audit_logs (event_type, event_details, agent_id, team_id)
+        VALUES ('agent_reply_received', ?, ?, ?)
+      `).run(JSON.stringify({ conversation_id: req.params.id, command_id: command_id ?? null, message_type: message.message_type }), agent_id, req.auth?.teamId ?? null);
+
+            broadcastRealtimeEvent('conversations.updated', {
+                action: 'reply.received',
+                conversationId: req.params.id,
+                agentId: agent_id,
+                commandId: command_id ?? null,
+            });
+
+            return res.status(201).json({ message });
+        } catch (error) {
+            console.error('Create agent reply error:', error);
+            return res.status(500).json({ error: 'Failed to store agent reply' });
+        }
+    });
+
     return router;
 }

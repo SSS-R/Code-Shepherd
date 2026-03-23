@@ -12,6 +12,8 @@ interface Task {
     labels: string[]
     blocked_by_task_id?: string | null
     assigned_agent_id: string | null
+    assignments?: Array<{ agent_id: string; role: string; conversation_id?: string | null }>
+    runtime?: TaskRuntime | null
 }
 
 interface TaskRuntime {
@@ -33,6 +35,7 @@ export default function KanbanBoard() {
     const [agents, setAgents] = useState<Agent[]>([])
     const [loading, setLoading] = useState(true)
     const [runtimeByTask, setRuntimeByTask] = useState<Record<string, TaskRuntime>>({})
+    const [selectedAgentsByTask, setSelectedAgentsByTask] = useState<Record<string, string[]>>({})
     const [form, setForm] = useState({
         title: '',
         description: '',
@@ -124,6 +127,25 @@ export default function KanbanBoard() {
             setRuntimeByTask((current) => current[taskId]
                 ? { ...current, [taskId]: { ...current[taskId], terminal_status: 'active' } }
                 : current)
+        }
+    }
+
+    const assignTaskToAgents = async (taskId: string) => {
+        const agentIds = selectedAgentsByTask[taskId] || []
+        if (agentIds.length === 0) return
+
+        const res = await fetch(`http://localhost:3000/tasks/${taskId}/assignments`, {
+            method: 'POST',
+            headers: buildAuthHeaders(),
+            body: JSON.stringify({ agent_ids: agentIds, role: 'executor' }),
+        })
+
+        if (res.ok) {
+            const overviewRes = await fetch('http://localhost:3000/tasks/coordination/overview', { headers: buildAuthHeaders() })
+            if (overviewRes.ok) {
+                const overview = await overviewRes.json()
+                setTasks(overview)
+            }
         }
     }
 
@@ -259,6 +281,19 @@ export default function KanbanBoard() {
                                                     <option key={agent.id} value={agent.id}>{agent.name}</option>
                                                 ))}
                                             </select>
+                                            <select
+                                                multiple
+                                                value={selectedAgentsByTask[task.id] || []}
+                                                onChange={(e) => setSelectedAgentsByTask((current) => ({
+                                                    ...current,
+                                                    [task.id]: Array.from(e.target.selectedOptions).map((option) => option.value),
+                                                }))}
+                                                className="surface-panel rounded-lg px-3 py-2 text-[13px] text-[var(--text-primary)]"
+                                            >
+                                                {agents.map((agent) => (
+                                                    <option key={agent.id} value={agent.id}>{agent.name}</option>
+                                                ))}
+                                            </select>
                                         </div>
                                         {task.blocked_by_task_id && (
                                             <div className="mt-3 text-[13px] text-[var(--accent-warning)]">Blocked by: {tasks.find((candidate) => candidate.id === task.blocked_by_task_id)?.title || task.blocked_by_task_id}</div>
@@ -266,7 +301,18 @@ export default function KanbanBoard() {
                                         <div className="mt-3 flex flex-wrap gap-2">
                                             <button onClick={() => void provisionRuntime(task.id)} className="btn-secondary rounded-lg px-3 py-2 text-[13px] font-medium">Provision Worktree</button>
                                             <button onClick={() => void activateTerminal(task.id)} className="btn-primary rounded-lg px-3 py-2 text-[13px] font-medium">Activate Terminal</button>
+                                            <button onClick={() => void assignTaskToAgents(task.id)} className="btn-secondary rounded-lg px-3 py-2 text-[13px] font-medium">Assign Multiple Agents</button>
                                         </div>
+                                        {task.assignments && task.assignments.length > 0 && (
+                                            <div className="mt-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] p-3 text-[13px] text-[var(--text-secondary)]">
+                                                <div className="mb-2 font-medium text-[var(--text-primary)]">Parallel Sessions</div>
+                                                <div className="space-y-1">
+                                                    {task.assignments.map((assignment) => (
+                                                        <div key={`${task.id}-${assignment.agent_id}`}>{assignment.agent_id} · {assignment.role} · conversation {assignment.conversation_id || 'n/a'}</div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                         {runtimeByTask[task.id] && (
                                             <div className="mt-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] p-3 text-[13px] text-[var(--text-secondary)]">
                                                 <div>Worktree: {runtimeByTask[task.id].worktree_path}</div>

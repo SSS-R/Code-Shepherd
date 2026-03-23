@@ -18,6 +18,7 @@ import { createOperationsRoutes } from './routes/operations';
 import { createAuthRoutes } from './routes/auth';
 import { createDemoRoutes } from './routes/demo';
 import { createConversationRoutes } from './routes/conversations';
+import { createConnectorRoutes } from './routes/connectors';
 import { getVapidKeys } from './utils/vapidKeys';
 import * as activities from './activities';
 import { initializeRealtime } from './realtime';
@@ -115,6 +116,9 @@ app.use('/tasks', createTaskRoutes(db));
 
 // Operational runtime scaffolding
 app.use('/operations', createOperationsRoutes(db));
+
+// Connector trust and governance API
+app.use('/connectors', createConnectorRoutes(db));
 
 // Start server
 async function start() {

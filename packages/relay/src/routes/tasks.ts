@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import type { Database } from 'better-sqlite3';
 import { broadcastRealtimeEvent } from '../realtime';
 import { requireAuth, requireRole } from '../middleware/auth';
+import { ensureConversationForAgent } from './conversations';
 
 type TaskStatus = 'Queued' | 'In Progress' | 'Blocked' | 'Done' | 'Failed';
 type TaskPriority = 'P0' | 'P1' | 'P2' | 'P3';
@@ -29,6 +30,10 @@ function mapTask(task: TaskRow) {
     };
 }
 
+function createId(prefix: string): string {
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export function createTaskRoutes(db: Database): ReturnType<typeof require>['Router'] {
     const router = require('express').Router();
     router.use(requireAuth);
@@ -49,6 +54,19 @@ export function createTaskRoutes(db: Database): ReturnType<typeof require>['Rout
       FOREIGN KEY (assigned_agent_id) REFERENCES agents(id)
     )
   `);
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS task_assignments (
+        id TEXT PRIMARY KEY,
+        task_id TEXT NOT NULL,
+        agent_id TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'executor',
+        conversation_id TEXT,
+        assigned_by TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(task_id, agent_id)
+      )
+    `);
 
     try {
         db.exec('ALTER TABLE tasks ADD COLUMN blocked_by_task_id TEXT');
@@ -175,6 +193,72 @@ export function createTaskRoutes(db: Database): ReturnType<typeof require>['Rout
         } catch (error) {
             console.error('Update task error:', error);
             return res.status(500).json({ error: 'Failed to update task' });
+        }
+    });
+
+    router.get('/coordination/overview', (req: Request, res: Response) => {
+        try {
+            const tasks = (db.prepare('SELECT * FROM tasks WHERE team_id IS ? OR team_id = ? ORDER BY updated_at DESC')
+                .all(req.auth?.teamId ?? null, req.auth?.teamId ?? null) as TaskRow[]).map(mapTask);
+
+            const assignments = db.prepare('SELECT * FROM task_assignments ORDER BY created_at DESC').all() as any[];
+            const runtimes = db.prepare('SELECT * FROM task_runtime ORDER BY updated_at DESC').all() as any[];
+
+            return res.json(tasks.map((task) => ({
+                ...task,
+                assignments: assignments.filter((assignment) => assignment.task_id === task.id),
+                runtime: runtimes.find((runtime) => runtime.task_id === task.id) ?? null,
+            })));
+        } catch (error) {
+            console.error('Task coordination overview error:', error);
+            return res.status(500).json({ error: 'Failed to build coordination overview' });
+        }
+    });
+
+    router.post('/:id/assignments', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
+        try {
+            const { id } = req.params as { id: string };
+            const { agent_ids = [], role = 'executor' } = req.body as { agent_ids?: string[]; role?: string };
+
+            const task = db.prepare('SELECT * FROM tasks WHERE id = ? AND (team_id IS ? OR team_id = ?)').get(id, req.auth?.teamId ?? null, req.auth?.teamId ?? null) as TaskRow | undefined;
+            if (!task) {
+                return res.status(404).json({ error: 'Task not found' });
+            }
+
+            if (!Array.isArray(agent_ids) || agent_ids.length === 0) {
+                return res.status(400).json({ error: 'agent_ids must be a non-empty array' });
+            }
+
+            const createdAssignments = agent_ids.map((agentId) => {
+                const conversation = ensureConversationForAgent(db, {
+                    agentId,
+                    taskId: id,
+                    title: `${task.title} · ${agentId}`,
+                    teamId: req.auth?.teamId ?? null,
+                });
+
+                db.prepare(`
+                    INSERT INTO task_assignments (id, task_id, agent_id, role, conversation_id, assigned_by)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(task_id, agent_id) DO UPDATE SET
+                      role = excluded.role,
+                      conversation_id = excluded.conversation_id,
+                      assigned_by = excluded.assigned_by
+                `).run(createId('assignment'), id, agentId, role, conversation.id, req.auth?.userId ?? 'dashboard-user');
+
+                db.prepare(`
+                    INSERT INTO audit_logs (event_type, event_details, agent_id, team_id)
+                    VALUES ('task_assignment_created', ?, ?, ?)
+                `).run(JSON.stringify({ task_id: id, role, conversation_id: conversation.id }), agentId, req.auth?.teamId ?? null);
+
+                return { task_id: id, agent_id: agentId, role, conversation_id: conversation.id };
+            });
+
+            broadcastRealtimeEvent('tasks.updated', { action: 'assignments.updated', taskId: id, agentIds: agent_ids });
+            return res.status(201).json({ task_id: id, assignments: createdAssignments });
+        } catch (error) {
+            console.error('Create task assignments error:', error);
+            return res.status(500).json({ error: 'Failed to create task assignments' });
         }
     });
 

@@ -36,6 +36,23 @@ export function createOperationsRoutes(db: Database): ReturnType<typeof require>
     )
   `);
 
+    router.get('/parallel-sessions', (req: Request, res: Response) => {
+        try {
+            const sessions = db.prepare(`
+                SELECT task_runtime.*, tasks.title, tasks.assigned_agent_id
+                FROM task_runtime
+                JOIN tasks ON tasks.id = task_runtime.task_id
+                WHERE tasks.team_id IS ? OR tasks.team_id = ?
+                ORDER BY task_runtime.updated_at DESC
+            `).all(req.auth?.teamId ?? null, req.auth?.teamId ?? null);
+
+            return res.json(sessions);
+        } catch (error) {
+            console.error('List parallel sessions error:', error);
+            return res.status(500).json({ error: 'Failed to list parallel sessions' });
+        }
+    });
+
     router.post('/tasks/:id/provision', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
         try {
             const { id } = req.params as { id: string };
