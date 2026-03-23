@@ -180,25 +180,30 @@ export default function KanbanBoard() {
     return (
         <div className="flex flex-col bg-surface overflow-hidden min-h-[calc(100vh-7rem)]">
             {/* Board Header */}
-            <header className="px-4 md:px-8 py-6 flex flex-col md:flex-row justify-between md:items-end shrink-0 gap-4">
-                <div>
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(123,219,128,0.5)]"></span>
-                        <span className="font-mono text-[10px] text-secondary tracking-widest uppercase">Orchestration Active</span>
+            <header className="px-4 md:px-6 lg:px-10 py-6 flex flex-col xl:flex-row justify-between xl:items-end shrink-0 gap-6">
+                <div className="animate-slide-up">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(123,219,128,0.5)] animate-pulse"></span>
+                        <span className="font-mono text-[10px] text-secondary tracking-[0.2em] uppercase font-bold">Orchestration Active</span>
                     </div>
-                    <h1 className="font-headline text-3xl font-bold tracking-tight text-on-surface">Mission Kanban</h1>
-                    <p className="text-on-surface-variant text-sm mt-1 max-w-md">Real-time task distribution across autonomous agent clusters.</p>
+                    <h1 className="font-headline text-3xl md:text-4xl font-bold tracking-tight text-on-surface uppercase">Mission Kanban</h1>
+                    <p className="text-outline text-sm mt-1.5 max-w-lg font-body">Real-time task distribution across autonomous agent clusters.</p>
                 </div>
-                <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full md:w-auto">
-                    <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value as 'all' | Task['priority'])} className="w-full sm:w-auto px-4 py-2 bg-surface-container text-on-surface text-xs font-medium rounded-sm border border-outline-variant/20 focus:ring-1 focus:ring-primary outline-none">
-                        <option value="all">All Priorities</option>
-                        <option value="P0">P0 - Critical</option>
-                        <option value="P1">P1 - High</option>
-                        <option value="P2">P2 - Medium</option>
-                        <option value="P3">P3 - Low</option>
-                    </select>
-                    <button onClick={() => setShowNewTaskForm(!showNewTaskForm)} className="w-full sm:w-auto px-4 py-2 bg-gradient-to-b from-primary-container to-primary text-on-primary-container text-xs font-bold rounded-sm shadow-lg shadow-primary/10 hover:brightness-110 transition-all flex items-center justify-center gap-2">
-                        <Plus size={14} strokeWidth={3} /> Deploy New Task
+                <div className="flex flex-col sm:flex-row flex-wrap gap-4 w-full xl:w-auto animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                    <div className="relative min-w-[180px]">
+                        <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value as 'all' | Task['priority'])} className="w-full appearance-none px-4 py-2.5 bg-surface-container-high/50 text-on-surface text-xs font-bold uppercase tracking-wider rounded border border-outline-variant/20 focus:ring-2 focus:ring-primary/40 outline-none transition-all cursor-pointer">
+                            <option value="all">Priority: All</option>
+                            <option value="P0">P0 - Critical</option>
+                            <option value="P1">P1 - High</option>
+                            <option value="P2">P2 - Medium</option>
+                            <option value="P3">P3 - Low</option>
+                        </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-outline">
+                            <Filter size={14} />
+                        </div>
+                    </div>
+                    <button onClick={() => setShowNewTaskForm(!showNewTaskForm)} className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-primary-container to-primary text-on-primary-container text-xs font-bold uppercase tracking-[0.15em] rounded shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <Plus size={16} strokeWidth={3} /> Deploy New Task
                     </button>
                 </div>
             </header>
@@ -244,14 +249,14 @@ export default function KanbanBoard() {
             )}
 
             {/* Kanban Board Container */}
-            <div className="flex-1 overflow-x-auto overflow-y-hidden px-0 pb-8 flex gap-4 md:gap-6 custom-scrollbar">
+            <div className="flex-1 overflow-x-auto overflow-y-hidden px-4 md:px-6 lg:px-10 pb-10 flex gap-6 custom-scrollbar animate-fade-in">
 
                 {COLUMNS.map((column) => {
                     const columnTasks = filteredTasks.filter(t => t.status === column)
                     const config = getColumnConfig(column)
 
                     return (
-                        <div key={column} className="flex flex-col w-[16rem] sm:w-[18rem] md:w-80 shrink-0 h-full">
+                        <div key={column} className="flex flex-col w-[280px] sm:w-[320px] md:w-[350px] shrink-0 h-full">
                             <div className="flex items-center justify-between mb-4 px-2 shrink-0">
                                 <div className="flex items-center gap-3">
                                     <span className={`text-[10px] font-mono ${config.colorClass} font-bold tracking-tighter ${config.bgClass} px-2 py-0.5 rounded`}>{config.index}</span>
@@ -260,13 +265,13 @@ export default function KanbanBoard() {
                                 <span className={`text-[10px] font-mono ${config.colorClass}`}>{columnTasks.length} {columnTasks.length === 1 ? 'TASK' : 'TASKS'}</span>
                             </div>
 
-                            <div className={`flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar pb-6 ${config.fade ? 'opacity-60' : ''}`}>
+                             <div className={`flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar pb-6 ${config.fade ? 'opacity-50' : ''}`}>
                                 {columnTasks.length === 0 ? (
-                                    <div className="rounded border border-dashed border-outline-variant/20 p-4 text-center text-xs text-outline/50 uppercase tracking-widest font-mono">Empty Dropzone</div>
+                                    <div className="rounded-lg border border-dashed border-outline-variant/20 p-8 text-center text-[10px] text-outline/40 uppercase tracking-[0.25em] font-mono bg-white/[0.02]">Empty Dropzone</div>
                                 ) : (
                                     columnTasks.map((task) => (
-                                        <div key={task.id} className={`bg-surface-container rounded-md p-4 relative group hover:ring-1 ring-primary/30 transition-all cursor-pointer ${task.status === 'In Progress' ? 'ring-1 ring-primary/20 bg-gradient-to-br from-surface-container to-surface-container-high shadow-xl shadow-primary/5' : ''}`}>
-                                            <div className={`absolute left-0 top-4 bottom-4 w-0.5 rounded-full ${config.lineClass} ${task.status === 'In Progress' ? 'shadow-[0_0_8px_rgba(123,219,128,0.6)]' : ''}`}></div>
+                                        <div key={task.id} className={`premium-card rounded-lg p-5 relative group ring-primary/0 hover:ring-primary/20 transition-all cursor-pointer ${task.status === 'In Progress' ? 'ring-1 ring-primary/20 bg-gradient-to-br from-surface-container to-surface-container-high shadow-xl shadow-primary/5' : ''}`}>
+                                            <div className={`absolute left-0 top-5 bottom-5 w-1 rounded-r-full ${config.lineClass} ${task.status === 'In Progress' ? 'shadow-[0_0_12px_rgba(123,219,128,0.8)]' : ''}`}></div>
 
                                             <div className="flex justify-between items-start mb-3">
                                                 <span className={`font-mono text-[10px] ${task.status === 'In Progress' ? 'text-secondary' : task.status === 'Failed' ? 'text-error' : task.status === 'Blocked' ? 'text-tertiary' : 'text-outline'} truncate max-w-[150px]`}>

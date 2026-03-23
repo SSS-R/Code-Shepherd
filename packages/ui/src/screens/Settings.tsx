@@ -209,11 +209,15 @@ export default function Settings() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto animate-fade-in pb-20">
+    <div className="max-w-6xl mx-auto animate-fade-in pb-20 px-4 md:px-0">
       {/* Page Header */}
-      <div className="mb-10">
-        <h1 className="font-headline text-3xl font-bold tracking-tight text-on-surface">Configuration</h1>
-        <p className="text-outline text-sm mt-1">Manage global system parameters, external integrations, and team access.</p>
+      <div className="mb-10 animate-slide-up">
+        <div className="flex items-center gap-2 mb-2">
+            <Server size={14} className="text-primary" />
+            <span className="font-mono text-[10px] text-outline tracking-[0.2em] uppercase font-bold">Infrastructure</span>
+        </div>
+        <h1 className="font-headline text-3xl md:text-4xl font-bold tracking-tight text-on-surface uppercase font-bold">Configuration</h1>
+        <p className="text-outline text-sm mt-1.5 max-w-xl font-body">Manage global system parameters, external integrations, and team access.</p>
       </div>
 
       {/* Bento Grid Layout */}
@@ -238,22 +242,22 @@ export default function Settings() {
               const severityClass = warning ? 'severity-marker-tertiary' : 'severity-marker-secondary'
 
               return (
-                <div key={connector.connector_id} className={`bg-surface-container p-4 rounded-md ${severityClass} group hover:bg-surface-container-high transition-colors`}>
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="w-8 h-8 flex items-center justify-center bg-surface-container-lowest rounded-sm">
-                      <Command className={`${warning ? 'text-tertiary' : 'text-primary'} text-xl`} size={18} />
+                <div key={connector.connector_id} className={`premium-card p-5 rounded-xl ${severityClass} group hover:scale-[1.02] transition-all`}>
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="w-10 h-10 flex items-center justify-center bg-surface-container-lowest/50 backdrop-blur rounded-lg border border-outline-variant/10">
+                      <Command className={`${warning ? 'text-tertiary' : 'text-primary'} text-xl`} size={20} />
                     </div>
-                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${warning ? 'bg-tertiary/10 text-tertiary' : 'bg-secondary/10 text-secondary'}`}>
-                      {warning ? 'WARNING' : 'CONNECTED'}
+                    <span className={`text-[9px] font-mono px-2 py-0.5 rounded-full font-bold tracking-tighter ${warning ? 'bg-tertiary/10 text-tertiary' : 'bg-secondary/10 text-secondary'}`}>
+                      {warning ? 'WARNING' : 'STABLE'}
                     </span>
                   </div>
-                  <h3 className="font-medium text-sm">{connector.connector_name}</h3>
-                  <p className="text-xs text-outline mt-1 mb-4">{connector.scopes.join(' & ') || connector.adapter_kind}</p>
-                  <div className="flex justify-between items-center">
-                    <span className={`text-[10px] font-mono italic ${warning ? 'text-error' : 'text-outline-variant'}`}>
-                      {warning ? 'rate_limited' : index === 1 ? 'active_sessions: 12' : 'latency: 42ms'}
+                  <h3 className="font-bold text-sm text-on-surface tracking-tight">{connector.connector_name}</h3>
+                  <p className="text-[11px] text-outline mt-1 mb-5 line-clamp-1">{connector.scopes.join(' & ') || connector.adapter_kind}</p>
+                  <div className="flex justify-between items-center pt-3 border-t border-outline-variant/5">
+                    <span className={`text-[9px] font-mono font-bold ${warning ? 'text-error' : 'text-outline/60'}`}>
+                      {warning ? 'RATE_LIMITED' : index === 1 ? 'SESSIONS: 12' : 'LATENCY: 42ms'}
                     </span>
-                    <button onClick={() => activeRole === 'Admin' && !warning && void revokeConnector(connector.connector_id)} className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => activeRole === 'Admin' && !warning && void revokeConnector(connector.connector_id)} className="text-[10px] font-bold text-primary uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
                       Configure
                     </button>
                   </div>

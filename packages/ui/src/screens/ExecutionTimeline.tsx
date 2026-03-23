@@ -58,54 +58,51 @@ export default function ExecutionTimeline() {
     }
 
     return (
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_20rem] bg-surface text-on-surface min-h-[calc(100vh-7rem)] gap-6 xl:gap-0">
+        <div className="grid grid-cols-1 2xl:grid-cols-[1fr_22rem] bg-surface text-on-surface min-h-[calc(100vh-7rem)]">
             {/* Main Content Canvas */}
-            <main className="overflow-y-auto custom-scrollbar min-w-0">
+            <main className="overflow-y-auto custom-scrollbar min-w-0 px-4 md:px-6 lg:px-10 py-8">
                 {/* Header Section */}
-                <header className="mb-6 md:mb-10 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
-                    <div className="space-y-1">
-                        <h1 className="text-3xl font-headline font-bold tracking-tight text-on-surface">Audit Log</h1>
-                        <p className="text-on-surface-variant font-body text-sm">Chronological sequence of system events and autonomous agent decisions.</p>
+                <header className="mb-10 flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+                    <div className="space-y-2 animate-slide-up">
+                        <div className="flex items-center gap-2 mb-1">
+                            <Terminal size={14} className="text-primary" />
+                            <span className="font-mono text-[10px] text-outline tracking-[0.2em] uppercase font-bold">System Ledger</span>
+                        </div>
+                        <h1 className="text-3xl md:text-4xl font-headline font-bold tracking-tight text-on-surface uppercase">Audit Log</h1>
+                        <p className="text-outline font-body text-sm max-w-xl">Chronological sequence of system events and autonomous agent decisions.</p>
                     </div>
 
                     {/* Filters */}
-                    <div className="flex flex-wrap items-center gap-2 p-1 bg-surface-container-low rounded-lg border border-outline-variant/10">
+                    <div className="flex flex-wrap items-center gap-2 p-1.5 bg-surface-container/50 backdrop-blur-md rounded-xl border border-outline-variant/10 animate-slide-up" style={{ animationDelay: '0.1s' }}>
                         <button
                             onClick={() => setFilterCategory('all')}
-                            className={`px-4 py-1.5 rounded text-xs font-medium transition-colors ${filterCategory === 'all' ? 'bg-primary-container text-on-primary-container shadow-sm' : 'text-on-surface-variant hover:bg-surface-container'}`}
+                            className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${filterCategory === 'all' ? 'bg-primary text-on-primary shadow-lg shadow-primary/20' : 'text-on-surface-variant hover:bg-surface-container'}`}
                         >
                             All
                         </button>
                         <button
                             onClick={() => setFilterCategory('errors')}
-                            className={`px-4 py-1.5 rounded text-xs font-medium transition-colors ${filterCategory === 'errors' ? 'bg-error/20 text-error shadow-sm' : 'text-on-surface-variant hover:bg-surface-container'}`}
+                            className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${filterCategory === 'errors' ? 'bg-error text-on-error shadow-lg shadow-error/20' : 'text-on-surface-variant hover:bg-surface-container'}`}
                         >
-                            Errors Only
+                            Errors
                         </button>
                         <button
                             onClick={() => setFilterCategory('approvals')}
-                            className={`px-4 py-1.5 rounded text-xs font-medium transition-colors ${filterCategory === 'approvals' ? 'bg-secondary/20 text-secondary shadow-sm' : 'text-on-surface-variant hover:bg-surface-container'}`}
+                            className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${filterCategory === 'approvals' ? 'bg-secondary text-on-secondary shadow-lg shadow-secondary/20' : 'text-on-surface-variant hover:bg-surface-container'}`}
                         >
                             Approvals
                         </button>
-                        <button
-                            onClick={() => setFilterCategory('agent_state')}
-                            className={`px-4 py-1.5 rounded text-xs font-medium transition-colors ${filterCategory === 'agent_state' ? 'bg-primary/20 text-primary shadow-sm' : 'text-on-surface-variant hover:bg-surface-container'}`}
-                        >
-                            Agent State
-                        </button>
-                        <div className="hidden sm:block h-4 w-px bg-outline-variant/30 mx-2"></div>
-                        <input
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Find logs..."
-                            className="bg-transparent border-none focus:ring-1 focus:ring-primary/50 text-xs text-on-surface-variant w-32 outline-none"
-                        />
-                        <button onClick={exportJson} className="p-1.5 text-on-surface-variant hover:text-primary transition-colors text-xs inline-flex items-center" title="Export JSON">
-                            Export
-                        </button>
-                        <button className="p-1.5 text-on-surface-variant hover:text-primary transition-colors inline-flex items-center">
-                            <Calendar size={18} />
+                        <div className="hidden sm:block h-6 w-px bg-outline-variant/30 mx-2"></div>
+                        <div className="relative">
+                            <input
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                placeholder="Search logs..."
+                                className="bg-surface-container-lowest/50 border border-outline-variant/20 focus:border-primary/50 text-xs px-3 py-2 rounded-lg w-40 outline-none transition-all placeholder:text-outline/50"
+                            />
+                        </div>
+                        <button onClick={exportJson} className="px-3 py-2 text-on-surface-variant hover:text-primary transition-colors text-[10px] font-bold uppercase tracking-widest inline-flex items-center gap-1">
+                            <ArrowRight size={12} className="rotate-90" /> Export
                         </button>
                     </div>
                 </header>
@@ -125,45 +122,47 @@ export default function ExecutionTimeline() {
                 </footer>
             </main>
 
-            {/* Side Inspection Panel (Asymmetric Design Element) */}
-            <aside className="hidden xl:flex bg-surface-container-low border-l border-outline-variant/15 flex-col p-6 overflow-y-auto min-w-0">
-                <h2 className="font-headline text-xs font-bold uppercase tracking-widest text-[#58a6ff] mb-6">Live Heartbeat</h2>
+            {/* Side Inspection Panel */}
+            <aside className="hidden 2xl:flex bg-surface-container/30 backdrop-blur-xl border-l border-outline-variant/10 flex-col p-8 overflow-y-auto">
+                <div className="flex items-center gap-2 mb-8 animate-fade-in">
+                    <span className="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_#7bdb80]"></span>
+                    <h2 className="font-headline text-xs font-bold uppercase tracking-[0.2em] text-on-surface/70">Live Heartbeat</h2>
+                </div>
 
-                <div className="space-y-6">
-                    <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                            <span className="text-[10px] text-outline uppercase font-bold">Node Load</span>
-                            <span className="text-[10px] text-secondary font-mono">NORMAL</span>
-                        </div>
-                        <div className="h-1 bg-surface-container-lowest rounded-full overflow-hidden">
-                            <div className="h-full bg-secondary w-[42%]"></div>
-                        </div>
-                    </div>
-
+                <div className="space-y-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
                     <div className="space-y-4">
-                        <span className="text-[10px] text-outline uppercase font-bold block">Active Agents</span>
-
-                        <div className="flex items-center gap-3 p-2 rounded bg-surface-container/50 border border-outline-variant/5">
-                            <div className="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(123,219,128,0.5)]"></div>
-                            <span className="text-xs font-mono text-on-surface">CO-PILOT-01</span>
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] text-outline uppercase font-bold tracking-widest">Node Load</span>
+                            <span className="text-[10px] text-secondary font-mono font-bold">NORMAL</span>
                         </div>
-
-                        <div className="flex items-center gap-3 p-2 rounded bg-surface-container/50 border border-outline-variant/5">
-                            <div className="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(123,219,128,0.5)]"></div>
-                            <span className="text-xs font-mono text-on-surface">SECURITY-SENTRY</span>
-                        </div>
-
-                        <div className="flex items-center gap-3 p-2 rounded bg-surface-container/50 border border-outline-variant/5 opacity-50">
-                            <div className="w-2 h-2 rounded-full bg-outline"></div>
-                            <span className="text-xs font-mono text-on-surface">DATA-SCRAPER</span>
+                        <div className="h-1.5 bg-surface-container-lowest rounded-full overflow-hidden">
+                            <div className="h-full bg-secondary shadow-[0_0_10px_#7bdb80] w-[42%] transition-all duration-1000"></div>
                         </div>
                     </div>
 
-                    <div className="p-4 bg-surface-container-lowest rounded border border-outline-variant/10 mt-auto">
-                        <span className="text-[10px] text-[#58a6ff] uppercase font-bold block mb-2">Audit Hash</span>
-                        <p className="font-mono text-[10px] text-outline break-all leading-tight">
-                            SHA-256: 7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069
-                        </p>
+                    <div className="space-y-5">
+                        <span className="text-[10px] text-outline uppercase font-bold tracking-widest block">Active Agents</span>
+
+                        {[
+                            { name: 'CO-PILOT-01', status: 'online' },
+                            { name: 'SECURITY-SENTRY', status: 'online' },
+                            { name: 'DATA-SCRAPER', status: 'offline' }
+                        ].map((agent, i) => (
+                            <div key={i} className={`flex items-center gap-4 p-3 rounded-lg border border-outline-variant/10 transition-all ${agent.status === 'online' ? 'bg-surface-container/50' : 'bg-surface-container-lowest/30 opacity-40'}`}>
+                                <div className={`w-2 h-2 rounded-full ${agent.status === 'online' ? 'bg-secondary shadow-[0_0_8px_#7bdb80]' : 'bg-outline'}`}></div>
+                                <span className="text-xs font-mono font-bold text-on-surface tracking-tight">{agent.name}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="premium-card p-5 rounded-xl border border-outline-variant/10 mt-10">
+                        <span className="text-[10px] text-primary uppercase font-bold tracking-widest block mb-3">Audit Registry</span>
+                        <div className="space-y-2">
+                            <span className="text-[9px] text-outline font-mono block">SHA-256 HASH</span>
+                            <p className="font-mono text-[10px] text-on-surface-variant break-all leading-relaxed bg-black/20 p-2 rounded">
+                                7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069
+                            </p>
+                        </div>
                     </div>
                 </div>
             </aside>

@@ -62,9 +62,9 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
   }
 
   return (
-    <div className="animate-fade-in pb-12">
+    <div className="animate-fade-in pb-12 pt-8">
       {/* Dashboard Header */}
-      <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 mb-10">
+      <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 mb-12 mt-4">
         <div>
           <h1 className="font-headline text-3xl font-bold tracking-tight text-on-surface mb-1 uppercase">Command Center</h1>
           <p className="text-outline text-sm font-body">Operational pulse for cluster <span className="text-primary font-mono">SHEPHERD-ALPHA-09</span></p>
@@ -80,47 +80,47 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
         </div>
       </div>
 
-      {/* Metric Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        <div className="bg-surface-container p-5 rounded-md severity-marker-secondary">
-          <p className="text-[10px] font-mono text-outline uppercase tracking-widest mb-1">Total Agents</p>
+      {/* Metric Grid - More robust breakpoints */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-10">
+        <div className="premium-card p-5 rounded-lg severity-marker-secondary">
+          <p className="text-[10px] font-mono text-on-surface-variant/80 font-bold uppercase tracking-widest mb-2">Total Agents</p>
           <div className="flex items-baseline gap-2">
             <span className="font-headline text-3xl font-bold text-on-surface">{agents.length}</span>
-            <span className="text-secondary text-[10px] font-mono">+12%</span>
+            <span className="text-secondary text-[10px] font-mono font-bold">+12%</span>
           </div>
         </div>
 
-        <div className="bg-surface-container p-5 rounded-md severity-marker-secondary">
-          <p className="text-[10px] font-mono text-outline uppercase tracking-widest mb-1">Online Agents</p>
+        <div className="premium-card p-5 rounded-lg severity-marker-secondary">
+          <p className="text-[10px] font-mono text-on-surface-variant/80 font-bold uppercase tracking-widest mb-2">Online Agents</p>
           <div className="flex items-baseline gap-2">
             <span className="font-headline text-3xl font-bold text-on-surface">{stats.activeAgents}</span>
-            <div className="flex items-center gap-1 mb-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-secondary shadow-[0_0_4px_#7bdb80]"></div>
+            <div className="flex items-center gap-1.5 mb-1">
+              <div className="w-2 h-2 rounded-full bg-secondary shadow-[0_0_10px_#7bdb80] animate-pulse"></div>
             </div>
           </div>
         </div>
 
-        <div className="bg-surface-container p-5 rounded-md severity-marker-error">
-          <p className="text-[10px] font-mono text-outline uppercase tracking-widest mb-1">Blocked Agents</p>
+        <div className="premium-card p-5 rounded-lg severity-marker-error">
+          <p className="text-[10px] font-mono text-on-surface-variant/80 font-bold uppercase tracking-widest mb-2">Blocked Agents</p>
           <div className="flex items-baseline gap-2">
             <span className="font-headline text-3xl font-bold text-error">0</span>
-            <span className="text-outline text-[10px] font-mono">0.0% rate</span>
+            <span className="text-outline text-[10px] font-mono italic">0.0% rate</span>
           </div>
         </div>
 
-        <div className="bg-surface-container p-5 rounded-md severity-marker-tertiary">
-          <p className="text-[10px] font-mono text-outline uppercase tracking-widest mb-1">Pending Approvals</p>
+        <div className="premium-card p-5 rounded-lg severity-marker-tertiary">
+          <p className="text-[10px] font-mono text-on-surface-variant/80 font-bold uppercase tracking-widest mb-2">Pending Approvals</p>
           <div className="flex items-baseline gap-2">
             <span className="font-headline text-3xl font-bold text-tertiary">{stats.pendingApprovals}</span>
-            <span className="text-outline text-[10px] font-mono">Action req.</span>
+            <span className="text-outline text-[10px] font-mono italic">Action req.</span>
           </div>
         </div>
 
-        <div className="bg-surface-container p-5 rounded-md border border-outline-variant/10">
-          <p className="text-[10px] font-mono text-outline uppercase tracking-widest mb-1">Active Workflows</p>
+        <div className="premium-card p-5 rounded-lg border border-outline-variant/10">
+          <p className="text-[10px] font-mono text-on-surface-variant/80 font-bold uppercase tracking-widest mb-2">Active Workflows</p>
           <div className="flex items-baseline gap-2">
             <span className="font-headline text-3xl font-bold text-on-surface">{parallelSessions.length}</span>
-            <RefreshCw size={14} className="text-primary animate-spin" style={{ animationDuration: '3s' }} />
+            <RefreshCw size={14} className="text-primary animate-spin" style={{ animationDuration: '4s' }} />
           </div>
         </div>
       </div>

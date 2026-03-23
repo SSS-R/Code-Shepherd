@@ -65,123 +65,156 @@ function App() {
   const activeTopTab = currentScreen === 'dashboard' ? 'overview' : currentScreen === 'timeline' ? 'network' : 'resources'
 
   return (
-    <div className="min-h-screen bg-surface text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
-      {/* TopNavBar */}
-      <header className="fixed top-0 inset-x-0 z-50 flex justify-between items-center px-4 md:px-6 h-14 bg-[#10141a] border-b border-[#414752]/15">
-        <div className="flex items-center gap-6 lg:gap-8">
-          <div className="flex items-center gap-3">
-            <button className="lg:hidden text-outline hover:text-primary-container transition-colors" onClick={() => setSidebarOpen(true)}>
-              <Menu size={22} />
-            </button>
-            <span className="text-lg font-bold text-[#58a6ff] tracking-widest uppercase font-headline">Code Shepherd</span>
-          </div>
-
-          <div className="hidden md:flex items-center gap-6 h-14">
-            <nav className="flex items-center gap-4 h-14">
-              <button className={`${activeTopTab === 'overview' ? 'text-[#58a6ff] border-b-2 border-[#58a6ff]' : 'text-[#8b919d] hover:bg-[#1c2026]'} h-full flex items-center px-2 text-sm font-medium transition-all duration-150`}>
-                Overview
+    <div className="min-h-screen bg-surface text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container overflow-x-hidden">
+      {/* Absolute Grid Layout Wrapper */}
+      <div className="grid grid-areas-layout grid-cols-layout grid-rows-layout h-screen w-screen overflow-hidden" 
+           style={{ 
+             display: 'grid', 
+             gridTemplateAreas: '"header header" "sidebar main"',
+             gridTemplateColumns: sidebarOpen ? '288px 1fr' : '0px 1fr',
+             gridTemplateRows: '64px 1fr',
+           }}>
+        
+        {/* Header Area */}
+        <header style={{ gridArea: 'header' }} className="flex justify-between items-center px-4 lg:px-8 bg-background/80 backdrop-blur-xl border-b border-outline-variant/10 shadow-sm z-[100]">
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-3">
+              <button 
+                className="p-2 text-outline hover:text-primary transition-colors focus:outline-none" 
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+              >
+                <Menu size={24} />
               </button>
-              <button className={`${activeTopTab === 'network' ? 'text-[#58a6ff] border-b-2 border-[#58a6ff]' : 'text-[#8b919d] hover:bg-[#1c2026]'} h-full flex items-center px-2 text-sm font-medium transition-all duration-150`}>
-                Network
-              </button>
-              <button className={`${activeTopTab === 'resources' ? 'text-[#58a6ff] border-b-2 border-[#58a6ff]' : 'text-[#8b919d] hover:bg-[#1c2026]'} h-full flex items-center px-2 text-sm font-medium transition-all duration-150`}>
-                Resources
-              </button>
+              <span className="text-xl font-bold text-primary-container tracking-[0.15em] uppercase font-headline hidden sm:block">Code Shepherd</span>
+              <span className="text-lg font-bold text-primary-container tracking-widest uppercase font-headline sm:hidden">CS</span>
+            </div>
+            
+            <nav className="hidden lg:flex items-center gap-8 h-16 ml-8">
+              {['overview', 'network', 'resources'].map((tab) => (
+                <button 
+                  key={tab}
+                  className={`${activeTopTab === tab ? 'text-primary border-b-2 border-primary' : 'text-outline/70 hover:text-on-surface'} h-full flex items-center px-1 text-[10px] font-bold uppercase tracking-widest transition-all`}
+                >
+                  {tab}
+                </button>
+              ))}
             </nav>
           </div>
-        </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center gap-1">
-            <button className="p-2 text-outline hover:bg-[#1c2026] rounded-sm transition-colors">
-              <Bell size={20} />
-            </button>
-            <button className="p-2 text-outline hover:bg-[#1c2026] rounded-sm transition-colors">
-              <Radio size={20} />
-            </button>
-            <button className="p-2 text-outline hover:bg-[#1c2026] rounded-sm transition-colors">
-              <Network size={20} />
-            </button>
+          <div className="flex items-center gap-4">
+             <div className="hidden md:flex items-center gap-2">
+                {[Bell, Radio, Network].map((Icon, i) => (
+                  <button key={i} className="p-2 text-outline hover:text-primary hover:bg-white/5 rounded-full transition-all">
+                    <Icon size={18} />
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-3 pl-4 border-l border-outline-variant/20">
+                <div className="text-right hidden sm:block">
+                  <p className="text-[9px] font-bold text-outline-variant uppercase tracking-widest leading-none mb-1">Status</p>
+                  <p className="text-[10px] font-mono text-secondary flex items-center justify-end gap-1.5 leading-none font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+                    VERIFIED_OP
+                  </p>
+                </div>
+                <div className="w-8 h-8 rounded-full border border-primary/20 bg-surface-container-high flex items-center justify-center text-xs font-bold text-primary shadow-lg">
+                  {(session?.name || session?.userId || 'OP').slice(0, 2).toUpperCase()}
+                </div>
+              </div>
           </div>
-          <div className="w-8 h-8 rounded-full overflow-hidden border border-outline-variant/30 bg-surface-container-high flex items-center justify-center text-xs font-bold text-primary-container">
-            {(session?.name || session?.userId || 'OP').slice(0, 2).toUpperCase()}
+        </header>
+
+        {/* Sidebar Area */}
+        <aside style={{ gridArea: 'sidebar' }} className={`
+          bg-[#0d1117] border-r border-outline-variant/10 flex flex-col z-[90] transition-all duration-300 overflow-hidden
+          ${!sidebarOpen ? 'w-0' : 'w-72 lg:w-64'}
+        `}>
+          <div className="p-6 mb-2 flex items-center gap-4 border-b border-outline-variant/5 shrink-0 whitespace-nowrap">
+            <div className="w-10 h-10 bg-primary/10 flex items-center justify-center rounded-lg border border-primary/20 shadow-glow-primary">
+              <Terminal size={20} className="text-primary" />
+            </div>
+            <div>
+              <p className="text-primary font-bold text-[10px] uppercase tracking-[0.2em] font-headline">Orchestrator</p>
+              <p className="text-[9px] text-outline/60 font-mono mt-0.5">RELAY_ALPHA_01</p>
+            </div>
           </div>
-        </div>
-      </header>
 
-      {/* SideNavBar overlay for mobile and tablets */}
-      {sidebarOpen && <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-all duration-300" onClick={() => setSidebarOpen(false)} />}
+          <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto custom-scrollbar">
+            {navItems.map(item => {
+              const isActive = currentScreen === item.key;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => setCurrentScreen(item.key)}
+                  className={`
+                    w-full text-left flex items-center px-4 py-3 gap-3.5 rounded-lg transition-all duration-200 group whitespace-nowrap
+                    ${isActive 
+                      ? 'bg-primary/10 text-primary border border-primary/20 shadow-inner' 
+                      : 'text-outline hover:bg-white/5 hover:text-on-surface'}
+                  `}
+                >
+                  <span className={`${isActive ? 'text-primary' : 'text-outline group-hover:text-primary'} transition-colors`}>
+                    {item.icon}
+                  </span>
+                  <span className="font-bold text-[10px] uppercase tracking-[0.15em]">{item.label}</span>
+                </button>
+              )
+            })}
+          </nav>
 
-      {/* SideNavBar */}
-      <aside className={`fixed left-0 top-14 h-[calc(100vh-3.5rem)] flex flex-col pt-4 pb-8 w-64 bg-[#181c22] border-r border-[#414752]/15 z-50 transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'} lg:translate-x-0 lg:shadow-none`}>
-        <div className="px-6 mb-8 flex items-center gap-3">
-          <div className="w-10 h-10 bg-surface-container flex items-center justify-center rounded-sm border border-outline-variant/20">
-            <Terminal size={20} className="text-primary text-xl" />
+          <div className="p-4 border-t border-outline-variant/10 bg-black/10 shrink-0">
+             <div className="space-y-1">
+              {[ {Icon: Database, label: 'Health'}, {Icon: BookOpen, label: 'Docs'} ].map((item, i) => (
+                <a key={i} className="text-outline flex items-center px-4 py-2.5 gap-3 hover:text-on-surface hover:bg-white/5 rounded-md transition-all text-[9px] font-bold uppercase tracking-widest whitespace-nowrap" href="#">
+                  <item.Icon size={14} />
+                  {item.label}
+                </a>
+              ))}
+            </div>
           </div>
-          <div>
-            <p className="text-primary-container font-bold text-xs uppercase tracking-wider font-body">ORCHESTRATOR</p>
-            <p className="text-[10px] text-outline font-mono">v1.0.4-stable</p>
-          </div>
-        </div>
+        </aside>
 
-        <nav className="flex-1 space-y-1">
-          {navItems.map(item => {
-            const isActive = currentScreen === item.key;
-            return (
-              <button
-                key={item.key}
-                onClick={() => setCurrentScreen(item.key)}
-                className={`w-full text-left flex items-center px-6 py-3 gap-3 transition-all duration-200 ${isActive
-                  ? 'bg-surface-container text-primary-container border-l-2 border-primary-container'
-                  : 'text-outline hover:bg-[#262a31] hover:text-[#f0f6fc] border-l-2 border-transparent'}`}
-              >
-                {item.icon}
-                <span className="font-body text-xs font-medium uppercase tracking-wider">{item.label}</span>
-              </button>
-            )
-          })}
-        </nav>
+        {/* Main Area */}
+        <main style={{ gridArea: 'main' }} className="bg-surface overflow-y-auto custom-scrollbar relative">
+           <div className="p-4 sm:p-6 md:p-8 lg:p-12 xl:p-16 max-w-[1600px] mx-auto min-h-full">
+              {currentScreen === 'dashboard' ? (
+                <Dashboard onViewAgent={(id) => { setSelectedAgentId(id); setCurrentScreen('agent-detail'); }} />
+              ) : currentScreen === 'inbox' ? (
+                <Inbox initialAgentId={selectedAgentId} />
+              ) : currentScreen === 'agent-detail' && selectedAgentId ? (
+                <AgentDetail agentId={selectedAgentId} onBack={() => { setSelectedAgentId(null); setCurrentScreen('dashboard'); }} />
+              ) : currentScreen === 'approvals' ? (
+                <ApprovalQueue />
+              ) : currentScreen === 'timeline' ? (
+                <ExecutionTimeline />
+              ) : currentScreen === 'settings' ? (
+                <Settings />
+              ) : currentScreen === 'kanban' ? (
+                <KanbanBoard />
+              ) : null}
+           </div>
+        </main>
+      </div>
 
-        <div className="mt-auto border-t border-outline-variant/10 pt-4 space-y-1">
-          <a className="text-outline flex items-center px-6 py-2 gap-3 hover:text-[#f0f6fc] transition-all duration-200" href="#">
-            <Database size={18} />
-            <span className="font-body text-[10px] font-medium uppercase tracking-widest">System Status</span>
-          </a>
-          <a className="text-outline flex items-center px-6 py-2 gap-3 hover:text-[#f0f6fc] transition-all duration-200" href="#">
-            <BookOpen size={18} />
-            <span className="font-body text-[10px] font-medium uppercase tracking-widest">Documentation</span>
-          </a>
-        </div>
-      </aside>
+      {/* Floating UI */}
+      {!sidebarOpen && (
+          <button 
+            onClick={() => setSidebarOpen(true)}
+            className="fixed bottom-10 left-10 w-12 h-12 bg-primary text-on-primary rounded-full shadow-glow-primary z-[200] lg:hidden flex items-center justify-center animate-bounce"
+          >
+            <Menu size={24} />
+          </button>
+      )}
 
-      {/* Main Content Canvas */}
-      <main className="relative mt-14 min-h-[calc(100vh-3.5rem)] overflow-x-hidden px-4 py-4 md:px-6 md:py-6 lg:ml-64 lg:px-8 lg:py-8 max-w-[calc(100vw-0px)] lg:max-w-[calc(100vw-16rem)]">
-        {currentScreen === 'dashboard' ? (
-          <Dashboard onViewAgent={(id) => { setSelectedAgentId(id); setCurrentScreen('agent-detail'); }} />
-        ) : currentScreen === 'inbox' ? (
-          <Inbox initialAgentId={selectedAgentId} />
-        ) : currentScreen === 'agent-detail' && selectedAgentId ? (
-          <AgentDetail agentId={selectedAgentId} onBack={() => { setSelectedAgentId(null); setCurrentScreen('dashboard'); }} />
-        ) : currentScreen === 'approvals' ? (
-          <ApprovalQueue />
-        ) : currentScreen === 'timeline' ? (
-          <ExecutionTimeline />
-        ) : currentScreen === 'settings' ? (
-          <Settings />
-        ) : currentScreen === 'kanban' ? (
-          <KanbanBoard />
-        ) : null}
-      </main>
-
-      {/* Floating Command Palette Hint - Global logic could go here */}
-      <div className="hidden xl:flex fixed bottom-6 right-6 glass-panel border border-outline-variant/20 px-4 py-2 rounded-lg items-center gap-4 z-50">
-        <div className="flex items-center gap-1">
-          <kbd className="bg-surface-container-highest px-1.5 py-0.5 rounded text-[10px] font-mono border border-outline-variant/30 text-primary-fixed">CTRL</kbd>
-          <span className="text-outline text-xs">+</span>
-          <kbd className="bg-surface-container-highest px-1.5 py-0.5 rounded text-[10px] font-mono border border-outline-variant/30 text-primary-fixed">K</kbd>
+      {/* Floating Hint */}
+      <div className="hidden lg:flex fixed bottom-10 right-10 glass-panel border border-primary/20 px-6 py-3 rounded-full items-center gap-4 z-[200] shadow-glow-primary hover:scale-105 transition-all cursor-pointer">
+        <div className="flex items-center gap-1.5">
+            <kbd className="bg-primary/20 px-2.5 py-1 rounded text-[10px] font-mono border border-primary/30 text-primary uppercase font-bold">Ctrl</kbd>
+            <span className="text-outline text-xs">+</span>
+            <kbd className="bg-primary/20 px-2.5 py-1 rounded text-[10px] font-mono border border-primary/30 text-primary uppercase font-bold">K</kbd>
         </div>
         <div className="h-4 w-px bg-outline-variant/30"></div>
-        <div className="text-xs text-outline font-medium uppercase tracking-tighter">Command Search</div>
+        <div className="text-[10px] text-primary font-bold uppercase tracking-[0.2em]">Console</div>
       </div>
     </div>
   )
