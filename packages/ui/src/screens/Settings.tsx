@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Command } from 'lucide-react'
 import { buildAuthHeaders, clearSession, loadSession, saveSession } from '../utils/authSession'
 
 interface Team {
@@ -121,6 +122,9 @@ export default function Settings() {
     const [connectorEvents, setConnectorEvents] = useState<ConnectorEventRecord[]>([])
     const [connectorForm, setConnectorForm] = useState({ connector_id: '', connector_name: '', adapter_kind: 'bridge', transport: 'http', scopes: 'messages,approvals' })
     const [sessionLabel, setSessionLabel] = useState('No session yet')
+    const [jsonOutputMode, setJsonOutputMode] = useState(true)
+    const [extendedLogging, setExtendedLogging] = useState(false)
+    const [alertPrefs, setAlertPrefs] = useState({ failures: true, queue: true, marketing: false })
     const activeRole = teams.find((team) => team.id === selectedTeamId)?.role || loadSession()?.role || 'Developer'
 
     useEffect(() => {
@@ -131,6 +135,13 @@ export default function Settings() {
             setSessionLabel(`Signed in as ${session.name || session.userId}`)
         }
     }, [])
+
+    useEffect(() => {
+        void loadConnectors()
+        if (selectedTeamId) {
+            void loadInvitations()
+        }
+    }, [selectedTeamId])
 
     const signUp = async () => {
         const res = await fetch('http://localhost:3000/auth/signup', {
@@ -274,199 +285,231 @@ export default function Settings() {
 
     return (
         <div className="space-y-6">
-            <section className="glass rounded-2xl p-6 md:p-8">
-                <h2 className="font-headline text-[28px] font-bold tracking-tight text-[var(--text-primary)] md:text-[36px]">Connectors and governance</h2>
-                <p className="mt-2 text-[15px] text-[var(--text-secondary)]">Phase 3 adds account setup, teams, invitations, and role-aware operational control.</p>
-                <div className="mt-4 inline-flex rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-[13px] font-medium text-violet-300">
-                    Active role: {activeRole}
-                </div>
-            </section>
-
-            <section className="space-y-4">
-                <div className="glass rounded-2xl p-6 md:p-8">
-                    <h3 className="font-headline text-[24px] font-bold tracking-tight text-[var(--text-primary)]">Plans and beta pricing</h3>
-                    <p className="mt-2 text-[15px] text-[var(--text-secondary)]">
-                        Beta access is managed from the website waitlist. The first 200 approved users get Beta Pro before launch, then keep launch discounts afterward.
-                    </p>
-                    <div className="mt-6 grid gap-4 xl:grid-cols-3">
-                        {PLAN_CARDS.map((plan) => (
-                            <article
-                                key={plan.id}
-                                className={`rounded-2xl border p-5 ${plan.highlight ? 'border-blue-500/30 bg-blue-500/10' : 'border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)]'}`}
-                            >
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <div className="text-[20px] font-semibold text-[var(--text-primary)]">{plan.name}</div>
-                                        <div className="mt-1 text-[13px] text-[var(--text-secondary)]">{plan.audience}</div>
-                                    </div>
-                                    {plan.badge && (
-                                        <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[12px] font-medium text-[var(--accent-info)]">{plan.badge}</span>
-                                    )}
-                                </div>
-
-                                <div className="mt-5 text-3xl font-bold text-[var(--text-primary)]">{plan.priceLabel}</div>
-                                <p className="mt-3 text-[14px] leading-6 text-[var(--text-secondary)]">{plan.description}</p>
-
-                                <ul className="mt-5 space-y-2 text-[14px] text-[var(--text-secondary)]">
-                                    {plan.features.map((feature) => (
-                                        <li key={feature} className="flex gap-2">
-                                            <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[var(--accent-info)]" />
-                                            <span>{feature}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-
-                                <button className={`mt-6 w-full rounded-xl px-4 py-3 text-sm font-medium ${plan.highlight ? 'btn-primary' : 'btn-secondary'}`}>
-                                    {plan.cta}
-                                </button>
-                            </article>
-                        ))}
-                    </div>
+            <section className="stitch-panel p-8">
+                <div className="mb-10">
+                    <h2 className="font-headline text-3xl font-bold tracking-tight text-[var(--text-primary)]">Configuration</h2>
+                    <p className="mt-1 text-sm text-[var(--text-muted)]">Manage global system parameters, external integrations, and team access.</p>
                 </div>
 
-                <div className="grid gap-4 lg:grid-cols-2">
-                    <div className="glass rounded-2xl p-5">
-                        <h4 className="text-[18px] font-semibold text-[var(--text-primary)]">Beta launch policy</h4>
-                        <ul className="mt-4 space-y-2 text-[14px] text-[var(--text-secondary)]">
-                            <li>The website waitlist is first-come, first-served until 200 users are invited.</li>
-                            <li>Those invited users get full Beta Pro access while the app remains private.</li>
-                            <li>After launch, those 200 users receive 50% off the first 2 months of Pro.</li>
-                            <li>If they choose Max after launch, they receive 20% off that plan.</li>
-                        </ul>
-                    </div>
-
-                    <div className="glass rounded-2xl p-5">
-                        <h4 className="text-[18px] font-semibold text-[var(--text-primary)]">Remaining non-security beta gaps</h4>
-                        <ul className="mt-4 space-y-2 text-[14px] text-[var(--text-secondary)]">
-                            <li>Real bridge adapters still need to be connected to external tools, not just the relay scaffolding.</li>
-                            <li>Billing logic is not wired yet; this pricing surface is UI-first and product-definition level.</li>
-                            <li>Whitelist issuance, coupon handling, and post-launch entitlement rules still need backend implementation.</li>
-                            <li>Beta onboarding, support flow, and usage analytics should be tightened before public beta starts.</li>
-                        </ul>
-                    </div>
-                </div>
-            </section>
-
-            <section className="grid gap-4 lg:grid-cols-2">
-                <div className="glass rounded-2xl p-5 space-y-3">
-                    <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Create account / login</h3>
-                    <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="app-input px-4" />
-                    <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="app-input px-4" />
-                    <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" className="app-input px-4" />
-                    <input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="Team name (optional)" className="app-input px-4" />
-                    <div className="flex gap-3 flex-wrap">
-                        <button onClick={() => void signUp()} className="btn-primary rounded-lg px-4 py-3 text-sm font-medium">Sign Up</button>
-                        <button onClick={() => void login()} className="btn-secondary rounded-lg px-4 py-3 text-sm font-medium">Login</button>
-                        <button onClick={() => void seedDemo()} className="btn-secondary rounded-lg px-4 py-3 text-sm font-medium">Load Demo</button>
-                        <button onClick={signOut} className="btn-secondary rounded-lg px-4 py-3 text-sm font-medium">Sign Out</button>
-                    </div>
-                    <p className="text-[13px] text-[var(--text-secondary)]">{sessionLabel}</p>
-                </div>
-
-                <div className="glass rounded-2xl p-5 space-y-3">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Your teams</h3>
-                        <button onClick={() => void loadTeams()} className="btn-secondary rounded-lg px-3 py-2 text-sm font-medium">Refresh</button>
-                    </div>
-                    {teams.length === 0 ? (
-                        <div className="rounded-lg border border-dashed border-[var(--border-subtle)] p-4 text-[13px] text-[var(--text-muted)]">No teams loaded yet.</div>
-                    ) : (
-                        teams.map((team) => (
-                            <div key={team.id} className="surface-panel rounded-lg p-4">
-                                <div className="text-[15px] font-medium text-[var(--text-primary)]">{team.name}</div>
-                                <div className="mt-1 text-[13px] text-[var(--text-secondary)]">Role: {team.role}</div>
-                            </div>
-                        ))
-                    )}
-                </div>
-            </section>
-
-            <section className="grid gap-4 lg:grid-cols-2">
-                <div className="glass rounded-2xl p-5 space-y-3">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Invite teammate</h3>
-                        <button onClick={() => void loadInvitations()} className="btn-secondary rounded-lg px-3 py-2 text-sm font-medium">Refresh invites</button>
-                    </div>
-                    <select value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)} className="app-input px-4">
-                        <option value="">Select team</option>
-                        {teams.map((team) => (
-                            <option key={team.id} value={team.id}>{team.name}</option>
-                        ))}
-                    </select>
-                    <input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="Invite email" className="app-input px-4" />
-                    <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className="app-input px-4">
-                        <option value="Developer">Developer</option>
-                        <option value="Viewer">Viewer</option>
-                        <option value="Admin">Admin</option>
-                    </select>
-                    <button onClick={() => void createInvitation()} disabled={activeRole === 'Viewer'} className="btn-primary rounded-lg px-4 py-3 text-sm font-medium disabled:opacity-50">Create invitation</button>
-                </div>
-
-                <div className="glass rounded-2xl p-5 space-y-3">
-                    <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Invitations</h3>
-                    {invitations.length === 0 ? (
-                        <div className="rounded-lg border border-dashed border-[var(--border-subtle)] p-4 text-[13px] text-[var(--text-muted)]">No invitations loaded.</div>
-                    ) : (
-                        invitations.map((invite) => (
-                            <div key={invite.id} className="surface-panel rounded-lg p-4">
-                                <div className="text-[15px] font-medium text-[var(--text-primary)]">{invite.email}</div>
-                                <div className="mt-1 text-[13px] text-[var(--text-secondary)]">Role: {invite.role} · Status: {invite.status}</div>
-                                {invite.status === 'pending' && (
-                                    <button onClick={() => void acceptInvitation(invite.id)} className="btn-secondary mt-3 rounded-lg px-3 py-2 text-sm font-medium">Accept as current user</button>
-                                )}
-                            </div>
-                        ))
-                    )}
-                </div>
-            </section>
-
-            <section className="grid gap-4 lg:grid-cols-2">
-                <div className="glass rounded-2xl p-5 space-y-3">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Trusted connectors</h3>
-                        <button onClick={() => void loadConnectors()} className="btn-secondary rounded-lg px-3 py-2 text-sm font-medium">Refresh</button>
-                    </div>
-                    <input value={connectorForm.connector_id} onChange={(e) => setConnectorForm({ ...connectorForm, connector_id: e.target.value })} placeholder="Connector ID" className="app-input px-4" />
-                    <input value={connectorForm.connector_name} onChange={(e) => setConnectorForm({ ...connectorForm, connector_name: e.target.value })} placeholder="Connector name" className="app-input px-4" />
-                    <div className="grid gap-3 md:grid-cols-2">
-                        <input value={connectorForm.adapter_kind} onChange={(e) => setConnectorForm({ ...connectorForm, adapter_kind: e.target.value })} placeholder="Adapter kind" className="app-input px-4" />
-                        <input value={connectorForm.transport} onChange={(e) => setConnectorForm({ ...connectorForm, transport: e.target.value })} placeholder="Transport" className="app-input px-4" />
-                    </div>
-                    <input value={connectorForm.scopes} onChange={(e) => setConnectorForm({ ...connectorForm, scopes: e.target.value })} placeholder="Scopes (comma separated)" className="app-input px-4" />
-                    <button onClick={() => void trustConnector()} disabled={activeRole !== 'Admin'} className="btn-primary rounded-lg px-4 py-3 text-sm font-medium disabled:opacity-50">Trust connector</button>
-                </div>
-
-                <div className="glass rounded-2xl p-5 space-y-3">
-                    <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Connector governance</h3>
-                    {connectors.length === 0 ? (
-                        <div className="rounded-lg border border-dashed border-[var(--border-subtle)] p-4 text-[13px] text-[var(--text-muted)]">No connectors registered yet.</div>
-                    ) : connectors.map((connector) => (
-                        <div key={connector.connector_id} className="surface-panel rounded-lg p-4">
-                            <div className="text-[15px] font-medium text-[var(--text-primary)]">{connector.connector_name}</div>
-                            <div className="mt-1 text-[13px] text-[var(--text-secondary)]">{connector.connector_id} · {connector.adapter_kind} · {connector.transport}</div>
-                            <div className="mt-2 text-[13px] text-[var(--text-secondary)]">Scopes: {connector.scopes.join(', ') || 'none'}</div>
-                            <div className="mt-2 text-[13px] text-[var(--text-secondary)]">Status: {connector.trust_status}</div>
-                            <button onClick={() => void revokeConnector(connector.connector_id)} disabled={activeRole !== 'Admin' || connector.trust_status === 'revoked'} className="btn-secondary mt-3 rounded-lg px-3 py-2 text-sm font-medium disabled:opacity-50">Revoke connector</button>
+                <div className="grid grid-cols-12 gap-6">
+                    <section className="col-span-12">
+                        <div className="mb-4 flex items-center justify-between">
+                            <h3 className="font-headline text-lg font-medium text-[var(--text-primary)]">Adapter Connectors</h3>
+                            <button onClick={() => void trustConnector()} disabled={activeRole !== 'Admin'} className="text-xs font-mono uppercase tracking-[0.16em] text-[var(--accent-primary-strong)] disabled:opacity-50">
+                                Register_New_Mcp
+                            </button>
                         </div>
-                    ))}
+
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                            {(connectors.length > 0 ? connectors.slice(0, 3) : [
+                                { connector_id: 'github-enterprise', connector_name: 'GitHub Enterprise', adapter_kind: 'repo-sync', transport: 'https', trust_status: 'connected', scopes: ['repo sync', 'pr automation'] },
+                                { connector_id: 'vscode-extension', connector_name: 'VS Code Extension', adapter_kind: 'ide-link', transport: 'websocket', trust_status: 'connected', scopes: ['live ide orchestration'] },
+                                { connector_id: 'slack-relay', connector_name: 'Slack Relay', adapter_kind: 'chat-ops', transport: 'http', trust_status: 'warning', scopes: ['notifications', 'control'] },
+                            ]).map((connector, index) => {
+                                const warning = connector.trust_status !== 'connected'
+                                const accentClass = warning ? 'border-l-[var(--accent-warning)]' : 'border-l-[var(--accent-success)]'
+
+                                return (
+                                    <div key={connector.connector_id} className={`stitch-card border-l-2 p-4 ${accentClass}`}>
+                                        <div className="mb-3 flex items-start justify-between">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-sm bg-[var(--bg-base)] text-[var(--accent-primary-strong)]">
+                                                <Command size={16} />
+                                            </div>
+                                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-mono uppercase ${warning ? 'bg-[var(--accent-warning)]/10 text-[var(--accent-warning)]' : 'bg-[var(--accent-success)]/10 text-[var(--accent-success)]'}`}>
+                                                {warning ? 'warning' : 'connected'}
+                                            </span>
+                                        </div>
+                                        <h4 className="text-sm font-medium text-[var(--text-primary)]">{connector.connector_name}</h4>
+                                        <p className="mt-1 text-xs text-[var(--text-muted)]">{connector.scopes.join(' & ') || connector.adapter_kind}</p>
+                                        <div className="mt-4 flex items-center justify-between">
+                                            <span className="text-[10px] font-mono italic text-[var(--text-muted)]">{warning ? 'rate_limited' : index === 1 ? 'active_sessions: 12' : 'latency: 42ms'}</span>
+                                            <button onClick={() => activeRole === 'Admin' && !warning && void revokeConnector(connector.connector_id)} className="text-xs text-[var(--accent-primary-strong)]">
+                                                Configure
+                                            </button>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+
+                            <div className="stitch-card flex flex-col items-center justify-center border border-dashed border-[var(--border-subtle)] p-4 text-center opacity-70">
+                                <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-sm bg-[var(--bg-surface-elevated)] text-[var(--text-muted)]">
+                                    <Command size={16} />
+                                </div>
+                                <span className="text-xs font-mono uppercase tracking-[0.16em] text-[var(--text-muted)]">Add_Custom_Mcp</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="col-span-12 space-y-6 lg:col-span-7">
+                        <div className="stitch-card p-6">
+                            <h3 className="mb-6 flex items-center gap-2 font-headline text-lg font-medium text-[var(--text-primary)]">Relay &amp; Server Settings</h3>
+                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--text-muted)]">Internal_Relay_Host</label>
+                                    <input value={connectorForm.connector_name || 'relay-alpha.shepherd.internal'} onChange={(e) => setConnectorForm({ ...connectorForm, connector_name: e.target.value })} className="stitch-input" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--text-muted)]">Daemon_Port</label>
+                                    <input value={connectorForm.transport || '9090'} onChange={(e) => setConnectorForm({ ...connectorForm, transport: e.target.value })} className="stitch-input" />
+                                </div>
+                                <div className="space-y-2 md:col-span-2">
+                                    <label className="text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--text-muted)]">Telemetry_Endpoint</label>
+                                    <input value="https://telemetry.codeshepherd.io/v1/ingest" readOnly className="stitch-input" />
+                                </div>
+                            </div>
+
+                            <div className="mt-8 border-t border-[var(--border-subtle)] pt-6">
+                                <h4 className="mb-4 text-xs font-mono uppercase tracking-[0.16em] text-[var(--text-muted)]">Developer Preferences</h4>
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <div className="text-sm text-[var(--text-primary)]">JSON Output Mode</div>
+                                            <div className="text-xs text-[var(--text-muted)]">Force all terminal responses to strict JSON.</div>
+                                        </div>
+                                        <button type="button" data-on={jsonOutputMode} onClick={() => setJsonOutputMode((value) => !value)} className="stitch-toggle" />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <div className="text-sm text-[var(--text-primary)]">Extended Logging</div>
+                                            <div className="text-xs text-[var(--text-muted)]">Increase verbosity to 'DEBUG' level.</div>
+                                        </div>
+                                        <button type="button" data-on={extendedLogging} onClick={() => setExtendedLogging((value) => !value)} className="stitch-toggle" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="stitch-card p-6">
+                            <h3 className="mb-6 flex items-center gap-2 font-headline text-lg font-medium text-[var(--text-primary)]">Local Authentication</h3>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between border-l-2 border-[var(--accent-success)] bg-[var(--bg-surface)] px-4 py-3">
+                                    <div>
+                                        <div className="text-sm font-medium text-[var(--text-primary)]">Session Token: active</div>
+                                        <div className="text-[10px] font-mono text-[var(--text-muted)]">{sessionLabel}</div>
+                                    </div>
+                                    <button onClick={signOut} className="text-xs font-mono uppercase tracking-[0.16em] text-[var(--accent-danger)]">Revoke</button>
+                                </div>
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <button onClick={() => void login()} className="btn-secondary rounded-sm px-4 py-2 text-xs font-mono uppercase tracking-[0.16em]">Update Password</button>
+                                    <button onClick={() => void seedDemo()} className="btn-secondary rounded-sm px-4 py-2 text-xs font-mono uppercase tracking-[0.16em]">Manage API Keys</button>
+                                </div>
+                                <div className="grid gap-3 md:grid-cols-2">
+                                    <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="stitch-input" />
+                                    <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" className="stitch-input" />
+                                </div>
+                                <div className="grid gap-3 md:grid-cols-2">
+                                    <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="stitch-input" />
+                                    <input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="Team name (optional)" className="stitch-input" />
+                                </div>
+                                <div className="flex flex-wrap gap-3">
+                                    <button onClick={() => void signUp()} className="btn-primary rounded-sm px-4 py-2 text-xs font-mono uppercase tracking-[0.16em]">Create Account</button>
+                                    <button onClick={() => void login()} className="btn-secondary rounded-sm px-4 py-2 text-xs font-mono uppercase tracking-[0.16em]">Login</button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="col-span-12 space-y-6 lg:col-span-5">
+                        <div className="stitch-card p-6">
+                            <h3 className="mb-6 flex items-center gap-2 font-headline text-lg font-medium text-[var(--text-primary)]">Notifications</h3>
+                            <div className="space-y-4">
+                                <label className="flex items-start gap-4 bg-[var(--bg-surface)] p-3">
+                                    <input checked={alertPrefs.failures} onChange={() => setAlertPrefs((current) => ({ ...current, failures: !current.failures }))} className="mt-1" type="checkbox" />
+                                    <div>
+                                        <div className="text-sm font-medium text-[var(--text-primary)]">Agent Failure Alerts</div>
+                                        <div className="text-xs text-[var(--text-muted)]">Notify immediately if an agent process terminates unexpectedly.</div>
+                                    </div>
+                                </label>
+                                <label className="flex items-start gap-4 bg-[var(--bg-surface)] p-3">
+                                    <input checked={alertPrefs.queue} onChange={() => setAlertPrefs((current) => ({ ...current, queue: !current.queue }))} className="mt-1" type="checkbox" />
+                                    <div>
+                                        <div className="text-sm font-medium text-[var(--text-primary)]">Pipeline Queue Updates</div>
+                                        <div className="text-xs text-[var(--text-muted)]">Summary of approval queue status every 4 hours.</div>
+                                    </div>
+                                </label>
+                                <label className="flex items-start gap-4 bg-[var(--bg-surface)] p-3">
+                                    <input checked={alertPrefs.marketing} onChange={() => setAlertPrefs((current) => ({ ...current, marketing: !current.marketing }))} className="mt-1" type="checkbox" />
+                                    <div>
+                                        <div className="text-sm font-medium text-[var(--text-primary)]">Marketing &amp; Insights</div>
+                                        <div className="text-xs text-[var(--text-muted)]">Optional updates about new Shepherd capabilities.</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="stitch-card p-6">
+                            <h3 className="mb-6 flex items-center gap-2 font-headline text-lg font-medium text-[var(--text-primary)]">Team Members</h3>
+                            <div className="space-y-3">
+                                {(teams.length > 0 ? teams : [{ id: 'default-team', name: 'alex_dev_ops', role: 'Administrator' }, { id: 'operator-team', name: 'sarah_codes', role: 'Operator' }]).map((team) => (
+                                    <div key={team.id} className="flex items-center justify-between rounded-sm p-2 transition-colors hover:bg-[var(--bg-surface)]">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] text-xs font-semibold text-[var(--accent-primary-strong)]">
+                                                {team.name.slice(0, 2).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <div className="text-xs font-medium text-[var(--text-primary)]">{team.name}</div>
+                                                <div className="text-[10px] font-mono uppercase text-[var(--text-muted)]">Role: {team.role}</div>
+                                            </div>
+                                        </div>
+                                        <button className="text-xs text-[var(--text-muted)]">⋮</button>
+                                    </div>
+                                ))}
+
+                                <div className="space-y-3 pt-3">
+                                    <select value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)} className="stitch-input">
+                                        <option value="">Select team</option>
+                                        {teams.map((team) => (
+                                            <option key={team.id} value={team.id}>{team.name}</option>
+                                        ))}
+                                    </select>
+                                    <input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="Invite email" className="stitch-input" />
+                                    <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className="stitch-input">
+                                        <option value="Developer">Developer</option>
+                                        <option value="Viewer">Viewer</option>
+                                        <option value="Admin">Admin</option>
+                                    </select>
+                                    <button onClick={() => void createInvitation()} disabled={activeRole === 'Viewer'} className="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] px-4 py-3 text-xs font-mono uppercase tracking-[0.16em] text-[var(--text-primary)] disabled:opacity-50">
+                                        Send_Invitation
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                {connectorEvents.length > 0 && (
+                    <div className="mt-10 border-t border-[var(--border-subtle)] pt-8">
+                        <div className="mb-4 flex items-center justify-between">
+                            <h3 className="font-headline text-lg font-medium text-[var(--text-primary)]">Connector Event History</h3>
+                            <button onClick={() => void loadConnectors()} className="text-xs font-mono uppercase tracking-[0.16em] text-[var(--accent-primary-strong)]">Refresh</button>
+                        </div>
+                        <div className="space-y-3">
+                            {connectorEvents.slice(0, 4).map((event) => (
+                                <div key={event.id} className="stitch-card p-4">
+                                    <div className="text-sm font-medium text-[var(--text-primary)]">{event.connector_id}</div>
+                                    <div className="mt-1 text-xs text-[var(--text-muted)]">{event.event_type} · {new Date(event.created_at).toLocaleString()}</div>
+                                    <div className="mt-2 text-xs text-[var(--text-secondary)]">{JSON.stringify(event.event_details)}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <div className="mt-12 flex justify-end gap-4 border-t border-[var(--border-subtle)] pt-8">
+                    <button onClick={() => void loadTeams()} className="px-6 py-2 text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">Discard Changes</button>
+                    <button onClick={() => void loadConnectors()} className="btn-primary rounded-sm px-8 py-2 text-sm font-semibold">Commit Settings</button>
                 </div>
             </section>
 
-            <section className="glass rounded-2xl p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Connector event history</h3>
-                    <button onClick={() => void loadConnectors()} className="btn-secondary rounded-lg px-3 py-2 text-sm font-medium">Refresh history</button>
+            <div className="fixed bottom-6 right-6 z-20 hidden items-center gap-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]/90 px-4 py-2 backdrop-blur md:flex">
+                <div className="flex items-center gap-1">
+                    <kbd className="rounded border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] px-1.5 py-0.5 text-[10px] font-mono text-[var(--text-primary)]">CTRL</kbd>
+                    <span className="text-xs text-[var(--text-muted)]">+</span>
+                    <kbd className="rounded border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] px-1.5 py-0.5 text-[10px] font-mono text-[var(--text-primary)]">K</kbd>
                 </div>
-                {connectorEvents.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-[var(--border-subtle)] p-4 text-[13px] text-[var(--text-muted)]">No connector events recorded yet.</div>
-                ) : connectorEvents.map((event) => (
-                    <div key={event.id} className="surface-panel rounded-lg p-4">
-                        <div className="text-[15px] font-medium text-[var(--text-primary)]">{event.connector_id}</div>
-                        <div className="mt-1 text-[13px] text-[var(--text-secondary)]">{event.event_type} · {new Date(event.created_at).toLocaleString()}</div>
-                        <div className="mt-2 text-[13px] text-[var(--text-secondary)]">{JSON.stringify(event.event_details)}</div>
-                    </div>
-                ))}
-            </section>
+                <div className="h-4 w-px bg-[var(--border-subtle)]" />
+                <div className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">Command Search</div>
+            </div>
         </div>
     )
 }

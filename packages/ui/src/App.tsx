@@ -74,11 +74,18 @@ function App() {
   return (
     <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
       <div className="shadow-overlay" />
-      <div className="relative z-10 flex min-h-screen">
-        <aside className={`app-sidebar fixed inset-y-0 left-0 z-40 w-72 transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          <div className="flex h-16 items-center justify-between border-b border-[var(--border-subtle)] px-6 lg:justify-start">
+      <div className="relative z-10 min-h-screen">
+        <aside className={`app-sidebar fixed inset-y-0 left-0 z-40 w-64 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+          <div className="flex h-14 items-center justify-between border-b border-[var(--border-subtle)] px-5 lg:hidden">
+            <span className="font-headline text-sm font-bold uppercase tracking-[0.18em] text-[var(--accent-primary-strong)]">Menu</span>
+            <button className="text-[var(--text-secondary)]" onClick={() => setSidebarOpen(false)} aria-label="Close navigation">
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="hidden h-14 items-center border-b border-[var(--border-subtle)] px-5 md:flex">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[var(--accent-primary-strong)] text-[var(--accent-primary-contrast)] shadow-[0_0_20px_rgba(88,166,255,0.18)]">
+              <div className="flex h-9 w-9 items-center justify-center rounded-sm bg-[var(--accent-primary)]/15 text-[var(--accent-primary-strong)]">
                 <Command size={18} />
               </div>
               <div>
@@ -86,13 +93,10 @@ function App() {
                 <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-[var(--text-muted)]">orchestrator v1.0.4</p>
               </div>
             </div>
-            <button className="lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close navigation">
-              <X size={18} />
-            </button>
           </div>
 
-          <div className="flex h-[calc(100vh-4rem)] flex-col px-4 py-5">
-            <div className="mb-6 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)]/80 px-4 py-3">
+          <div className="flex h-full flex-col px-4 py-4 md:h-[calc(100vh-3.5rem)]">
+            <div className="mb-6 rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)]/70 px-4 py-3">
               <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-[var(--text-muted)]">cluster memory</div>
               <div className="mt-2 flex items-center justify-between text-xs text-[var(--text-secondary)]">
                 <span>42% used</span>
@@ -116,7 +120,7 @@ function App() {
             </nav>
 
             <div className="mt-auto space-y-4 px-2 pt-8">
-              <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)]/70 p-4">
+              <div className="rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)]/70 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-[var(--text-muted)]">system link</p>
@@ -133,23 +137,23 @@ function App() {
           </div>
         </aside>
 
-        {sidebarOpen && <button className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu" />}
+        {sidebarOpen && <button className="fixed inset-0 z-30 bg-black/50 md:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu" />}
 
-        <div className="flex min-h-screen flex-1 flex-col lg:pl-72">
-          <header className="sticky top-0 z-20 border-b border-[var(--border-subtle)] bg-[var(--bg-base)]/95 backdrop-blur-xl">
-            <div className="flex h-16 items-center justify-between gap-4 px-4 md:px-6">
+        <div className="md:ml-64">
+          <header className="fixed left-0 right-0 top-0 z-20 border-b border-[var(--border-subtle)] bg-[var(--bg-base)]/95 backdrop-blur-xl md:left-64">
+            <div className="flex h-14 items-center justify-between gap-4 px-4 md:px-6">
               <div className="flex items-center gap-3 md:gap-4">
-                <button className="inline-flex rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] p-2 text-[var(--text-secondary)] lg:hidden" onClick={() => setSidebarOpen(true)} aria-label="Open navigation">
+                <button className="inline-flex rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] p-2 text-[var(--text-secondary)] md:hidden" onClick={() => setSidebarOpen(true)} aria-label="Open navigation">
                   <Menu size={18} />
                 </button>
                 <div>
-                  <h1 className="font-headline text-lg font-bold tracking-tight text-[var(--text-primary)] md:text-xl">{currentTitle}</h1>
-                  <p className="text-[12px] text-[var(--text-secondary)]">Unified control plane for active coding agents</p>
+                  <h1 className="font-headline text-base font-bold tracking-tight text-[var(--text-primary)] md:text-lg">{currentTitle}</h1>
+                  <p className="hidden text-[11px] text-[var(--text-secondary)] md:block">Unified control plane for active coding agents</p>
                 </div>
               </div>
 
-              <div className="hidden min-w-[260px] flex-1 items-center justify-center lg:flex">
-                <div className="relative w-full max-w-md">
+              <div className="hidden min-w-[260px] flex-1 items-center justify-center md:flex">
+                <div className="relative w-full max-w-[520px]">
                   <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
                   <input
                     value={globalSearch}
@@ -161,7 +165,7 @@ function App() {
               </div>
 
               <div className="flex items-center gap-2 md:gap-3">
-                <div className="hidden items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] px-3 py-1.5 md:flex">
+                <div className="hidden items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] px-3 py-1 md:flex">
                   <div className={`h-2 w-2 rounded-full ${isConnected ? 'status-online' : 'status-critical'}`} />
                   <span className="text-xs font-medium text-[var(--text-secondary)]">{isConnected ? 'Live' : 'Offline'}</span>
                 </div>
@@ -175,14 +179,14 @@ function App() {
                 >
                   {isDarkMode ? <Sun size={17} /> : <Moon size={17} />}
                 </button>
-                <div className="flex h-9 w-9 items-center justify-center rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] text-xs font-semibold text-[var(--accent-primary-strong)]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] text-xs font-semibold text-[var(--accent-primary-strong)]">
                   {(session?.name || session?.userId || 'OP').slice(0, 2).toUpperCase()}
                 </div>
               </div>
             </div>
           </header>
 
-          <main className="relative z-10 flex-1 px-4 py-6 md:px-6 md:py-8">
+          <main className="relative z-10 min-h-screen px-4 pb-8 pt-[5.5rem] md:px-6 lg:px-8">
             {currentScreen === 'dashboard' ? (
               <Dashboard onViewAgent={(id) => { setSelectedAgentId(id); setCurrentScreen('agent-detail'); }} />
             ) : currentScreen === 'inbox' ? (
@@ -233,7 +237,7 @@ function SidebarButton({ icon, label, isActive, onClick }: NavButtonProps) {
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-md border px-4 py-3 text-left text-sm transition-all duration-200 ${isActive
+      className={`flex w-full items-center gap-3 rounded-sm border px-4 py-3 text-left text-sm transition-all duration-200 ${isActive
         ? 'border-[var(--accent-primary-strong)]/30 bg-[var(--bg-surface-elevated)] text-[var(--accent-primary-strong)] shadow-[inset_2px_0_0_var(--accent-primary-strong)]'
         : 'border-transparent text-[var(--text-muted)] hover:border-[var(--border-subtle)] hover:bg-[var(--bg-surface-elevated)] hover:text-[var(--text-primary)]'
         }`}
