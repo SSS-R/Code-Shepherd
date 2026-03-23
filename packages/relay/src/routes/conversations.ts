@@ -3,6 +3,7 @@ import type { Database } from 'better-sqlite3';
 import type { CommandRecord, ConversationRecord, MessageRecord, MessageType } from '@code-shepherd/shared';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { broadcastRealtimeEvent } from '../realtime';
+import { requireConnectorAuth } from '../middleware/connectorAuth';
 
 function createId(prefix: string): string {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -395,6 +396,52 @@ export function createConversationRoutes(db: Database) {
         } catch (error) {
             console.error('Create agent reply error:', error);
             return res.status(500).json({ error: 'Failed to store agent reply' });
+        }
+    });
+
+    router.get('/commands/poll', requireConnectorAuth(db, ['messages']), (req: Request, res: Response) => {
+        try {
+            const agentId = req.query.agent_id as string | undefined;
+            const query = agentId
+                ? `SELECT * FROM commands WHERE status IN ('queued', 'sent') AND target_agent_id = ? ORDER BY created_at ASC LIMIT 20`
+                : `SELECT * FROM commands WHERE status IN ('queued', 'sent') ORDER BY created_at ASC LIMIT 20`;
+            const rows = (agentId ? db.prepare(query).all(agentId) : db.prepare(query).all()) as any[];
+
+            rows.forEach((row) => {
+                db.prepare(`UPDATE commands SET status = 'sent', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(row.id);
+            });
+
+            return res.json(rows.map((row) => ({
+                id: row.id,
+                conversation_id: row.conversation_id,
+                target_agent_id: row.target_agent_id,
+                content: row.content,
+                metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+                created_at: row.created_at,
+            })));
+        } catch (error) {
+            console.error('Poll commands error:', error);
+            return res.status(500).json({ error: 'Failed to poll commands' });
+        }
+    });
+
+    router.post('/commands/:id/ack', requireConnectorAuth(db, ['messages']), (req: Request, res: Response) => {
+        try {
+            const { id } = req.params as { id: string };
+            const result = db.prepare(`
+        UPDATE commands
+        SET status = 'running', updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(id);
+
+            if (result.changes === 0) {
+                return res.status(404).json({ error: 'Command not found' });
+            }
+
+            return res.json({ id, status: 'running' });
+        } catch (error) {
+            console.error('Acknowledge command error:', error);
+            return res.status(500).json({ error: 'Failed to acknowledge command' });
         }
     });
 

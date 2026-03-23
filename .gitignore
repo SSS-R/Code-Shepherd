@@ -99,3 +99,7 @@ node_modules/
 
 
 temporal.exe
+
+
+#stitch desgins
+packages/ui/src/stitch_exports/

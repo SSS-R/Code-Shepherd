@@ -31,6 +31,81 @@ interface ConnectorEventRecord {
     event_details: Record<string, unknown>
 }
 
+interface PlanCard {
+    id: string
+    name: string
+    priceLabel: string
+    audience: string
+    badge?: string
+    description: string
+    features: string[]
+    cta: string
+    highlight?: boolean
+}
+
+const PLAN_CARDS: PlanCard[] = [
+    {
+        id: 'free',
+        name: 'Free',
+        priceLabel: '$0',
+        audience: 'Early individual users',
+        badge: 'Always available',
+        description: 'Entry tier for trying Code Shepherd before upgrading into deeper agent supervision and parallel operations.',
+        features: [
+            'Single-user access',
+            'Limited number of connected agents',
+            'Basic inbox, approvals, and visibility flows',
+            'Good for evaluating the product before moving to Pro',
+        ],
+        cta: 'Start Free',
+    },
+    {
+        id: 'beta-pro',
+        name: 'Beta Pro',
+        priceLabel: '$19/mo',
+        audience: 'Whitelisted beta users only',
+        badge: '200-seat whitelist',
+        description: 'Beta Pro access is granted from the website waitlist on a first-come, first-served basis until the 200-user whitelist is full.',
+        features: [
+            'Full Pro feature access during beta testing',
+            'Website waitlist feeds the first 200 approved beta invitations',
+            '50% off the first 2 months of Pro after public launch',
+            'Priority product feedback loop during beta period',
+        ],
+        cta: 'Request Beta Pro Access',
+        highlight: true,
+    },
+    {
+        id: 'pro',
+        name: 'Pro',
+        priceLabel: '$19/mo',
+        audience: 'Individual power users',
+        description: 'For solo developers who want always-on agent supervision, approvals, inbox access, and multi-agent control.',
+        features: [
+            'Unlimited connected agents',
+            'Inbox, approvals, timeline, and coordination flows',
+            'Mobile and desktop supervision',
+            'Public-launch tier after beta ends',
+        ],
+        cta: 'Upgrade to Pro',
+    },
+    {
+        id: 'max',
+        name: 'Max',
+        priceLabel: 'Planning',
+        audience: 'Heavy B2C operator tier',
+        badge: 'Coming next',
+        description: 'For users running larger multi-agent workloads, deeper automation, and higher operational limits.',
+        features: [
+            'Planned higher concurrency and usage limits',
+            'Planned deeper automation and premium governance tools',
+            'Whitelisted beta users will get 20% off if they choose Max after launch',
+            'Final pricing still to be locked before launch',
+        ],
+        cta: 'Join Max Waitlist',
+    },
+]
+
 export default function Settings() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
@@ -204,6 +279,71 @@ export default function Settings() {
                 <p className="mt-2 text-[15px] text-[var(--text-secondary)]">Phase 3 adds account setup, teams, invitations, and role-aware operational control.</p>
                 <div className="mt-4 inline-flex rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-[13px] font-medium text-violet-300">
                     Active role: {activeRole}
+                </div>
+            </section>
+
+            <section className="space-y-4">
+                <div className="glass rounded-xl p-6 md:p-8">
+                    <h3 className="text-[24px] font-bold tracking-tight text-[var(--text-primary)]">Plans and beta pricing</h3>
+                    <p className="mt-2 text-[15px] text-[var(--text-secondary)]">
+                        Beta access is managed from the website waitlist. The first 200 approved users get Beta Pro before launch, then keep launch discounts afterward.
+                    </p>
+                    <div className="mt-6 grid gap-4 xl:grid-cols-3">
+                        {PLAN_CARDS.map((plan) => (
+                            <article
+                                key={plan.id}
+                                className={`rounded-2xl border p-5 ${plan.highlight ? 'border-blue-500/30 bg-blue-500/10' : 'border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)]'}`}
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <div className="text-[20px] font-semibold text-[var(--text-primary)]">{plan.name}</div>
+                                        <div className="mt-1 text-[13px] text-[var(--text-secondary)]">{plan.audience}</div>
+                                    </div>
+                                    {plan.badge && (
+                                        <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[12px] font-medium text-[var(--accent-info)]">{plan.badge}</span>
+                                    )}
+                                </div>
+
+                                <div className="mt-5 text-3xl font-bold text-[var(--text-primary)]">{plan.priceLabel}</div>
+                                <p className="mt-3 text-[14px] leading-6 text-[var(--text-secondary)]">{plan.description}</p>
+
+                                <ul className="mt-5 space-y-2 text-[14px] text-[var(--text-secondary)]">
+                                    {plan.features.map((feature) => (
+                                        <li key={feature} className="flex gap-2">
+                                            <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[var(--accent-info)]" />
+                                            <span>{feature}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                <button className={`mt-6 w-full rounded-xl px-4 py-3 text-sm font-medium ${plan.highlight ? 'btn-primary' : 'btn-secondary'}`}>
+                                    {plan.cta}
+                                </button>
+                            </article>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="glass rounded-xl p-5">
+                        <h4 className="text-[18px] font-semibold text-[var(--text-primary)]">Beta launch policy</h4>
+                        <ul className="mt-4 space-y-2 text-[14px] text-[var(--text-secondary)]">
+                            <li>The website waitlist is first-come, first-served until 200 users are invited.</li>
+                            <li>Those invited users get full Beta Pro access while the app remains private.</li>
+                            <li>After launch, those 200 users receive 50% off the first 2 months of Pro.</li>
+                            <li>If they choose Max after launch, they receive 20% off that plan.</li>
+                        </ul>
+                    </div>
+
+                    <div className="glass rounded-xl p-5">
+                        <h4 className="text-[18px] font-semibold text-[var(--text-primary)]">Remaining non-security beta gaps</h4>
+                        <ul className="mt-4 space-y-2 text-[14px] text-[var(--text-secondary)]">
+                            <li>Real bridge adapters still need to be connected to external tools, not just the relay scaffolding.</li>
+                            <li>Billing logic is not wired yet; this pricing surface is UI-first and product-definition level.</li>
+                            <li>Whitelist issuance, coupon handling, and post-launch entitlement rules still need backend implementation.</li>
+                            <li>Beta onboarding, support flow, and usage analytics should be tightened before public beta starts.</li>
+                        </ul>
+                    </div>
                 </div>
             </section>
 

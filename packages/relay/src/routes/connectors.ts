@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import type { Database } from 'better-sqlite3';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { broadcastRealtimeEvent } from '../realtime';
+import { hashSecret } from '../middleware/connectorAuth';
 
 type ConnectorTrustStatus = 'trusted' | 'revoked';
 
@@ -20,6 +21,7 @@ export function createConnectorRoutes(db: Database) {
       connector_name TEXT NOT NULL,
       adapter_kind TEXT NOT NULL,
       transport TEXT NOT NULL,
+      connector_secret_hash TEXT,
       trust_status TEXT NOT NULL DEFAULT 'trusted',
       scopes TEXT DEFAULT '[]',
       last_verified_at DATETIME,
@@ -29,6 +31,12 @@ export function createConnectorRoutes(db: Database) {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+    try {
+        db.exec('ALTER TABLE trusted_connectors ADD COLUMN connector_secret_hash TEXT');
+    } catch {
+        // already exists
+    }
 
     db.exec(`
     CREATE TABLE IF NOT EXISTS connector_events (
@@ -101,11 +109,12 @@ export function createConnectorRoutes(db: Database) {
             }
 
             const id = createId('connector');
+            const connectorSecret = `cs_${Math.random().toString(36).slice(2)}${Date.now()}`;
 
             db.prepare(`
-        INSERT INTO trusted_connectors (id, connector_id, connector_name, adapter_kind, transport, trust_status, scopes, last_verified_at, team_id)
-        VALUES (?, ?, ?, ?, ?, 'trusted', ?, ?, ?)
-      `).run(id, connector_id, connector_name, adapter_kind, transport, JSON.stringify(scopes), last_verified_at, req.auth?.teamId ?? null);
+        INSERT INTO trusted_connectors (id, connector_id, connector_name, adapter_kind, transport, connector_secret_hash, trust_status, scopes, last_verified_at, team_id)
+        VALUES (?, ?, ?, ?, ?, ?, 'trusted', ?, ?, ?)
+      `).run(id, connector_id, connector_name, adapter_kind, transport, hashSecret(connectorSecret), JSON.stringify(scopes), last_verified_at, req.auth?.teamId ?? null);
 
             db.prepare(`
         INSERT INTO connector_events (id, connector_id, event_type, event_details, team_id)
@@ -120,10 +129,37 @@ export function createConnectorRoutes(db: Database) {
             broadcastRealtimeEvent('connectors.updated' as any, { action: 'trusted', connectorId: connector_id });
 
             const connector = db.prepare('SELECT * FROM trusted_connectors WHERE id = ?').get(id) as any;
-            return res.status(201).json({ ...connector, scopes: JSON.parse(connector.scopes || '[]') });
+            return res.status(201).json({ ...connector, scopes: JSON.parse(connector.scopes || '[]'), connector_secret: connectorSecret });
         } catch (error) {
             console.error('Trust connector error:', error);
             return res.status(500).json({ error: 'Failed to trust connector' });
+        }
+    });
+
+    router.post('/:connectorId/rotate-secret', requireRole(['Admin']), (req: Request, res: Response) => {
+        try {
+            const { connectorId } = req.params as { connectorId: string };
+            const connectorSecret = `cs_${Math.random().toString(36).slice(2)}${Date.now()}`;
+
+            const result = db.prepare(`
+        UPDATE trusted_connectors
+        SET connector_secret_hash = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE connector_id = ? AND (team_id IS ? OR team_id = ?)
+      `).run(hashSecret(connectorSecret), connectorId, req.auth?.teamId ?? null, req.auth?.teamId ?? null);
+
+            if (result.changes === 0) {
+                return res.status(404).json({ error: 'Connector not found' });
+            }
+
+            db.prepare(`
+        INSERT INTO connector_events (id, connector_id, event_type, event_details, team_id)
+        VALUES (?, ?, 'secret_rotated', ?, ?)
+      `).run(createId('connector-event'), connectorId, JSON.stringify({ actor: req.auth?.userId ?? 'dashboard-user' }), req.auth?.teamId ?? null);
+
+            return res.json({ connector_id: connectorId, connector_secret: connectorSecret });
+        } catch (error) {
+            console.error('Rotate connector secret error:', error);
+            return res.status(500).json({ error: 'Failed to rotate connector secret' });
         }
     });
 
