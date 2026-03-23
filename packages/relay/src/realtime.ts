@@ -1,7 +1,7 @@
 import type { Server as HttpServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 
-type RealtimeEventType = 'tasks.updated' | 'approvals.updated' | 'agents.updated' | 'workflows.updated';
+type RealtimeEventType = 'tasks.updated' | 'approvals.updated' | 'agents.updated' | 'workflows.updated' | 'conversations.updated';
 
 interface RealtimeEvent {
     type: RealtimeEventType;

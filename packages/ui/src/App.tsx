@@ -1,5 +1,5 @@
 import { ReactNode, useState, useEffect } from 'react'
-import { Moon, Sun, BellRing, History, LayoutDashboard, Settings as SettingsIcon } from 'lucide-react'
+import { Moon, Sun, BellRing, History, LayoutDashboard, MessageSquare, Settings as SettingsIcon } from 'lucide-react'
 import Dashboard from './screens/Dashboard'
 import ApprovalQueue from './screens/ApprovalQueue'
 import AgentDetail from './screens/AgentDetail'
@@ -7,9 +7,10 @@ import ActiveWorkflows from './components/ActiveWorkflows'
 import KanbanBoard from './screens/KanbanBoard'
 import ExecutionTimeline from './screens/ExecutionTimeline'
 import Settings from './screens/Settings'
+import Inbox from './screens/Inbox'
 import { loadSession } from './utils/authSession'
 
-type Screen = 'dashboard' | 'approvals' | 'timeline' | 'settings' | 'kanban' | 'agent-detail'
+type Screen = 'dashboard' | 'inbox' | 'approvals' | 'timeline' | 'settings' | 'kanban' | 'agent-detail'
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('dashboard')
@@ -89,7 +90,9 @@ function App() {
       {/* Main Content */}
       <main className="relative z-10 max-w-7xl mx-auto px-4 py-8 pb-28">
         {currentScreen === 'dashboard' ? (
-          <Dashboard onViewAgent={(id) => { setSelectedAgentId(id); setCurrentScreen('agent-detail'); }} />
+          <Dashboard onViewAgent={(id) => { setSelectedAgentId(id); setCurrentScreen('inbox'); }} />
+        ) : currentScreen === 'inbox' ? (
+          <Inbox initialAgentId={selectedAgentId} />
         ) : currentScreen === 'agent-detail' && selectedAgentId ? (
           <AgentDetail agentId={selectedAgentId} onBack={() => { setSelectedAgentId(null); setCurrentScreen('dashboard'); }} />
         ) : currentScreen === 'approvals' ? (
@@ -105,12 +108,18 @@ function App() {
 
       <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-[var(--border-subtle)] bg-[var(--bg-base)]/95 backdrop-blur-md">
         <div className="mx-auto max-w-3xl px-2">
-          <div className="grid h-16 grid-cols-5 gap-1">
+          <div className="grid h-16 grid-cols-6 gap-1">
             <NavButton
               icon={<LayoutDashboard size={18} />}
               label="Dashboard"
               isActive={currentScreen === 'dashboard'}
               onClick={() => setCurrentScreen('dashboard')}
+            />
+            <NavButton
+              icon={<MessageSquare size={18} />}
+              label="Inbox"
+              isActive={currentScreen === 'inbox'}
+              onClick={() => setCurrentScreen('inbox')}
             />
             <NavButton
               icon={<BellRing size={18} />}

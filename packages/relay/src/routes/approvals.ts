@@ -20,6 +20,7 @@ import { approvalRequestWorkflow, decisionSignal } from '../workflows/approvalWo
 import { resolveApprovalTimeoutMs } from '../utils/approvalTimeout';
 import { broadcastRealtimeEvent } from '../realtime';
 import { requireAuth, requireRole } from '../middleware/auth';
+import { appendConversationMessage, ensureConversationForAgent } from './conversations';
 
 export function createApprovalRoutes(db: Database, workflowClient: WorkflowClient | null): ReturnType<typeof require>['Router'] {
   const vapidKeys = getVapidKeys();
@@ -66,6 +67,24 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
     // Column already exists, ignore
   }
 
+  try {
+    db.exec('ALTER TABLE approvals ADD COLUMN conversation_id TEXT');
+  } catch (e) {
+    // Column already exists, ignore
+  }
+
+  try {
+    db.exec('ALTER TABLE approvals ADD COLUMN command_id TEXT');
+  } catch (e) {
+    // Column already exists, ignore
+  }
+
+  try {
+    db.exec("ALTER TABLE approvals ADD COLUMN presentation_mode TEXT DEFAULT 'queue-and-thread'");
+  } catch (e) {
+    // Column already exists, ignore
+  }
+
   // Initialize audit_logs table (append-only)
   db.exec(`
     CREATE TABLE IF NOT EXISTS audit_logs (
@@ -84,9 +103,11 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
    */
   router.post('/', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
     try {
-      const { id, agent_id, action_type, action_details, risk_level, risk_reason } = req.body as {
+      const { id, agent_id, conversation_id, command_id, action_type, action_details, risk_level, risk_reason } = req.body as {
         id: string;
         agent_id: string;
+        conversation_id?: string;
+        command_id?: string;
         action_type: string;
         action_details?: Record<string, unknown>;
         risk_level?: string;
@@ -107,13 +128,36 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
       // Generate code diff for file writes
       const { diff, is_new_file } = processApprovalWithDiff(action_type, action_details || {});
 
+      const conversation = conversation_id
+        ? { id: conversation_id }
+        : ensureConversationForAgent(db, {
+          agentId: agent_id,
+          title: `Conversation with ${agent_id}`,
+          teamId: req.auth?.teamId ?? null,
+        });
+
       // Insert approval request
       const stmt = db.prepare(`
-        INSERT INTO approvals (id, agent_id, action_type, summary, diff, is_new_file, action_details, risk_level, risk_reason, status, team_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+        INSERT INTO approvals (id, agent_id, conversation_id, command_id, action_type, summary, diff, is_new_file, action_details, risk_level, risk_reason, presentation_mode, status, team_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queue-and-thread', 'pending', ?)
       `);
 
-      stmt.run(id, agent_id, action_type, summary, diff, is_new_file ? 1 : 0, JSON.stringify(action_details || {}), resolvedRiskLevel, resolvedRiskReason, req.auth?.teamId ?? null);
+      stmt.run(id, agent_id, conversation.id, command_id ?? null, action_type, summary, diff, is_new_file ? 1 : 0, JSON.stringify(action_details || {}), resolvedRiskLevel, resolvedRiskReason, req.auth?.teamId ?? null);
+
+      appendConversationMessage(db, {
+        conversationId: conversation.id,
+        senderType: 'system',
+        senderId: 'code-shepherd',
+        content: summary,
+        messageType: 'approval-request',
+        commandId: command_id ?? null,
+        approvalId: id,
+        metadata: {
+          action_type,
+          risk_level: resolvedRiskLevel,
+          risk_reason: resolvedRiskReason,
+        },
+      });
 
       // Log to audit trail
       const auditStmt = db.prepare(`
@@ -153,6 +197,8 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
       return res.status(201).json({
         id,
         agent_id,
+        conversation_id: conversation.id,
+        command_id: command_id ?? null,
         action_type,
         summary,
         diff,
@@ -185,7 +231,9 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
         action_details: JSON.parse(approval.action_details || '{}'),
         summary: approval.summary || null,
         diff: approval.diff || null,
-        is_new_file: approval.is_new_file === 1
+        is_new_file: approval.is_new_file === 1,
+        conversation_id: approval.conversation_id || null,
+        command_id: approval.command_id || null,
       }));
 
       return res.json(approvals);
@@ -221,7 +269,11 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
       const approvals = stmt.all(...params).map((approval: any): any => ({
         ...approval,
         action_details: JSON.parse(approval.action_details || '{}'),
-        summary: approval.summary || null
+        summary: approval.summary || null,
+        diff: approval.diff || null,
+        is_new_file: approval.is_new_file === 1,
+        conversation_id: approval.conversation_id || null,
+        command_id: approval.command_id || null,
       }));
 
       return res.json(approvals);
@@ -250,7 +302,9 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
         action_details: JSON.parse(approval.action_details || '{}'),
         summary: approval.summary || null,
         diff: approval.diff || null,
-        is_new_file: approval.is_new_file === 1
+        is_new_file: approval.is_new_file === 1,
+        conversation_id: approval.conversation_id || null,
+        command_id: approval.command_id || null,
       });
     } catch (error: unknown) {
       console.error('Get approval error:', error);
@@ -282,6 +336,23 @@ export function createApprovalRoutes(db: Database, workflowClient: WorkflowClien
 
       if (result.changes === 0) {
         return res.status(404).json({ error: 'Approval not found or already decided' });
+      }
+
+      const approvalRow = db.prepare('SELECT * FROM approvals WHERE id = ?').get(id) as any;
+
+      if (approvalRow?.conversation_id) {
+        appendConversationMessage(db, {
+          conversationId: approvalRow.conversation_id,
+          senderType: 'system',
+          senderId: req.auth?.userId ?? 'dashboard-user',
+          content: decision === 'approved'
+            ? `Approval granted: ${approvalRow.summary || approvalRow.action_type}`
+            : `Approval rejected: ${decision_reason || approvalRow.summary || approvalRow.action_type}`,
+          messageType: 'approval-decision',
+          commandId: approvalRow.command_id ?? null,
+          approvalId: id,
+          metadata: { decision, decision_reason },
+        });
       }
 
       // Log to audit trail

@@ -190,6 +190,8 @@ export interface ApprovalActionDetails {
 export interface ApprovalRequestPayload {
     id: string;
     agent_id: string;
+    conversation_id?: string;
+    command_id?: string;
     action_type: string;
     action_details: ApprovalActionDetails;
     risk_level?: RiskLevel;
@@ -268,6 +270,22 @@ export interface SendAgentMessageRequest {
 export interface SendAgentMessageResponse {
     message: MessageRecord;
     command?: CommandRecord;
+}
+
+export interface ConversationEnsureRequest {
+    agent_id: string;
+    title?: string;
+    task_id?: string;
+}
+
+export interface ConversationEnsureResponse {
+    conversation: ConversationRecord;
+    created: boolean;
+}
+
+export interface ConversationMessagesResponse {
+    conversation: ConversationRecord;
+    messages: MessageRecord[];
 }
 
 export interface CodeShepherdAdapterContext {

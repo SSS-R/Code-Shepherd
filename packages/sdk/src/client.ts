@@ -7,6 +7,8 @@ import {
     ApprovalDecisionResponse,
     ApprovalRecord,
     ApprovalRequestPayload,
+    SendAgentMessageRequest,
+    SendAgentMessageResponse,
     WaitForApprovalOptions,
 } from '@code-shepherd/shared';
 
@@ -99,6 +101,21 @@ export class CodeShepherdClient {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestPayload),
+        });
+    }
+
+    async sendMessage(payload: Omit<SendAgentMessageRequest, 'target_agent_id'> & { target_agent_id?: string }): Promise<SendAgentMessageResponse> {
+        const targetAgentId = payload.target_agent_id ?? this.requireAgentId();
+
+        return this.request<SendAgentMessageResponse>(`/conversations/${payload.conversation_id}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                target_agent_id: targetAgentId,
+                content: payload.content,
+                message_type: payload.message_type,
+                metadata: payload.metadata,
+            }),
         });
     }
 
