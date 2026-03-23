@@ -1,5 +1,6 @@
 import {
     AgentHeartbeatResponse,
+    AgentRegistrationRequest,
     CodeShepherdClientOptions,
     CodeShepherdRegistrationOptions,
     AgentRegistrationResponse,
@@ -18,6 +19,7 @@ export class CodeShepherdClient {
     private readonly fetchImpl: typeof fetch;
     private readonly defaultHeartbeatIntervalMs: number;
     private readonly defaultApprovalPollIntervalMs: number;
+    private readonly adapter: CodeShepherdClientOptions['adapter'] | null;
     private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
     private registeredAgentId: string | null;
 
@@ -26,6 +28,7 @@ export class CodeShepherdClient {
         this.fetchImpl = options.fetchImpl ?? fetch;
         this.defaultHeartbeatIntervalMs = options.heartbeatIntervalMs ?? 30_000;
         this.defaultApprovalPollIntervalMs = options.approvalPollIntervalMs ?? 2_000;
+        this.adapter = options.adapter ?? null;
         this.registeredAgentId = options.agentId ?? null;
     }
 
@@ -34,10 +37,17 @@ export class CodeShepherdClient {
     }
 
     async register(options: CodeShepherdRegistrationOptions): Promise<AgentRegistrationResponse> {
-        const payload = {
+        const payload: AgentRegistrationRequest = {
             id: options.id ?? this.registeredAgentId ?? createId('agent'),
             name: options.name,
             capabilities: options.capabilities ?? [],
+            capability_tier: options.capabilityTier,
+            adapter: options.adapter ?? this.adapter ?? undefined,
+            transport: options.transport,
+            reconnect_policy: options.reconnectPolicy,
+            connection_profile: options.connectionProfile,
+            labels: options.labels,
+            metadata: options.metadata,
         };
 
         const response = await this.request<AgentRegistrationResponse>('/agents/register', {
