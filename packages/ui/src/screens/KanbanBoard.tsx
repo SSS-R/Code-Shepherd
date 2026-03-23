@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Filter, Plus, MoreVertical, Lock, Check, X, Code, AlertCircle, Bot, Zap, Play, CheckCircle2, ShieldAlert } from 'lucide-react'
 import { buildAuthHeaders } from '../utils/authSession'
 
 type TaskStatus = 'Queued' | 'In Progress' | 'Blocked' | 'Done' | 'Failed'
@@ -37,6 +38,8 @@ export default function KanbanBoard() {
     const [runtimeByTask, setRuntimeByTask] = useState<Record<string, TaskRuntime>>({})
     const [selectedAgentsByTask, setSelectedAgentsByTask] = useState<Record<string, string[]>>({})
     const [priorityFilter, setPriorityFilter] = useState<'all' | Task['priority']>('all')
+
+    const [showNewTaskForm, setShowNewTaskForm] = useState(false)
     const [form, setForm] = useState({
         title: '',
         description: '',
@@ -98,6 +101,7 @@ export default function KanbanBoard() {
             const created = await res.json()
             setTasks([created, ...tasks])
             setForm({ title: '', description: '', priority: 'P2', labels: '', assigned_agent_id: '', blocked_by_task_id: '' })
+            setShowNewTaskForm(false)
         }
     }
 
@@ -155,197 +159,285 @@ export default function KanbanBoard() {
         return tasks.filter((task) => task.priority === priorityFilter)
     }, [priorityFilter, tasks])
 
-    const grouped = useMemo(() => {
-        return COLUMNS.map((column) => ({
-            column,
-            tasks: filteredTasks.filter((task) => task.status === column),
-        }))
-    }, [filteredTasks])
+    const getColumnConfig = (status: TaskStatus) => {
+        switch (status) {
+            case 'Queued': return { index: '01', title: 'Ready for Queue', colorClass: 'text-outline', bgClass: 'bg-surface-container', lineClass: 'bg-outline' }
+            case 'In Progress': return { index: '02', title: 'Active Operations', colorClass: 'text-primary', bgClass: 'bg-primary/10', lineClass: 'bg-secondary' }
+            case 'Blocked': return { index: '03', title: 'Validation Gate', colorClass: 'text-tertiary', bgClass: 'bg-tertiary/10', lineClass: 'bg-tertiary' }
+            case 'Failed': return { index: '04', title: 'Action Required', colorClass: 'text-error', bgClass: 'bg-error/10', lineClass: 'bg-error' }
+            case 'Done': return { index: '05', title: 'Completed Artifacts', colorClass: 'text-outline', bgClass: 'bg-surface-container/50', lineClass: 'bg-outline-variant', fade: true }
+        }
+    }
 
     if (loading) {
-        return <div className="glass rounded-2xl p-8 text-[15px] text-[var(--text-secondary)]">Loading task board...</div>
+        return (
+            <div className="flex-1 flex items-center justify-center min-h-[50vh]">
+                <div className="w-8 h-8 rounded-full border-t-2 border-primary animate-spin"></div>
+            </div>
+        )
     }
 
     return (
-        <div className="space-y-6">
-            <section className="glass rounded-2xl p-6 md:p-8">
-                <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-                    <div>
-                        <h2 className="font-headline text-[28px] font-bold tracking-tight text-[var(--text-primary)] md:text-[36px]">Mission Kanban</h2>
-                        <p className="mt-2 max-w-2xl text-[15px] text-[var(--text-secondary)]">Track queue, execution, blockers, and completion with a Stitch-inspired operations board for multi-agent coordination.</p>
+        <div className="flex flex-col bg-surface overflow-hidden min-h-[calc(100vh-7rem)]">
+            {/* Board Header */}
+            <header className="px-4 md:px-8 py-6 flex flex-col md:flex-row justify-between md:items-end shrink-0 gap-4">
+                <div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(123,219,128,0.5)]"></span>
+                        <span className="font-mono text-[10px] text-secondary tracking-widest uppercase">Orchestration Active</span>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                        <button className="btn-secondary rounded-xl px-4 py-3 text-sm font-medium">Filter</button>
-                        <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value as 'all' | Task['priority'])} className="app-input px-4">
-                            <option value="all">All priorities</option>
-                            <option value="P0">P0</option>
-                            <option value="P1">P1</option>
-                            <option value="P2">P2</option>
-                            <option value="P3">P3</option>
-                        </select>
-                    </div>
+                    <h1 className="font-headline text-3xl font-bold tracking-tight text-on-surface">Mission Kanban</h1>
+                    <p className="text-on-surface-variant text-sm mt-1 max-w-md">Real-time task distribution across autonomous agent clusters.</p>
                 </div>
-                <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-                    <input
-                        value={form.title}
-                        onChange={(e) => setForm({ ...form, title: e.target.value })}
-                        placeholder="Task title"
-                        className="app-input px-4"
-                    />
-                    <input
-                        value={form.description}
-                        onChange={(e) => setForm({ ...form, description: e.target.value })}
-                        placeholder="Description"
-                        className="app-input px-4"
-                    />
-                    <input
-                        value={form.labels}
-                        onChange={(e) => setForm({ ...form, labels: e.target.value })}
-                        placeholder="Labels (comma separated)"
-                        className="app-input px-4"
-                    />
-                    <select
-                        value={form.priority}
-                        onChange={(e) => setForm({ ...form, priority: e.target.value as Task['priority'] })}
-                        className="app-input px-4"
-                    >
-                        <option value="P0">P0</option>
-                        <option value="P1">P1</option>
-                        <option value="P2">P2</option>
-                        <option value="P3">P3</option>
+                <div className="flex flex-wrap gap-3">
+                    <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value as 'all' | Task['priority'])} className="px-4 py-2 bg-surface-container text-on-surface text-xs font-medium rounded-sm border border-outline-variant/20 focus:ring-1 focus:ring-primary outline-none">
+                        <option value="all">All Priorities</option>
+                        <option value="P0">P0 - Critical</option>
+                        <option value="P1">P1 - High</option>
+                        <option value="P2">P2 - Medium</option>
+                        <option value="P3">P3 - Low</option>
                     </select>
-                    <div className="flex gap-3">
-                        <select
-                            value={form.blocked_by_task_id}
-                            onChange={(e) => setForm({ ...form, blocked_by_task_id: e.target.value })}
-                            className="app-input flex-1 px-4"
-                        >
-                            <option value="">No dependency</option>
-                            {tasks.map((task) => (
-                                <option key={task.id} value={task.id}>{task.title}</option>
-                            ))}
-                        </select>
-                        <select
-                            value={form.assigned_agent_id}
-                            onChange={(e) => setForm({ ...form, assigned_agent_id: e.target.value })}
-                            className="app-input flex-1 px-4"
-                        >
-                            <option value="">Unassigned</option>
-                            {agents.map((agent) => (
-                                <option key={agent.id} value={agent.id}>{agent.name}</option>
-                            ))}
-                        </select>
-                        <button onClick={() => void createTask()} className="btn-primary rounded-xl px-4 py-3 text-sm font-medium whitespace-nowrap">Add Task</button>
-                    </div>
+                    <button onClick={() => setShowNewTaskForm(!showNewTaskForm)} className="px-4 py-2 bg-gradient-to-b from-primary-container to-primary text-on-primary-container text-xs font-bold rounded-sm shadow-lg shadow-primary/10 hover:brightness-110 transition-all flex items-center gap-2">
+                        <Plus size={14} strokeWidth={3} /> Deploy New Task
+                    </button>
                 </div>
-            </section>
+            </header>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-                {grouped.map(({ column, tasks: columnTasks }) => (
-                    <section key={column} className="glass rounded-2xl p-4">
-                        <div className="mb-4 flex items-center justify-between">
-                            <h3 className="font-headline text-[15px] font-semibold text-[var(--text-primary)]">{column}</h3>
-                            <span className="rounded-full bg-[var(--border-subtle)] px-2 py-1 text-[13px] text-[var(--text-secondary)]">{columnTasks.length}</span>
+            {/* New Task Inline Form */}
+            {showNewTaskForm && (
+                <div className="px-4 md:px-8 mb-6 shrink-0 animate-fade-in">
+                    <div className="bg-surface-container rounded-md p-4 border border-outline-variant/20 grid gap-3 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 items-end relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-primary"></div>
+
+                        <div className="flex flex-col gap-1 lg:col-span-2">
+                            <label className="text-[10px] uppercase font-bold text-outline tracking-wider">Task Title</label>
+                            <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Optimize dependency graph" className="bg-surface-container-lowest border border-outline-variant/20 text-xs px-3 py-2 rounded focus:ring-1 focus:ring-primary outline-none text-on-surface" />
                         </div>
 
-                        <div className="space-y-3">
-                            {columnTasks.length === 0 ? (
-                                <div className="rounded-lg border border-dashed border-[var(--border-subtle)] p-4 text-[13px] text-[var(--text-muted)]">No tasks</div>
-                            ) : (
-                                columnTasks.map((task) => (
-                                    <article key={task.id} className="surface-panel rounded-2xl p-4">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <h4 className="text-[15px] font-medium text-[var(--text-primary)]">{task.title}</h4>
-                                            <select
-                                                value={task.priority}
-                                                onChange={(e) => void updateTask(task.id, { priority: e.target.value as Task['priority'] })}
-                                                className="rounded-full bg-blue-500/10 px-2 py-1 text-[13px] text-[var(--accent-info)] border border-blue-500/20"
-                                            >
-                                                <option value="P0">P0</option>
-                                                <option value="P1">P1</option>
-                                                <option value="P2">P2</option>
-                                                <option value="P3">P3</option>
-                                            </select>
-                                        </div>
-                                        {task.description && <p className="mt-2 text-[13px] text-[var(--text-secondary)]">{task.description}</p>}
-                                        <div className="mt-3 flex flex-wrap gap-2">
-                                            {task.labels.map((label) => (
-                                                <span key={label} className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] px-2 py-1 text-[13px] text-[var(--text-secondary)]">{label}</span>
-                                            ))}
-                                        </div>
-                                        <div className="mt-3 grid gap-2">
-                                            <select
-                                                value={task.blocked_by_task_id || ''}
-                                                onChange={(e) => void updateTask(task.id, { blocked_by_task_id: e.target.value || null })}
-                                                className="app-input rounded-xl px-3"
-                                            >
-                                                <option value="">No dependency</option>
-                                                {tasks.filter((candidate) => candidate.id !== task.id).map((candidate) => (
-                                                    <option key={candidate.id} value={candidate.id}>{candidate.title}</option>
-                                                ))}
-                                            </select>
-                                            <select
-                                                value={task.status}
-                                                onChange={(e) => void updateTask(task.id, { status: e.target.value as TaskStatus })}
-                                                className="app-input rounded-xl px-3"
-                                            >
-                                                {COLUMNS.map((status) => <option key={status} value={status}>{status}</option>)}
-                                            </select>
-                                            <select
-                                                value={task.assigned_agent_id || ''}
-                                                onChange={(e) => void updateTask(task.id, { assigned_agent_id: e.target.value || null })}
-                                                className="app-input rounded-xl px-3"
-                                            >
-                                                <option value="">Unassigned</option>
-                                                {agents.map((agent) => (
-                                                    <option key={agent.id} value={agent.id}>{agent.name}</option>
-                                                ))}
-                                            </select>
-                                            <select
-                                                multiple
-                                                value={selectedAgentsByTask[task.id] || []}
-                                                onChange={(e) => setSelectedAgentsByTask((current) => ({
-                                                    ...current,
-                                                    [task.id]: Array.from(e.target.selectedOptions).map((option) => option.value),
-                                                }))}
-                                                className="app-input rounded-xl px-3 min-h-[110px]"
-                                            >
-                                                {agents.map((agent) => (
-                                                    <option key={agent.id} value={agent.id}>{agent.name}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        {task.blocked_by_task_id && (
-                                            <div className="mt-3 text-[13px] text-[var(--accent-warning)]">Blocked by: {tasks.find((candidate) => candidate.id === task.blocked_by_task_id)?.title || task.blocked_by_task_id}</div>
-                                        )}
-                                        <div className="mt-3 flex flex-wrap gap-2">
-                                            <button onClick={() => void provisionRuntime(task.id)} className="btn-secondary rounded-xl px-3 py-2 text-[13px] font-medium">Provision Worktree</button>
-                                            <button onClick={() => void activateTerminal(task.id)} className="btn-primary rounded-xl px-3 py-2 text-[13px] font-medium">Activate Terminal</button>
-                                            <button onClick={() => void assignTaskToAgents(task.id)} className="btn-secondary rounded-xl px-3 py-2 text-[13px] font-medium">Assign Multiple Agents</button>
-                                        </div>
-                                        {task.assignments && task.assignments.length > 0 && (
-                                            <div className="mt-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] p-3 text-[13px] text-[var(--text-secondary)]">
-                                                <div className="mb-2 font-medium text-[var(--text-primary)]">Parallel Sessions</div>
-                                                <div className="space-y-1">
-                                                    {task.assignments.map((assignment) => (
-                                                        <div key={`${task.id}-${assignment.agent_id}`}>{assignment.agent_id} · {assignment.role} · conversation {assignment.conversation_id || 'n/a'}</div>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] uppercase font-bold text-outline tracking-wider">Priority</label>
+                            <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as Task['priority'] })} className="bg-surface-container-lowest border border-outline-variant/20 text-xs px-3 py-2 rounded focus:ring-1 focus:ring-primary outline-none text-on-surface">
+                                <option value="P0">P0 - Critical</option>
+                                <option value="P1">P1 - High</option>
+                                <option value="P2">P2 - Medium</option>
+                                <option value="P3">P3 - Low</option>
+                            </select>
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] uppercase font-bold text-outline tracking-wider">Labels</label>
+                            <input value={form.labels} onChange={(e) => setForm({ ...form, labels: e.target.value })} placeholder="core, api, ui" className="bg-surface-container-lowest border border-outline-variant/20 text-xs px-3 py-2 rounded focus:ring-1 focus:ring-primary outline-none text-on-surface" />
+                        </div>
+
+                        <div className="flex flex-col gap-1 lg:col-span-2">
+                            <label className="text-[10px] uppercase font-bold text-outline tracking-wider">Assigned Agent</label>
+                            <div className="flex gap-2">
+                                <select value={form.assigned_agent_id} onChange={(e) => setForm({ ...form, assigned_agent_id: e.target.value })} className="bg-surface-container-lowest border border-outline-variant/20 text-xs px-3 py-2 rounded focus:ring-1 focus:ring-primary outline-none text-on-surface flex-1">
+                                    <option value="">Unassigned</option>
+                                    {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
+                                </select>
+                                <button onClick={() => void createTask()} className="bg-primary/10 text-primary hover:bg-primary/20 px-4 py-2 rounded text-xs font-bold transition-colors uppercase tracking-wider">Add</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Kanban Board Container */}
+            <div className="flex-1 overflow-x-auto overflow-y-hidden px-0 pb-8 flex gap-4 md:gap-6 custom-scrollbar">
+
+                {COLUMNS.map((column) => {
+                    const columnTasks = filteredTasks.filter(t => t.status === column)
+                    const config = getColumnConfig(column)
+
+                    return (
+                        <div key={column} className="flex flex-col w-[18rem] md:w-80 shrink-0 h-full">
+                            <div className="flex items-center justify-between mb-4 px-2 shrink-0">
+                                <div className="flex items-center gap-3">
+                                    <span className={`text-[10px] font-mono ${config.colorClass} font-bold tracking-tighter ${config.bgClass} px-2 py-0.5 rounded`}>{config.index}</span>
+                                    <h3 className={`font-headline font-semibold text-sm uppercase tracking-wider ${config.fade ? 'text-on-surface-variant/50' : 'text-on-surface-variant'}`}>{config.title}</h3>
+                                </div>
+                                <span className={`text-[10px] font-mono ${config.colorClass}`}>{columnTasks.length} {columnTasks.length === 1 ? 'TASK' : 'TASKS'}</span>
+                            </div>
+
+                            <div className={`flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar pb-6 ${config.fade ? 'opacity-60' : ''}`}>
+                                {columnTasks.length === 0 ? (
+                                    <div className="rounded border border-dashed border-outline-variant/20 p-4 text-center text-xs text-outline/50 uppercase tracking-widest font-mono">Empty Dropzone</div>
+                                ) : (
+                                    columnTasks.map((task) => (
+                                        <div key={task.id} className={`bg-surface-container rounded-md p-4 relative group hover:ring-1 ring-primary/30 transition-all cursor-pointer ${task.status === 'In Progress' ? 'ring-1 ring-primary/20 bg-gradient-to-br from-surface-container to-surface-container-high shadow-xl shadow-primary/5' : ''}`}>
+                                            <div className={`absolute left-0 top-4 bottom-4 w-0.5 rounded-full ${config.lineClass} ${task.status === 'In Progress' ? 'shadow-[0_0_8px_rgba(123,219,128,0.6)]' : ''}`}></div>
+
+                                            <div className="flex justify-between items-start mb-3">
+                                                <span className={`font-mono text-[10px] ${task.status === 'In Progress' ? 'text-secondary' : task.status === 'Failed' ? 'text-error' : task.status === 'Blocked' ? 'text-tertiary' : 'text-outline'} truncate max-w-[150px]`}>
+                                                    REF: {task.id.slice(0, 8).toUpperCase()}
+                                                </span>
+
+                                                {task.status === 'In Progress' && (
+                                                    <div className="flex items-center gap-1 animate-pulse">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                                                        <span className="text-[9px] font-mono text-secondary">RUNNING</span>
+                                                    </div>
+                                                )}
+                                                {task.status === 'Blocked' && <Lock size={14} className="text-tertiary" />}
+                                                {task.status === 'Failed' && <ShieldAlert size={14} className="text-error" />}
+                                                {task.status === 'Done' && <CheckCircle2 size={14} className="text-secondary" />}
+                                                {task.status === 'Queued' && <MoreVertical size={14} className="text-outline hidden group-hover:block transition-all" />}
+                                            </div>
+
+                                            <h4 className={`text-sm font-medium ${task.status === 'Done' ? 'text-on-surface/80 line-through' : 'text-on-surface'} mb-4 leading-snug`}>{task.title}</h4>
+
+                                            {task.labels && task.labels.length > 0 && (
+                                                <div className="flex flex-wrap gap-2 mb-4">
+                                                    {task.labels.map(l => (
+                                                        <span key={l} className="bg-surface-container-lowest border border-outline-variant/10 px-2 py-0.5 rounded text-[10px] text-primary flex items-center gap-1">
+                                                            <Code size={10} /> {l}
+                                                        </span>
                                                     ))}
                                                 </div>
+                                            )}
+
+                                            {task.status === 'In Progress' && (
+                                                <div className="h-1 w-full bg-surface-container-lowest rounded-full mb-4 overflow-hidden">
+                                                    <div className="h-full bg-primary w-[65%] rounded-full shadow-[0_0_10px_rgba(162,201,255,0.4)] animate-pulse"></div>
+                                                </div>
+                                            )}
+
+                                            {task.status === 'Blocked' && task.blocked_by_task_id && (
+                                                <div className="p-2 bg-error/5 rounded text-[10px] font-mono text-error border border-error/10 mb-4 line-clamp-2" title={`Blocked by: ${task.blocked_by_task_id}`}>
+                                                    ERR: Needs completion of REF: {task.blocked_by_task_id.slice(0, 8).toUpperCase()}
+                                                </div>
+                                            )}
+
+                                            <div className="flex justify-between items-center mt-2">
+                                                {task.assigned_agent_id || task.status === 'Done' ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-6 h-6 rounded-full border border-surface bg-surface-container-high flex items-center justify-center overflow-hidden ${task.status === 'Done' ? 'opacity-80' : ''}`}>
+                                                            <Bot size={12} className="text-primary" />
+                                                        </div>
+                                                        <span className={`text-[10px] font-mono ${task.status === 'Done' ? 'text-outline' : 'text-on-surface-variant'}`}>{agents.find(a => a.id === task.assigned_agent_id)?.name || 'AGENT'}</span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[10px] font-mono text-outline">UNASSIGNED</span>
+                                                )}
+
+                                                {task.status === 'Queued' && (
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="text-[10px] font-mono text-on-surface-variant uppercase">{task.priority}</span>
+                                                    </div>
+                                                )}
+
+                                                {task.status === 'Done' && (
+                                                    <span className="text-[10px] font-mono text-outline">TERMINATED_SUCCESS</span>
+                                                )}
+
+                                                {task.status === 'In Progress' && (
+                                                    <span className="text-[10px] font-mono text-on-surface-variant">OPS-LOG: ACTIVE</span>
+                                                )}
+
+                                                {task.status === 'Blocked' && (
+                                                    <button onClick={() => updateTask(task.id, { status: 'Queued' })} className="text-[10px] font-bold text-primary hover:underline uppercase tracking-tighter">Queue Task</button>
+                                                )}
+                                                {task.status === 'Failed' && (
+                                                    <button onClick={() => updateTask(task.id, { status: 'Queued' })} className="text-[10px] font-bold text-error hover:underline uppercase tracking-tighter">Retry Task</button>
+                                                )}
                                             </div>
-                                        )}
-                                        {runtimeByTask[task.id] && (
-                                            <div className="mt-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] p-3 text-[13px] text-[var(--text-secondary)]">
-                                                <div>Worktree: {runtimeByTask[task.id].worktree_path}</div>
-                                                <div>Terminal: {runtimeByTask[task.id].terminal_session_id}</div>
-                                                <div>Status: {runtimeByTask[task.id].terminal_status}</div>
-                                            </div>
-                                        )}
-                                    </article>
-                                ))
+
+                                            {/* Action quick menu on hover if not done */}
+                                            {task.status !== 'Done' && task.status !== 'In Progress' && (
+                                                <div className="absolute top-2 right-2 flex gap-1 bg-surface-container-high/90 backdrop-blur rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 border border-outline-variant/20 shadow-lg">
+                                                    <button onClick={(e) => { e.stopPropagation(); updateTask(task.id, { status: 'In Progress' }) }} title="Start Task" className="w-6 h-6 rounded flex items-center justify-center text-primary hover:bg-primary/20 transition-colors">
+                                                        <Play size={12} fill="currentColor" />
+                                                    </button>
+                                                    <button onClick={(e) => { e.stopPropagation(); updateTask(task.id, { status: 'Done' }) }} title="Mark Done" className="w-6 h-6 rounded flex items-center justify-center text-secondary hover:bg-secondary/20 transition-colors">
+                                                        <Check size={14} />
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {task.status === 'In Progress' && (
+                                                <div className="mt-4 pt-3 border-t border-outline-variant/10 flex flex-wrap gap-2">
+                                                    <button onClick={(e) => { e.stopPropagation(); provisionRuntime(task.id) }} className="bg-surface-container-low border border-outline-variant/20 hover:bg-surface-container-high px-2 py-1 text-[10px] uppercase font-bold tracking-wider rounded text-primary transition-colors">Provision</button>
+                                                    <button onClick={(e) => { e.stopPropagation(); activateTerminal(task.id) }} className="bg-primary/10 border border-primary/20 hover:bg-primary/20 px-2 py-1 text-[10px] uppercase font-bold tracking-wider rounded text-primary transition-colors">Terminal</button>
+                                                    <button onClick={(e) => { e.stopPropagation(); updateTask(task.id, { status: 'Done' }) }} className="bg-secondary/10 border border-secondary/20 hover:bg-secondary/20 px-2 py-1 text-[10px] uppercase font-bold tracking-wider rounded text-secondary transition-colors">Complete</button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )
+                })}
+
+                {/* Column: Analytics / Realtime Insight (Bento style) */}
+                <div className="flex flex-col w-64 xl:w-80 shrink-0 ml-4 h-full border-l border-outline-variant/10 pl-8 overflow-y-auto custom-scrollbar pb-8">
+                    <div className="mb-4">
+                        <h3 className="font-headline font-semibold text-sm uppercase tracking-wider text-primary">Operational Metrics</h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2 bg-surface-container p-4 rounded-md border border-outline-variant/5">
+                            <span className="text-[10px] font-mono text-outline uppercase tracking-widest block mb-2">Throughput / H</span>
+                            <div className="flex items-end gap-1 h-12">
+                                <div className="w-full bg-primary/20 h-[40%] rounded-t-sm hover:h-[45%] transition-all"></div>
+                                <div className="w-full bg-primary/20 h-[60%] rounded-t-sm hover:h-[65%] transition-all"></div>
+                                <div className="w-full bg-primary/20 h-[30%] rounded-t-sm hover:h-[35%] transition-all"></div>
+                                <div className="w-full bg-primary h-[90%] rounded-t-sm hover:h-[95%] transition-all"></div>
+                                <div className="w-full bg-primary/20 h-[50%] rounded-t-sm hover:h-[55%] transition-all"></div>
+                                <div className="w-full bg-primary/20 h-[45%] rounded-t-sm hover:h-[50%] transition-all"></div>
+                                <div className="w-full bg-primary/20 h-[70%] rounded-t-sm hover:h-[75%] transition-all"></div>
+                            </div>
+                            <div className="flex justify-between mt-2 font-mono text-[9px] text-outline">
+                                <span>00:00</span>
+                                <span>NOW</span>
+                            </div>
+                        </div>
+                        <div className="bg-surface-container p-4 rounded-md border border-outline-variant/5 text-center">
+                            <span className="text-[10px] font-mono text-outline uppercase block mb-1">Health</span>
+                            <span className="text-2xl font-headline font-bold text-secondary">99.8%</span>
+                        </div>
+                        <div className="bg-surface-container p-4 rounded-md border border-outline-variant/5 text-center">
+                            <span className="text-[10px] font-mono text-outline uppercase block mb-1">Load</span>
+                            <span className="text-2xl font-headline font-bold text-tertiary">14.2</span>
+                        </div>
+                        <div className="col-span-2 bg-primary/5 p-4 rounded-md border border-primary/20">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Zap className="text-primary" size={16} />
+                                <span className="text-xs font-bold text-primary tracking-wide">ACTIVE CLUSTERS</span>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] text-on-surface">Alpha_Region_EU</span>
+                                    <span className="text-[10px] font-mono text-secondary">STABLE</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] text-on-surface">Lambda_Compute</span>
+                                    <span className="text-[10px] font-mono text-primary animate-pulse">SCALING</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="col-span-2 mt-4 space-y-3">
+                            <span className="text-[10px] text-outline uppercase font-bold tracking-widest block font-mono">Terminal Sessions</span>
+                            {Object.entries(runtimeByTask).map(([taskId, runtime]) => (
+                                <div key={taskId} className="bg-surface-container rounded border border-outline-variant/10 p-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-[10px] font-mono text-primary truncate max-w-[120px]">{taskId}</span>
+                                        <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${runtime.terminal_status === 'active' ? 'bg-secondary/20 text-secondary' : 'bg-outline-variant/20 text-outline'}`}>
+                                            {runtime.terminal_status.toUpperCase()}
+                                        </span>
+                                    </div>
+                                    <div className="text-[9px] font-mono text-outline-variant truncate" title={runtime.worktree_path}>
+                                        {runtime.worktree_path.split('/').pop() || runtime.worktree_path}
+                                    </div>
+                                </div>
+                            ))}
+                            {Object.keys(runtimeByTask).length === 0 && (
+                                <div className="text-[10px] text-outline-variant font-mono">No active terminal runtimes.</div>
                             )}
                         </div>
-                    </section>
-                ))}
+                    </div>
+                </div>
             </div>
         </div>
     )

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, ReactNode } from 'react'
-import { BellRing, Check, FilePenLine, Search, Shield, ShieldAlert, ShieldX, X } from 'lucide-react'
+import { BellRing, Check, FilePenLine, Search, Shield, ShieldAlert, ShieldX, X, Bolt, MemoryStick, FileText, Link, MessageSquare, Clock, Terminal, Layers, Sparkles, Filter, ChevronRight } from 'lucide-react'
 import DiffViewer from '../components/DiffViewer'
 import { buildAuthHeaders } from '../utils/authSession'
 
@@ -31,7 +31,6 @@ export default function ApprovalQueue() {
     const [rejectReason, setRejectReason] = useState('')
     const [showReasonError, setShowReasonError] = useState(false)
     const [riskFilter, setRiskFilter] = useState('all')
-    const [query, setQuery] = useState('')
 
     useEffect(() => {
         fetch('http://localhost:3000/approvals/pending', { headers: buildAuthHeaders() })
@@ -46,12 +45,9 @@ export default function ApprovalQueue() {
 
     const filteredApprovals = useMemo(() => {
         return approvals.filter((approval) => {
-            const matchesRisk = riskFilter === 'all' || approval.risk_level.toLowerCase() === riskFilter
-            const haystack = `${approval.agent_id} ${approval.summary} ${approval.action_type} ${approval.risk_reason}`.toLowerCase()
-            const matchesQuery = haystack.includes(query.trim().toLowerCase())
-            return matchesRisk && matchesQuery
+            return riskFilter === 'all' || approval.risk_level.toLowerCase() === riskFilter
         })
-    }, [approvals, query, riskFilter])
+    }, [approvals, riskFilter])
 
     const handleApprove = async (id: string) => {
         try {
@@ -110,82 +106,69 @@ export default function ApprovalQueue() {
 
     if (loading) {
         return (
-            <div className="space-y-6 animate-pulse">
-                <div className="glass rounded-xl p-8">
-                    <div className="h-4 w-28 rounded bg-[var(--border-subtle)]" />
-                    <div className="mt-4 h-8 w-3/4 rounded bg-[var(--border-subtle)]" />
-                </div>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    {Array.from({ length: 3 }).map((_, index) => <div key={index} className="glass h-28 rounded-xl" />)}
-                </div>
+            <div className="flex-1 flex items-center justify-center min-h-[50vh]">
+                <div className="w-8 h-8 rounded-full border-t-2 border-primary animate-spin"></div>
             </div>
         )
     }
 
     return (
-        <div className="space-y-6 animate-fade-in">
-            <section className="glass rounded-2xl p-6 md:p-8">
-                <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                    <div className="max-w-2xl space-y-3">
-                        <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[13px] font-medium uppercase tracking-[0.16em] text-[var(--accent-info)]">
-                            <BellRing size={14} /> Approvals
-                        </div>
-                        <h2 className="font-headline text-[28px] font-bold tracking-tight text-[var(--text-primary)] md:text-[36px]">
-                            Every risky action should be readable before it is approved.
-                        </h2>
-                        <p className="text-[15px] leading-7 text-[var(--text-secondary)]">
-                            Review cards are designed for quick human judgment: clear risk level, readable summaries, diff visibility, and decisive approve or reject actions.
+        <div className="py-4 md:py-8 min-h-[calc(100vh-7rem)]">
+            <div className="max-w-5xl mx-auto">
+                {/* Page Header */}
+                <div className="mb-8 md:mb-10 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
+                    <div>
+                        <h1 className="text-3xl font-headline font-bold tracking-tight text-on-surface mb-2 uppercase">Approval Queue</h1>
+                        <p className="text-on-surface-variant text-sm flex items-center gap-2">
+                            {stats.pending > 0 ? (
+                                <>
+                                    <span className="w-2 h-2 rounded-full bg-secondary animate-pulse shadow-[0_0_8px_rgba(123,219,128,0.5)]"></span>
+                                    {stats.pending} pending actions requiring immediate triage
+                                </>
+                            ) : (
+                                <>
+                                    <span className="w-2 h-2 rounded-full bg-outline"></span>
+                                    Queue is currently empty
+                                </>
+                            )}
                         </p>
                     </div>
-
-                    <div className="surface-panel rounded-xl p-5 min-w-0 lg:min-w-72">
-                        <div className="text-[13px] font-medium text-[var(--text-secondary)]">Queue health</div>
-                        <div className="mt-3 flex items-end justify-between gap-4">
-                            <div>
-                                <div className="text-3xl font-bold text-[var(--text-primary)]">{stats.pending}</div>
-                                <div className="text-[13px] text-[var(--text-muted)]">pending decisions</div>
-                            </div>
-                            <div className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[13px] font-medium text-[var(--accent-info)]">
-                                {stats.approved + stats.rejected} resolved this session
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <StatCard label="Pending" value={stats.pending} icon={<BellRing size={18} />} borderClass="border-amber-500/20" />
-                <StatCard label="Approved" value={stats.approved} icon={<Check size={18} />} borderClass="border-green-500/20" />
-                <StatCard label="Rejected" value={stats.rejected} icon={<X size={18} />} borderClass="border-red-500/20" />
-            </div>
-
-            <section className="space-y-4">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Approval Queue</h3>
-                    <div className="flex flex-col gap-3 md:flex-row">
-                        <div className="relative">
-                            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-                            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search approvals" className="app-input min-w-[220px] pl-10 pr-4" />
-                        </div>
-                        <select value={riskFilter} onChange={(e) => setRiskFilter(e.target.value)} className="app-input px-4">
-                            <option value="all">All risks</option>
-                            <option value="high">High risk</option>
-                            <option value="medium">Medium risk</option>
-                            <option value="low">Low risk</option>
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 w-full md:w-auto">
+                        <select
+                            value={riskFilter}
+                            onChange={(e) => setRiskFilter(e.target.value)}
+                            className="w-full sm:w-auto bg-surface-container border border-outline-variant/20 focus:border-primary/50 text-on-surface-variant text-xs rounded-sm px-3 py-2 outline-none"
+                        >
+                            <option value="all">All Risks</option>
+                            <option value="high">High Risk</option>
+                            <option value="medium">Medium Risk</option>
+                            <option value="low">Low Risk</option>
                         </select>
+                        <button className="w-full sm:w-auto bg-surface-container hover:bg-surface-container-high text-on-surface-variant px-4 py-2 text-xs font-medium rounded-sm border border-outline-variant/10 transition-all">
+                            Bulk Reject
+                        </button>
+                        <button className="w-full sm:w-auto bg-gradient-to-b from-primary-container to-primary text-on-primary-container px-4 py-2 text-xs font-bold rounded-sm shadow-[0_4px_14px_0_rgba(88,166,255,0.1)] active:scale-95 transition-all">
+                            Approve All (Safe)
+                        </button>
                     </div>
                 </div>
 
+                {/* Central Feed of Approval Cards */}
                 {filteredApprovals.length === 0 ? (
-                    <div className="glass rounded-xl border border-dashed border-[var(--border-subtle)] p-16 text-center">
-                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] text-[var(--accent-success)]">
-                            <Check size={28} />
+                    <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
+                        <div className="w-20 h-20 bg-surface-container rounded-full flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(162,201,255,0.05)]">
+                            <Check className="text-secondary text-4xl" size={32} />
                         </div>
-                        <p className="text-[18px] font-semibold text-[var(--text-primary)]">No pending approvals</p>
-                        <p className="mt-2 text-[15px] text-[var(--text-secondary)]">You&apos;re all caught up.</p>
+                        <h3 className="text-2xl font-headline font-bold text-on-surface mb-2 uppercase tracking-tight">Triage Completed</h3>
+                        <p className="text-on-surface-variant max-w-xs mx-auto text-sm leading-relaxed">
+                            The queue is clear. All agent actions have been processed or deferred. System operating at peak efficiency.
+                        </p>
+                        <button className="mt-8 text-primary font-mono text-xs uppercase tracking-widest flex items-center gap-2 hover:gap-3 transition-all">
+                            View Activity Log <ChevronRight size={14} />
+                        </button>
                     </div>
                 ) : (
-                    <div className="grid gap-4">
+                    <div className="space-y-6">
                         {filteredApprovals.map((approval, index) => (
                             <ApprovalCard
                                 key={approval.id}
@@ -203,24 +186,12 @@ export default function ApprovalQueue() {
                                 rejectReason={rejectReason}
                                 setRejectReason={setRejectReason}
                                 showReasonError={showReasonError}
+                                setShowReasonError={setShowReasonError}
                             />
                         ))}
                     </div>
                 )}
-            </section>
-        </div>
-    )
-}
-
-function StatCard({ label, value, icon, borderClass }: { label: string; value: number; icon: ReactNode; borderClass: string }) {
-    return (
-        <div className={`glass rounded-xl border ${borderClass} p-5`}>
-            <div className="mb-4 flex items-center justify-between">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] text-[var(--accent-info)]">{icon}</div>
-                <div className="text-[13px] text-[var(--text-muted)]">State</div>
             </div>
-            <div className="text-3xl font-bold text-[var(--text-primary)]">{value}</div>
-            <div className="mt-1 text-[13px] text-[var(--text-secondary)]">{label}</div>
         </div>
     )
 }
@@ -236,6 +207,7 @@ function ApprovalCard({
     rejectReason,
     setRejectReason,
     showReasonError,
+    setShowReasonError,
 }: {
     approval: Approval
     index: number
@@ -247,97 +219,172 @@ function ApprovalCard({
     rejectReason: string
     setRejectReason: (reason: string) => void
     showReasonError: boolean
+    setShowReasonError: (v: boolean) => void
 }) {
-    const riskBadge = getRiskBadge(approval.risk_level)
+    const { riskClass, riskColor, riskLabel, RiskIcon, borderClass, bgClass, glowClass } = getRiskStyles(approval.risk_level)
+    const timeAgo = getTimeAgo(approval.requested_at)
 
     return (
-        <div className="glass rounded-xl border border-[var(--border-subtle)] p-5 transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--border-subtle)]" style={{ animationDelay: `${index * 40}ms` }}>
-            <div className="mb-4 flex items-start justify-between gap-4">
-                <div className="flex gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] text-[var(--accent-info)]">
-                        <FilePenLine size={18} />
-                    </div>
-                    <div>
-                        <div className="mb-2 inline-flex items-center gap-2 text-[13px] text-[var(--text-secondary)]">
-                            {getRiskIcon(approval.risk_level)}
-                            <span>{approval.action_type}</span>
+        <div className={`bg-surface-container rounded-md overflow-hidden relative group transition-all duration-300 ${isRejecting ? 'ring-1 ring-error/50 scale-[1.01]' : ''}`} style={{ animationFillMode: 'both', animationDuration: '400ms', animationName: 'fadeInUp', animationDelay: `${index * 50}ms` }}>
+            <div className={`absolute left-0 top-0 bottom-0 w-1 ${bgClass}`}></div>
+            <div className="p-5">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 bg-surface-container-lowest rounded-sm flex items-center justify-center border border-outline-variant/15`}>
+                            <RiskIcon className={`${riskColor}`} size={18} />
                         </div>
-                        <h4 className="text-[18px] font-semibold text-[var(--text-primary)]">{approval.summary || approval.action_type}</h4>
-                        <p className="mt-1 text-[13px] text-[var(--text-secondary)]">Agent: {approval.agent_id}</p>
+                        <div>
+                            <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                                <span className="text-xs font-mono font-bold text-on-surface uppercase">{approval.agent_id}</span>
+                                <span className={`px-2 py-0.5 rounded-full ${riskClass} text-[10px] font-bold uppercase tracking-widest`}>{riskLabel}</span>
+                            </div>
+                            <p className="text-on-surface-variant text-sm font-medium">{approval.summary || approval.action_type}</p>
+                        </div>
+                    </div>
+                    <div className="text-[10px] font-mono text-primary flex items-center gap-1 hover:underline cursor-pointer Shrink-0">
+                        <Link size={12} />
+                        Object_{approval.id.substring(0, 6)}
                     </div>
                 </div>
-                <div className={`rounded-full border px-3 py-1 text-[13px] font-medium ${riskBadge}`}>{approval.risk_level}</div>
+
+                {/* Risk Reason Context */}
+                {approval.risk_reason && (
+                    <div className="bg-surface-container-lowest p-4 rounded-sm border border-outline-variant/10 mb-4 sm:mb-5">
+                        <div className="flex items-start gap-3">
+                            <FileText size={16} className="text-outline shrink-0 mt-0.5" />
+                            <div className="text-xs text-on-surface-variant leading-relaxed">
+                                <span className="text-on-surface font-semibold mr-2">Risk Context:</span>
+                                {approval.risk_reason}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Code Diff Preview */}
+                {approval.diff && (
+                    <div className={`bg-surface-container-lowest rounded-sm border border-outline-variant/10 font-mono text-xs overflow-hidden mb-5`}>
+                        <div className="bg-surface-container-low px-3 py-1.5 border-b border-outline-variant/10 flex justify-between items-center">
+                            <span className="text-outline text-[10px]">{approval.is_new_file ? 'New File Creation' : 'File Modification'}</span>
+                            <span className={`${riskColor} text-[10px] uppercase`}>{approval.action_type}</span>
+                        </div>
+                        <div className="p-3 bg-[#0a0e14] code-diff-bg overflow-x-auto">
+                            <DiffViewer diff={approval.diff} isNewFile={approval.is_new_file ?? false} />
+                        </div>
+                    </div>
+                )}
+
+                {approval.action_details && Object.keys(approval.action_details).length > 0 && !approval.diff && (
+                    <div className="bg-surface-container-lowest rounded-sm border border-outline-variant/10 font-mono text-xs overflow-hidden mb-5">
+                        <div className="bg-surface-container-low px-3 py-1.5 border-b border-outline-variant/10">
+                            <span className="text-outline text-[10px] uppercase">Payload Data</span>
+                        </div>
+                        <pre className="p-3 text-[11px] text-outline overflow-x-auto whitespace-pre-wrap leading-relaxed">
+                            {JSON.stringify(approval.action_details, null, 2)}
+                        </pre>
+                    </div>
+                )}
+
+                {/* Action Area */}
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mt-2">
+                    <div className="flex flex-wrap gap-4 text-outline text-[11px] font-medium uppercase tracking-tighter">
+                        <span className="flex items-center gap-1"><Clock size={14} /> {timeAgo}</span>
+                        <span className="flex items-center gap-1"><Terminal size={14} /> Type: {approval.action_type}</span>
+                    </div>
+
+                    {isRejecting ? (
+                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 w-full sm:w-auto mt-4 sm:mt-0 p-3 sm:p-0 bg-surface-container-lowest sm:bg-transparent rounded border border-error/20 sm:border-transparent">
+                            <div className="w-full sm:w-64">
+                                <input
+                                    type="text"
+                                    value={rejectReason}
+                                    onChange={(e) => {
+                                        setRejectReason(e.target.value)
+                                        if (e.target.value) setShowReasonError(false)
+                                    }}
+                                    className={`w-full bg-surface-container border ${showReasonError ? 'border-error' : 'border-outline-variant/30'} text-xs focus:ring-1 focus:ring-error focus:border-error text-on-surface rounded-sm px-3 py-2 outline-none placeholder:text-outline`}
+                                    placeholder="Enter rejection reason..."
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="flex gap-2 w-full sm:w-auto">
+                                <button onClick={onRejectCancel} className="flex-1 sm:flex-none px-4 py-2 text-xs font-bold text-outline border border-outline-variant/30 hover:bg-surface-container-high transition-colors rounded-sm">
+                                    Cancel
+                                </button>
+                                <button onClick={() => onRejectConfirm(approval.id)} className="flex-1 sm:flex-none px-4 py-2 text-xs font-bold bg-error text-on-error hover:brightness-110 active:scale-95 transition-all rounded-sm uppercase tracking-wide">
+                                    Confirm
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                            <button onClick={() => onRejectClick(approval.id)} className={`flex-1 sm:flex-none px-4 py-2 text-xs font-bold ${riskColor} border ${borderClass} hover:bg-surface-container-high transition-colors rounded-sm`}>
+                                Reject
+                            </button>
+                            <button onClick={() => onRejectClick(approval.id)} className="hidden sm:flex px-3 py-2 text-xs font-bold text-outline border border-outline-variant/30 hover:bg-surface-container-high transition-colors rounded-sm items-center gap-1">
+                                <MessageSquare size={14} /> Reason
+                            </button>
+                            <button onClick={() => onApprove(approval.id)} className={`flex-1 sm:flex-none px-6 py-2 text-xs font-bold ${bgClass} ${riskColor === 'text-error' ? 'text-on-error' : 'text-surface-container-lowest'} shadow-lg hover:brightness-110 active:scale-95 transition-all rounded-sm uppercase tracking-wide`}>
+                                {riskLabel === 'High Risk' || riskLabel === 'Critical' ? 'Authorize' : 'Approve'}
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
-
-            {approval.risk_reason && (
-                <div className="surface-panel mb-4 rounded-xl p-4 text-[15px] text-[var(--text-secondary)]">
-                    <p className="mb-1 font-medium text-[var(--text-primary)]">Risk Assessment</p>
-                    {approval.risk_reason}
-                </div>
-            )}
-
-            {approval.diff && (
-                <div className="mb-4 code-surface rounded-xl p-3">
-                    <DiffViewer diff={approval.diff} isNewFile={approval.is_new_file ?? false} />
-                </div>
-            )}
-
-            {approval.action_details && Object.keys(approval.action_details).length > 0 && !approval.diff && (
-                <pre className="code-surface mb-4 overflow-auto rounded-xl p-3 text-[13px] text-[var(--text-secondary)]">
-                    {JSON.stringify(approval.action_details, null, 2)}
-                </pre>
-            )}
-
-            {isRejecting ? (
-                <div className="space-y-3">
-                    <div>
-                        <label className="mb-2 block text-[15px] font-medium text-[var(--text-primary)]">Why are you rejecting this?</label>
-                        <textarea
-                            value={rejectReason}
-                            onChange={(e) => setRejectReason(e.target.value)}
-                            className="surface-panel w-full rounded-xl p-3 text-[15px] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
-                            rows={3}
-                            placeholder="Explain the rejection reason"
-                            autoFocus
-                        />
-                        {showReasonError && <p className="mt-1 text-[13px] text-[var(--accent-danger)]">Rejection reason is required.</p>}
-                    </div>
-                    <div className="flex gap-3">
-                        <button onClick={() => onRejectConfirm(approval.id)} className="rounded-lg border border-red-500/30 bg-red-600/20 px-4 py-3 text-sm font-medium text-[var(--accent-danger)]">Confirm Reject</button>
-                        <button onClick={onRejectCancel} className="btn-secondary rounded-lg px-4 py-3 text-sm font-medium">Cancel</button>
-                    </div>
-                </div>
-            ) : (
-                <div className="flex gap-3">
-                    <button onClick={() => onRejectClick(approval.id)} className="rounded-lg border border-red-500/30 bg-red-600/20 px-4 py-3 text-sm font-medium text-[var(--accent-danger)] inline-flex items-center gap-2"><X size={16} /> Reject</button>
-                    <button onClick={() => onApprove(approval.id)} className="btn-primary rounded-lg px-4 py-3 text-sm font-medium inline-flex items-center gap-2"><Check size={16} /> Approve</button>
-                </div>
-            )}
         </div>
     )
 }
 
-function getRiskBadge(level: string): string {
-    switch (level) {
-        case 'critical':
-            return 'bg-red-500/10 text-[var(--accent-danger)] border-red-500/20'
-        case 'high':
-            return 'bg-red-500/10 text-[var(--accent-danger)] border-red-500/20'
-        case 'medium':
-            return 'bg-amber-500/10 text-[var(--accent-warning)] border-amber-500/20'
-        default:
-            return 'bg-blue-500/10 text-[var(--accent-info)] border-blue-500/20'
+function getRiskStyles(level: string) {
+    const l = level?.toLowerCase() || ''
+    if (l === 'critical' || l === 'high') {
+        return {
+            riskClass: 'bg-error/10 text-error',
+            riskColor: 'text-error',
+            bgClass: 'bg-error',
+            borderClass: 'border-error/20',
+            glowClass: 'shadow-[0_0_8px_#ffb4ab]',
+            riskLabel: l === 'critical' ? 'Critical' : 'High Risk',
+            RiskIcon: Bolt
+        }
+    }
+    if (l === 'medium') {
+        return {
+            riskClass: 'bg-tertiary/10 text-tertiary',
+            riskColor: 'text-tertiary',
+            bgClass: 'bg-tertiary',
+            borderClass: 'border-tertiary/20',
+            glowClass: 'shadow-[0_0_8px_#fabc45]',
+            riskLabel: 'Medium Risk',
+            RiskIcon: MemoryStick
+        }
+    }
+    return {
+        riskClass: 'bg-secondary/10 text-secondary',
+        riskColor: 'text-secondary',
+        bgClass: 'bg-secondary',
+        borderClass: 'border-secondary/20',
+        glowClass: 'shadow-[0_0_8px_#7bdb80]',
+        riskLabel: 'Low Risk',
+        RiskIcon: FileText
     }
 }
 
-function getRiskIcon(level: string) {
-    switch (level) {
-        case 'critical':
-        case 'high':
-            return <ShieldX size={16} className="text-[var(--accent-danger)]" />
-        case 'medium':
-            return <ShieldAlert size={16} className="text-[var(--accent-warning)]" />
-        default:
-            return <Shield size={16} className="text-[var(--accent-info)]" />
-    }
+function getTimeAgo(dateString: string) {
+    if (!dateString) return 'Just now'
+
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffSecs = Math.floor(diffMs / 1000)
+
+    if (diffSecs < 60) return `${diffSecs}s ago`
+
+    const diffMins = Math.floor(diffSecs / 60)
+    if (diffMins < 60) return `${diffMins}m ago`
+
+    const diffHours = Math.floor(diffMins / 60)
+    if (diffHours < 24) return `${diffHours}h ago`
+
+    const diffDays = Math.floor(diffHours / 24)
+    return `${diffDays}d ago`
 }

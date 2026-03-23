@@ -1,0 +1,6 @@
+src/components/SessionTimeline.tsx(2,72): error TS2305: Module '"lucide-react"' has no exported member 'Dns'.
+src/components/SessionTimeline.tsx(109,60): error TS2304: Cannot find name 'Bot'.
+src/components/SessionTimeline.tsx(129,33): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/components/SessionTimeline.tsx(132,43): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+src/screens/ApprovalQueue.tsx(299,61): error TS2552: Cannot find name 'setShowReasonError'. Did you mean 'showReasonError'?
+src/screens/ExecutionTimeline.tsx(2,34): error TS2305: Module '"lucide-react"' has no exported member 'Dns'.
