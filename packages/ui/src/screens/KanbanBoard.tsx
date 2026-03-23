@@ -189,15 +189,15 @@ export default function KanbanBoard() {
                     <h1 className="font-headline text-3xl font-bold tracking-tight text-on-surface">Mission Kanban</h1>
                     <p className="text-on-surface-variant text-sm mt-1 max-w-md">Real-time task distribution across autonomous agent clusters.</p>
                 </div>
-                <div className="flex flex-wrap gap-3">
-                    <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value as 'all' | Task['priority'])} className="px-4 py-2 bg-surface-container text-on-surface text-xs font-medium rounded-sm border border-outline-variant/20 focus:ring-1 focus:ring-primary outline-none">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full md:w-auto">
+                    <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value as 'all' | Task['priority'])} className="w-full sm:w-auto px-4 py-2 bg-surface-container text-on-surface text-xs font-medium rounded-sm border border-outline-variant/20 focus:ring-1 focus:ring-primary outline-none">
                         <option value="all">All Priorities</option>
                         <option value="P0">P0 - Critical</option>
                         <option value="P1">P1 - High</option>
                         <option value="P2">P2 - Medium</option>
                         <option value="P3">P3 - Low</option>
                     </select>
-                    <button onClick={() => setShowNewTaskForm(!showNewTaskForm)} className="px-4 py-2 bg-gradient-to-b from-primary-container to-primary text-on-primary-container text-xs font-bold rounded-sm shadow-lg shadow-primary/10 hover:brightness-110 transition-all flex items-center gap-2">
+                    <button onClick={() => setShowNewTaskForm(!showNewTaskForm)} className="w-full sm:w-auto px-4 py-2 bg-gradient-to-b from-primary-container to-primary text-on-primary-container text-xs font-bold rounded-sm shadow-lg shadow-primary/10 hover:brightness-110 transition-all flex items-center justify-center gap-2">
                         <Plus size={14} strokeWidth={3} /> Deploy New Task
                     </button>
                 </div>
@@ -251,7 +251,7 @@ export default function KanbanBoard() {
                     const config = getColumnConfig(column)
 
                     return (
-                        <div key={column} className="flex flex-col w-[18rem] md:w-80 shrink-0 h-full">
+                        <div key={column} className="flex flex-col w-[16rem] sm:w-[18rem] md:w-80 shrink-0 h-full">
                             <div className="flex items-center justify-between mb-4 px-2 shrink-0">
                                 <div className="flex items-center gap-3">
                                     <span className={`text-[10px] font-mono ${config.colorClass} font-bold tracking-tighter ${config.bgClass} px-2 py-0.5 rounded`}>{config.index}</span>
@@ -371,7 +371,7 @@ export default function KanbanBoard() {
                 })}
 
                 {/* Column: Analytics / Realtime Insight (Bento style) */}
-                <div className="flex flex-col w-64 xl:w-80 shrink-0 ml-4 h-full border-l border-outline-variant/10 pl-8 overflow-y-auto custom-scrollbar pb-8">
+                <div className="hidden 2xl:flex flex-col w-64 xl:w-80 shrink-0 ml-4 h-full border-l border-outline-variant/10 pl-8 overflow-y-auto custom-scrollbar pb-8">
                     <div className="mb-4">
                         <h3 className="font-headline font-semibold text-sm uppercase tracking-wider text-primary">Operational Metrics</h3>
                     </div>

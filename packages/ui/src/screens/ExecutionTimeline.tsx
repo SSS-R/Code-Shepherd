@@ -58,9 +58,9 @@ export default function ExecutionTimeline() {
     }
 
     return (
-        <div className="flex flex-col xl:flex-row bg-surface text-on-surface min-h-[calc(100vh-7rem)] gap-6 xl:gap-0">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_20rem] bg-surface text-on-surface min-h-[calc(100vh-7rem)] gap-6 xl:gap-0">
             {/* Main Content Canvas */}
-            <main className="flex-1 overflow-y-auto custom-scrollbar min-w-0">
+            <main className="overflow-y-auto custom-scrollbar min-w-0">
                 {/* Header Section */}
                 <header className="mb-6 md:mb-10 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
                     <div className="space-y-1">
@@ -111,12 +111,12 @@ export default function ExecutionTimeline() {
                 </header>
 
                 {/* Timeline Container */}
-                <section className="max-w-4xl space-y-4">
+                <section className="max-w-5xl space-y-4">
                     <SessionTimeline events={filtered} limit={limit} />
                 </section>
 
                 {/* Footer Pagination */}
-                <footer className="mt-12 mb-20 max-w-4xl flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <footer className="mt-12 mb-20 max-w-5xl flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-xs text-outline font-body">Showing {filtered.length} of {events.length} fetched limits</span>
                     <div className="flex gap-2">
                         <button onClick={() => setLimit(Math.max(50, limit - 50))} className="px-4 py-2 bg-surface-container-low text-xs border border-outline-variant/10 rounded-sm hover:bg-surface-container-high text-on-surface transition-all">Less</button>
@@ -126,7 +126,7 @@ export default function ExecutionTimeline() {
             </main>
 
             {/* Side Inspection Panel (Asymmetric Design Element) */}
-            <aside className="hidden xl:flex w-80 shrink-0 bg-surface-container-low border-l border-outline-variant/15 flex-col p-6 overflow-y-auto">
+            <aside className="hidden xl:flex bg-surface-container-low border-l border-outline-variant/15 flex-col p-6 overflow-y-auto min-w-0">
                 <h2 className="font-headline text-xs font-bold uppercase tracking-widest text-[#58a6ff] mb-6">Live Heartbeat</h2>
 
                 <div className="space-y-6">

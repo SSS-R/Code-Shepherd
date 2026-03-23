@@ -62,7 +62,7 @@ function App() {
     { key: 'settings' as const, label: 'Settings', icon: <SettingsIcon size={20} /> },
   ]), [])
 
-  const activeTopTab = currentScreen === 'dashboard' ? 'overview' : currentScreen === 'settings' ? 'settings' : 'monitor'
+  const activeTopTab = currentScreen === 'dashboard' ? 'overview' : currentScreen === 'timeline' ? 'network' : 'resources'
 
   return (
     <div className="min-h-screen bg-surface text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
@@ -81,10 +81,10 @@ function App() {
               <button className={`${activeTopTab === 'overview' ? 'text-[#58a6ff] border-b-2 border-[#58a6ff]' : 'text-[#8b919d] hover:bg-[#1c2026]'} h-full flex items-center px-2 text-sm font-medium transition-all duration-150`}>
                 Overview
               </button>
-              <button className={`${activeTopTab === 'monitor' ? 'text-[#58a6ff] border-b-2 border-[#58a6ff]' : 'text-[#8b919d] hover:bg-[#1c2026]'} h-full flex items-center px-2 text-sm font-medium transition-all duration-150`}>
+              <button className={`${activeTopTab === 'network' ? 'text-[#58a6ff] border-b-2 border-[#58a6ff]' : 'text-[#8b919d] hover:bg-[#1c2026]'} h-full flex items-center px-2 text-sm font-medium transition-all duration-150`}>
                 Network
               </button>
-              <button className={`${activeTopTab === 'settings' ? 'text-[#58a6ff] border-b-2 border-[#58a6ff]' : 'text-[#8b919d] hover:bg-[#1c2026]'} h-full flex items-center px-2 text-sm font-medium transition-all duration-150`}>
+              <button className={`${activeTopTab === 'resources' ? 'text-[#58a6ff] border-b-2 border-[#58a6ff]' : 'text-[#8b919d] hover:bg-[#1c2026]'} h-full flex items-center px-2 text-sm font-medium transition-all duration-150`}>
                 Resources
               </button>
             </nav>
@@ -155,7 +155,7 @@ function App() {
       </aside>
 
       {/* Main Content Canvas */}
-      <main className="relative mt-14 min-h-[calc(100vh-3.5rem)] p-4 md:p-6 lg:ml-64 lg:p-8 overflow-x-hidden">
+      <main className="relative mt-14 min-h-[calc(100vh-3.5rem)] overflow-x-hidden px-4 py-4 md:px-6 md:py-6 lg:ml-64 lg:px-8 lg:py-8 max-w-[calc(100vw-0px)] lg:max-w-[calc(100vw-16rem)]">
         {currentScreen === 'dashboard' ? (
           <Dashboard onViewAgent={(id) => { setSelectedAgentId(id); setCurrentScreen('agent-detail'); }} />
         ) : currentScreen === 'inbox' ? (
