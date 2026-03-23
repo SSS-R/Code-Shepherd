@@ -274,8 +274,8 @@ export default function Settings() {
 
     return (
         <div className="space-y-6">
-            <section className="glass rounded-xl p-6 md:p-8">
-                <h2 className="text-[28px] font-bold tracking-tight text-[var(--text-primary)] md:text-[32px]">Collaboration settings</h2>
+            <section className="glass rounded-2xl p-6 md:p-8">
+                <h2 className="font-headline text-[28px] font-bold tracking-tight text-[var(--text-primary)] md:text-[36px]">Connectors and governance</h2>
                 <p className="mt-2 text-[15px] text-[var(--text-secondary)]">Phase 3 adds account setup, teams, invitations, and role-aware operational control.</p>
                 <div className="mt-4 inline-flex rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-[13px] font-medium text-violet-300">
                     Active role: {activeRole}
@@ -283,8 +283,8 @@ export default function Settings() {
             </section>
 
             <section className="space-y-4">
-                <div className="glass rounded-xl p-6 md:p-8">
-                    <h3 className="text-[24px] font-bold tracking-tight text-[var(--text-primary)]">Plans and beta pricing</h3>
+                <div className="glass rounded-2xl p-6 md:p-8">
+                    <h3 className="font-headline text-[24px] font-bold tracking-tight text-[var(--text-primary)]">Plans and beta pricing</h3>
                     <p className="mt-2 text-[15px] text-[var(--text-secondary)]">
                         Beta access is managed from the website waitlist. The first 200 approved users get Beta Pro before launch, then keep launch discounts afterward.
                     </p>
@@ -325,7 +325,7 @@ export default function Settings() {
                 </div>
 
                 <div className="grid gap-4 lg:grid-cols-2">
-                    <div className="glass rounded-xl p-5">
+                    <div className="glass rounded-2xl p-5">
                         <h4 className="text-[18px] font-semibold text-[var(--text-primary)]">Beta launch policy</h4>
                         <ul className="mt-4 space-y-2 text-[14px] text-[var(--text-secondary)]">
                             <li>The website waitlist is first-come, first-served until 200 users are invited.</li>
@@ -335,7 +335,7 @@ export default function Settings() {
                         </ul>
                     </div>
 
-                    <div className="glass rounded-xl p-5">
+                    <div className="glass rounded-2xl p-5">
                         <h4 className="text-[18px] font-semibold text-[var(--text-primary)]">Remaining non-security beta gaps</h4>
                         <ul className="mt-4 space-y-2 text-[14px] text-[var(--text-secondary)]">
                             <li>Real bridge adapters still need to be connected to external tools, not just the relay scaffolding.</li>
@@ -348,12 +348,12 @@ export default function Settings() {
             </section>
 
             <section className="grid gap-4 lg:grid-cols-2">
-                <div className="glass rounded-xl p-5 space-y-3">
+                <div className="glass rounded-2xl p-5 space-y-3">
                     <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Create account / login</h3>
-                    <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
-                    <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
-                    <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
-                    <input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="Team name (optional)" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
+                    <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="app-input px-4" />
+                    <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="app-input px-4" />
+                    <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" className="app-input px-4" />
+                    <input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="Team name (optional)" className="app-input px-4" />
                     <div className="flex gap-3 flex-wrap">
                         <button onClick={() => void signUp()} className="btn-primary rounded-lg px-4 py-3 text-sm font-medium">Sign Up</button>
                         <button onClick={() => void login()} className="btn-secondary rounded-lg px-4 py-3 text-sm font-medium">Login</button>
@@ -363,7 +363,7 @@ export default function Settings() {
                     <p className="text-[13px] text-[var(--text-secondary)]">{sessionLabel}</p>
                 </div>
 
-                <div className="glass rounded-xl p-5 space-y-3">
+                <div className="glass rounded-2xl p-5 space-y-3">
                     <div className="flex items-center justify-between">
                         <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Your teams</h3>
                         <button onClick={() => void loadTeams()} className="btn-secondary rounded-lg px-3 py-2 text-sm font-medium">Refresh</button>
@@ -382,19 +382,19 @@ export default function Settings() {
             </section>
 
             <section className="grid gap-4 lg:grid-cols-2">
-                <div className="glass rounded-xl p-5 space-y-3">
+                <div className="glass rounded-2xl p-5 space-y-3">
                     <div className="flex items-center justify-between">
                         <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Invite teammate</h3>
                         <button onClick={() => void loadInvitations()} className="btn-secondary rounded-lg px-3 py-2 text-sm font-medium">Refresh invites</button>
                     </div>
-                    <select value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)} className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]">
+                    <select value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)} className="app-input px-4">
                         <option value="">Select team</option>
                         {teams.map((team) => (
                             <option key={team.id} value={team.id}>{team.name}</option>
                         ))}
                     </select>
-                    <input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="Invite email" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
-                    <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]">
+                    <input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="Invite email" className="app-input px-4" />
+                    <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className="app-input px-4">
                         <option value="Developer">Developer</option>
                         <option value="Viewer">Viewer</option>
                         <option value="Admin">Admin</option>
@@ -402,7 +402,7 @@ export default function Settings() {
                     <button onClick={() => void createInvitation()} disabled={activeRole === 'Viewer'} className="btn-primary rounded-lg px-4 py-3 text-sm font-medium disabled:opacity-50">Create invitation</button>
                 </div>
 
-                <div className="glass rounded-xl p-5 space-y-3">
+                <div className="glass rounded-2xl p-5 space-y-3">
                     <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Invitations</h3>
                     {invitations.length === 0 ? (
                         <div className="rounded-lg border border-dashed border-[var(--border-subtle)] p-4 text-[13px] text-[var(--text-muted)]">No invitations loaded.</div>
@@ -421,22 +421,22 @@ export default function Settings() {
             </section>
 
             <section className="grid gap-4 lg:grid-cols-2">
-                <div className="glass rounded-xl p-5 space-y-3">
+                <div className="glass rounded-2xl p-5 space-y-3">
                     <div className="flex items-center justify-between">
                         <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Trusted connectors</h3>
                         <button onClick={() => void loadConnectors()} className="btn-secondary rounded-lg px-3 py-2 text-sm font-medium">Refresh</button>
                     </div>
-                    <input value={connectorForm.connector_id} onChange={(e) => setConnectorForm({ ...connectorForm, connector_id: e.target.value })} placeholder="Connector ID" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
-                    <input value={connectorForm.connector_name} onChange={(e) => setConnectorForm({ ...connectorForm, connector_name: e.target.value })} placeholder="Connector name" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
+                    <input value={connectorForm.connector_id} onChange={(e) => setConnectorForm({ ...connectorForm, connector_id: e.target.value })} placeholder="Connector ID" className="app-input px-4" />
+                    <input value={connectorForm.connector_name} onChange={(e) => setConnectorForm({ ...connectorForm, connector_name: e.target.value })} placeholder="Connector name" className="app-input px-4" />
                     <div className="grid gap-3 md:grid-cols-2">
-                        <input value={connectorForm.adapter_kind} onChange={(e) => setConnectorForm({ ...connectorForm, adapter_kind: e.target.value })} placeholder="Adapter kind" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
-                        <input value={connectorForm.transport} onChange={(e) => setConnectorForm({ ...connectorForm, transport: e.target.value })} placeholder="Transport" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
+                        <input value={connectorForm.adapter_kind} onChange={(e) => setConnectorForm({ ...connectorForm, adapter_kind: e.target.value })} placeholder="Adapter kind" className="app-input px-4" />
+                        <input value={connectorForm.transport} onChange={(e) => setConnectorForm({ ...connectorForm, transport: e.target.value })} placeholder="Transport" className="app-input px-4" />
                     </div>
-                    <input value={connectorForm.scopes} onChange={(e) => setConnectorForm({ ...connectorForm, scopes: e.target.value })} placeholder="Scopes (comma separated)" className="surface-panel rounded-lg px-4 py-3 text-[15px] text-[var(--text-primary)]" />
+                    <input value={connectorForm.scopes} onChange={(e) => setConnectorForm({ ...connectorForm, scopes: e.target.value })} placeholder="Scopes (comma separated)" className="app-input px-4" />
                     <button onClick={() => void trustConnector()} disabled={activeRole !== 'Admin'} className="btn-primary rounded-lg px-4 py-3 text-sm font-medium disabled:opacity-50">Trust connector</button>
                 </div>
 
-                <div className="glass rounded-xl p-5 space-y-3">
+                <div className="glass rounded-2xl p-5 space-y-3">
                     <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Connector governance</h3>
                     {connectors.length === 0 ? (
                         <div className="rounded-lg border border-dashed border-[var(--border-subtle)] p-4 text-[13px] text-[var(--text-muted)]">No connectors registered yet.</div>
@@ -452,7 +452,7 @@ export default function Settings() {
                 </div>
             </section>
 
-            <section className="glass rounded-xl p-5 space-y-3">
+            <section className="glass rounded-2xl p-5 space-y-3">
                 <div className="flex items-center justify-between">
                     <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Connector event history</h3>
                     <button onClick={() => void loadConnectors()} className="btn-secondary rounded-lg px-3 py-2 text-sm font-medium">Refresh history</button>

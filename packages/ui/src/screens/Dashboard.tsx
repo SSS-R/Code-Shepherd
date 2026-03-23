@@ -1,5 +1,5 @@
 import { useState, useEffect, ReactNode } from 'react'
-import { ArrowRight, BellRing, Bot, CircleCheck, CircleX, LayoutDashboard } from 'lucide-react'
+import { ArrowRight, BellRing, Bot, CircleCheck, CircleX, LayoutDashboard, Rocket, Sparkles } from 'lucide-react'
 import ActiveWorkflows from '../components/ActiveWorkflows'
 import { buildAuthHeaders } from '../utils/authSession'
 
@@ -53,29 +53,40 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <section className="glass rounded-xl p-6 md:p-8">
-                <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                    <div className="max-w-2xl space-y-3">
-                        <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[13px] font-medium text-[var(--accent-info)]">
-                            <LayoutDashboard size={14} /> Dashboard
+            <section className="glass rounded-2xl p-6 md:p-8">
+                <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+                    <div className="max-w-3xl space-y-4">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-[var(--accent-primary-strong)]/20 bg-[var(--accent-primary-strong)]/10 px-3 py-1 text-[12px] font-medium uppercase tracking-[0.16em] text-[var(--accent-info)]">
+                            <LayoutDashboard size={14} /> Command Center
                         </div>
-                        <h2 className="text-[28px] font-bold tracking-tight text-[var(--text-primary)] md:text-[32px]">
-                            Glanceable control over every active agent.
+                        <h2 className="font-headline text-[32px] font-bold tracking-tight text-[var(--text-primary)] md:text-[40px]">
+                            Operational pulse for every connected agent cluster.
                         </h2>
-                        <p className="text-[15px] leading-7 text-[var(--text-secondary)]">
-                            The command center highlights what is healthy, what is waiting, and where your attention is needed next.
+                        <p className="max-w-2xl text-[15px] leading-7 text-[var(--text-secondary)]">
+                            The dashboard now follows the Stitch web direction: dense signal-first cards, cluster health metrics, live agent visibility, and immediate access to risky work.
                         </p>
                     </div>
 
-                    <div className="surface-panel rounded-xl p-5 min-w-0 lg:min-w-72">
-                        <div className="text-[13px] font-medium text-[var(--text-secondary)]">System pulse</div>
-                        <div className="mt-3 flex items-end justify-between gap-4">
-                            <div>
-                                <div className="text-3xl font-bold text-[var(--text-primary)]">{stats.activeAgents}</div>
-                                <div className="text-[13px] text-[var(--text-muted)]">agents online now</div>
+                    <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:min-w-[420px]">
+                        <button className="btn-secondary rounded-xl px-4 py-3 text-sm font-medium">
+                            Export Log
+                        </button>
+                        <button className="btn-primary inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold">
+                            <Rocket size={16} /> Deploy Agent
+                        </button>
+                        <div className="surface-panel rounded-xl p-5 sm:col-span-2">
+                            <div className="flex items-center justify-between gap-3 text-[13px] text-[var(--text-secondary)]">
+                                <span>System pulse</span>
+                                <span className="inline-flex items-center gap-2 rounded-full bg-[var(--accent-success)]/10 px-3 py-1 text-[12px] uppercase tracking-[0.16em] text-[var(--accent-success)]"><Sparkles size={12} /> Optimal state</span>
                             </div>
-                            <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-[13px] font-medium text-[var(--accent-warning)]">
-                                <BellRing size={14} /> {stats.pendingApprovals} waiting
+                            <div className="mt-3 flex items-end justify-between gap-4">
+                                <div>
+                                    <div className="text-3xl font-bold text-[var(--text-primary)]">{stats.activeAgents}</div>
+                                    <div className="text-[13px] text-[var(--text-muted)]">agents online now</div>
+                                </div>
+                                <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-[13px] font-medium text-[var(--accent-warning)]">
+                                    <BellRing size={14} /> {stats.pendingApprovals} waiting
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -175,7 +186,7 @@ function DashboardSkeleton() {
 
 function StatCard({ label, value, icon, borderClass }: { label: string; value: number; icon: ReactNode; borderClass: string }) {
     return (
-        <div className={`glass rounded-xl border ${borderClass} p-5`}>
+        <div className={`glass rounded-2xl border ${borderClass} p-5`}>
             <div className="mb-4 flex items-center justify-between">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] text-[var(--accent-info)]">{icon}</div>
                 <div className="text-[13px] text-[var(--text-muted)]">Live</div>
@@ -192,7 +203,7 @@ function AgentCard({ agent, index, onClick }: { agent: Agent; index: number; onC
     return (
         <button
             onClick={onClick}
-            className={`glass w-full rounded-xl border-l-[3px] p-5 text-left transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--border-subtle)] ${online ? 'border-l-green-500' : 'border-l-slate-500'}`}
+            className={`glass w-full rounded-2xl border-l-[3px] p-5 text-left transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--border-active)] ${online ? 'border-l-green-500' : 'border-l-slate-500'}`}
             style={{ animationDelay: `${index * 40}ms` }}
         >
             <div className="flex items-start justify-between gap-3">

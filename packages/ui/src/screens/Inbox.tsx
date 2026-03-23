@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Bot, MessageSquare, Send, ShieldAlert } from 'lucide-react'
+import { Bot, MessageSquare, PlusSquare, Search, Send, ShieldAlert } from 'lucide-react'
 import { buildAuthHeaders, loadSession } from '../utils/authSession'
 
 interface Conversation {
@@ -32,12 +32,26 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
     const [messages, setMessages] = useState<Message[]>([])
     const [draft, setDraft] = useState('')
     const [loading, setLoading] = useState(true)
+    const [query, setQuery] = useState('')
     const session = loadSession()
 
     const selectedConversation = useMemo(
         () => conversations.find((conversation) => conversation.id === selectedConversationId) ?? null,
         [conversations, selectedConversationId],
     )
+
+    const filteredConversations = useMemo(() => {
+        const normalized = query.trim().toLowerCase()
+        if (!normalized) return conversations
+
+        return conversations.filter((conversation) =>
+            [conversation.agent_id, conversation.title, conversation.latest_message_preview, conversation.status]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase()
+                .includes(normalized),
+        )
+    }, [conversations, query])
 
     useEffect(() => {
         fetch('http://localhost:3000/conversations', { headers: buildAuthHeaders() })
@@ -114,23 +128,31 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
     }
 
     return (
-        <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-            <section className="glass rounded-xl p-4 md:p-5">
-                <div className="mb-4 flex items-center gap-2 text-[var(--text-primary)]">
-                    <MessageSquare size={18} />
-                    <h2 className="text-lg font-semibold">Inbox</h2>
+        <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
+            <section className="glass rounded-2xl p-4 md:p-5">
+                <div className="mb-4 flex items-center justify-between gap-2 text-[var(--text-primary)]">
+                    <div className="flex items-center gap-2">
+                        <MessageSquare size={18} />
+                        <h2 className="font-headline text-lg font-semibold">Active Threads</h2>
+                    </div>
+                    <button className="icon-button h-9 w-9"><PlusSquare size={16} /></button>
+                </div>
+
+                <div className="relative mb-4">
+                    <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                    <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter agents or threads" className="app-input w-full pl-10 pr-4" />
                 </div>
 
                 <div className="space-y-3">
-                    {conversations.length === 0 ? (
+                    {filteredConversations.length === 0 ? (
                         <div className="rounded-lg border border-dashed border-[var(--border-subtle)] p-4 text-sm text-[var(--text-secondary)]">
                             No conversations yet.
                         </div>
-                    ) : conversations.map((conversation) => (
+                    ) : filteredConversations.map((conversation) => (
                         <button
                             key={conversation.id}
                             onClick={() => setSelectedConversationId(conversation.id)}
-                            className={`w-full rounded-xl border p-4 text-left transition-colors ${selectedConversationId === conversation.id ? 'border-blue-500/30 bg-blue-500/10' : 'border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)]'}`}
+                            className={`w-full rounded-2xl border p-4 text-left transition-all ${selectedConversationId === conversation.id ? 'border-[var(--accent-primary-strong)]/30 bg-[var(--accent-primary-strong)]/10 shadow-[inset_2px_0_0_var(--accent-primary-strong)]' : 'border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] hover:border-[var(--border-active)]'}`}
                         >
                             <div className="flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]">
@@ -145,15 +167,22 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
                 </div>
             </section>
 
-            <section className="glass rounded-xl p-4 md:p-6">
+            <section className="glass rounded-2xl p-4 md:p-6">
                 {selectedConversation ? (
                     <>
                         <div className="mb-4 border-b border-[var(--border-subtle)] pb-4">
-                            <h3 className="text-xl font-semibold text-[var(--text-primary)]">{selectedConversation.title}</h3>
-                            <p className="mt-1 text-sm text-[var(--text-secondary)]">Agent: {selectedConversation.agent_id}</p>
+                            <div className="flex flex-wrap items-center justify-between gap-4">
+                                <div>
+                                    <h3 className="font-headline text-xl font-semibold text-[var(--text-primary)]">{selectedConversation.title}</h3>
+                                    <p className="mt-1 text-sm text-[var(--text-secondary)]">Agent: {selectedConversation.agent_id}</p>
+                                </div>
+                                <div className="rounded-full border border-[var(--accent-success)]/20 bg-[var(--accent-success)]/10 px-3 py-1 text-xs uppercase tracking-[0.16em] text-[var(--accent-success)]">
+                                    {selectedConversation.status}
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="space-y-3">
+                        <div className="space-y-3 max-h-[58vh] overflow-y-auto pr-1">
                             {messages.length === 0 ? (
                                 <div className="rounded-lg border border-dashed border-[var(--border-subtle)] p-6 text-sm text-[var(--text-secondary)]">
                                     No messages yet. Send the first instruction to this agent.
@@ -165,7 +194,7 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
                                 return (
                                     <div
                                         key={message.id}
-                                        className={`rounded-xl border p-4 ${isApproval ? 'border-amber-500/30 bg-amber-500/10' : isUser ? 'border-blue-500/30 bg-blue-500/10' : 'border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)]'}`}
+                                        className={`rounded-2xl border p-4 ${isApproval ? 'border-amber-500/30 bg-amber-500/10' : isUser ? 'border-[var(--accent-primary-strong)]/30 bg-[var(--accent-primary-strong)]/10' : 'border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)]'}`}
                                     >
                                         <div className="mb-2 flex items-center justify-between gap-3 text-xs text-[var(--text-muted)]">
                                             <span className="inline-flex items-center gap-2">
@@ -183,15 +212,15 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
                             })}
                         </div>
 
-                        <div className="mt-6 flex gap-3">
+                        <div className="mt-6 flex flex-col gap-3 md:flex-row">
                             <textarea
                                 value={draft}
                                 onChange={(e) => setDraft(e.target.value)}
                                 rows={3}
                                 placeholder="Give the agent a command or ask a follow-up question"
-                                className="surface-panel min-h-[96px] flex-1 rounded-xl px-4 py-3 text-[15px] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none"
+                                className="surface-panel min-h-[96px] flex-1 rounded-2xl px-4 py-3 text-[15px] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none"
                             />
-                            <button onClick={() => void sendMessage()} className="btn-primary h-fit rounded-xl px-4 py-3 text-sm font-medium">
+                            <button onClick={() => void sendMessage()} className="btn-primary h-fit rounded-2xl px-5 py-3 text-sm font-medium">
                                 <span className="inline-flex items-center gap-2"><Send size={16} /> Send</span>
                             </button>
                         </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 export interface TimelineEvent {
   id: number;
@@ -21,9 +21,9 @@ interface SessionTimelineProps {
 export default function SessionTimeline({ events, agentId, limit = 50 }: SessionTimelineProps) {
   const [expandedEvent, setExpandedEvent] = useState<number | null>(null);
 
-  const sortedEvents = [...events].sort((a, b) => 
+  const sortedEvents = useMemo(() => [...events].sort((a, b) =>
     new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  ).slice(0, limit);
+  ).slice(0, limit), [events, limit]);
 
   const getTimeAgo = (timestamp: string): string => {
     const now = new Date();
@@ -61,9 +61,9 @@ export default function SessionTimeline({ events, agentId, limit = 50 }: Session
 
   if (events.length === 0) {
     return (
-      <div className="glass rounded-xl p-8 text-center">
+      <div className="glass rounded-2xl p-8 text-center">
         <div className="text-4xl mb-3">📜</div>
-        <p className="text-slate-400">No session events yet</p>
+        <p className="text-[var(--text-secondary)]">No session events yet</p>
         <p className="text-sm text-[var(--text-muted)] mt-1">Agent activity will appear here</p>
       </div>
     );
@@ -80,7 +80,7 @@ export default function SessionTimeline({ events, agentId, limit = 50 }: Session
 
           {/* Event Card */}
           <div
-            className={`glass rounded-xl p-4 border-l-4 ${getCategoryColor(event.category)} transition-all duration-200 hover:scale-[1.01] cursor-pointer`}
+            className={`glass rounded-2xl p-4 border-l-4 ${getCategoryColor(event.category)} transition-all duration-200 hover:scale-[1.01] cursor-pointer`}
             onClick={() => handleEventClick(event.id)}
           >
             <div className="flex items-start gap-4">
@@ -95,7 +95,7 @@ export default function SessionTimeline({ events, agentId, limit = 50 }: Session
                   <span className="text-sm font-semibold text-[var(--text-primary)]">
                     {formatEventType(event.event_type)}
                   </span>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-[var(--text-muted)]">
                     {getTimeAgo(event.timestamp)}
                   </span>
                   <span className="text-xs">
@@ -104,14 +104,14 @@ export default function SessionTimeline({ events, agentId, limit = 50 }: Session
                 </div>
 
                 {/* Preview */}
-                <div className="text-sm text-slate-400 truncate">
+                <div className="text-sm text-[var(--text-secondary)] truncate">
                   {getEventPreview(event.event_type, event.event_details)}
                 </div>
 
                 {/* Expanded Details */}
                 {expandedEvent === event.id && (
                   <div className="mt-3 pt-3 border-t border-[var(--border-subtle)] animate-fade-in">
-                    <div className="text-xs text-slate-300">
+                    <div className="text-xs text-[var(--text-secondary)]">
                       <div className="mb-2">
                         <span className="font-semibold">Event Type:</span> {event.event_type}
                       </div>
@@ -130,7 +130,7 @@ export default function SessionTimeline({ events, agentId, limit = 50 }: Session
                       )}
                       <div>
                         <span className="font-semibold">Details:</span>
-                        <pre className="mt-1 p-2 glass rounded bg-black/20 text-xs overflow-auto">
+                        <pre className="mt-1 overflow-auto rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] p-3 text-xs text-[var(--text-primary)]">
                           {JSON.stringify(event.event_details, null, 2)}
                         </pre>
                       </div>

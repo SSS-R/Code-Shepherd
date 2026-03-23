@@ -1,5 +1,5 @@
-import { useState, useEffect, ReactNode } from 'react'
-import { BellRing, Check, FilePenLine, Shield, ShieldAlert, ShieldX, X } from 'lucide-react'
+import { useMemo, useState, useEffect, ReactNode } from 'react'
+import { BellRing, Check, FilePenLine, Search, Shield, ShieldAlert, ShieldX, X } from 'lucide-react'
 import DiffViewer from '../components/DiffViewer'
 import { buildAuthHeaders } from '../utils/authSession'
 
@@ -30,6 +30,8 @@ export default function ApprovalQueue() {
     const [rejectingId, setRejectingId] = useState<string | null>(null)
     const [rejectReason, setRejectReason] = useState('')
     const [showReasonError, setShowReasonError] = useState(false)
+    const [riskFilter, setRiskFilter] = useState('all')
+    const [query, setQuery] = useState('')
 
     useEffect(() => {
         fetch('http://localhost:3000/approvals/pending', { headers: buildAuthHeaders() })
@@ -41,6 +43,15 @@ export default function ApprovalQueue() {
             })
             .catch(() => setLoading(false))
     }, [])
+
+    const filteredApprovals = useMemo(() => {
+        return approvals.filter((approval) => {
+            const matchesRisk = riskFilter === 'all' || approval.risk_level.toLowerCase() === riskFilter
+            const haystack = `${approval.agent_id} ${approval.summary} ${approval.action_type} ${approval.risk_reason}`.toLowerCase()
+            const matchesQuery = haystack.includes(query.trim().toLowerCase())
+            return matchesRisk && matchesQuery
+        })
+    }, [approvals, query, riskFilter])
 
     const handleApprove = async (id: string) => {
         try {
@@ -113,13 +124,13 @@ export default function ApprovalQueue() {
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <section className="glass rounded-xl p-6 md:p-8">
+            <section className="glass rounded-2xl p-6 md:p-8">
                 <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                     <div className="max-w-2xl space-y-3">
-                        <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[13px] font-medium text-[var(--accent-info)]">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[13px] font-medium uppercase tracking-[0.16em] text-[var(--accent-info)]">
                             <BellRing size={14} /> Approvals
                         </div>
-                        <h2 className="text-[28px] font-bold tracking-tight text-[var(--text-primary)] md:text-[32px]">
+                        <h2 className="font-headline text-[28px] font-bold tracking-tight text-[var(--text-primary)] md:text-[36px]">
                             Every risky action should be readable before it is approved.
                         </h2>
                         <p className="text-[15px] leading-7 text-[var(--text-secondary)]">
@@ -149,12 +160,23 @@ export default function ApprovalQueue() {
             </div>
 
             <section className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <h3 className="text-[18px] font-semibold text-[var(--text-primary)]">Approval Queue</h3>
-                    <div className="text-[13px] text-[var(--text-secondary)]">{approvals.length} pending</div>
+                    <div className="flex flex-col gap-3 md:flex-row">
+                        <div className="relative">
+                            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search approvals" className="app-input min-w-[220px] pl-10 pr-4" />
+                        </div>
+                        <select value={riskFilter} onChange={(e) => setRiskFilter(e.target.value)} className="app-input px-4">
+                            <option value="all">All risks</option>
+                            <option value="high">High risk</option>
+                            <option value="medium">Medium risk</option>
+                            <option value="low">Low risk</option>
+                        </select>
+                    </div>
                 </div>
 
-                {approvals.length === 0 ? (
+                {filteredApprovals.length === 0 ? (
                     <div className="glass rounded-xl border border-dashed border-[var(--border-subtle)] p-16 text-center">
                         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] text-[var(--accent-success)]">
                             <Check size={28} />
@@ -164,7 +186,7 @@ export default function ApprovalQueue() {
                     </div>
                 ) : (
                     <div className="grid gap-4">
-                        {approvals.map((approval, index) => (
+                        {filteredApprovals.map((approval, index) => (
                             <ApprovalCard
                                 key={approval.id}
                                 approval={approval}

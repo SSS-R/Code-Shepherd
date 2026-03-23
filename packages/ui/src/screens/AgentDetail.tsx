@@ -74,42 +74,40 @@ export default function AgentDetail({ agentId, onBack }: AgentDetailProps) {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <button
           onClick={onBack}
-          className="p-2 glass rounded-lg hover:bg-[var(--border-subtle)] transition-colors"
+          className="p-2 glass rounded-xl hover:bg-[var(--bg-surface-elevated)] transition-colors"
         >
           ←
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">{agent.name}</h1>
-          <p className="text-sm text-slate-400">ID: {agent.id}</p>
+          <h1 className="font-headline text-2xl font-bold text-[var(--text-primary)]">{agent.name}</h1>
+          <p className="text-sm text-[var(--text-secondary)]">ID: {agent.id}</p>
         </div>
         <div className={`px-4 py-2 rounded-full text-sm font-bold ${agent.status === 'online'
-            ? 'bg-green-500/20 text-[var(--accent-success)] border border-green-500/30'
-            : 'bg-slate-500/20 text-slate-300 border border-[var(--border-subtle)]/30'
+          ? 'bg-green-500/20 text-[var(--accent-success)] border border-green-500/30'
+          : 'bg-slate-500/20 text-slate-300 border border-[var(--border-subtle)]/30'
           }`}>
           {agent.status}
         </div>
       </div>
 
-      {/* Agent Info */}
-      <div className="glass rounded-xl p-6">
-        <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4">Agent Information</h2>
+      <div className="glass rounded-2xl p-6">
+        <h2 className="font-headline text-lg font-bold text-[var(--text-primary)] mb-4">Agent Information</h2>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-slate-400 mb-1">Status</p>
+            <p className="text-sm text-[var(--text-muted)] mb-1">Status</p>
             <p className="text-[var(--text-primary)] font-semibold">{agent.status}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-400 mb-1">Last Active</p>
+            <p className="text-sm text-[var(--text-muted)] mb-1">Last Active</p>
             <p className="text-[var(--text-primary)] font-semibold">{getTimeAgo(agent.last_heartbeat)}</p>
           </div>
         </div>
         {agent.capabilities && agent.capabilities.length > 0 && (
           <div className="mt-4">
-            <p className="text-sm text-slate-400 mb-2">Capabilities</p>
+            <p className="text-sm text-[var(--text-muted)] mb-2">Capabilities</p>
             <div className="flex flex-wrap gap-2">
               {agent.capabilities.map((cap, i) => (
                 <span

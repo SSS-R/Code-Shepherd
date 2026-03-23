@@ -55,7 +55,7 @@ export default function ActiveWorkflows() {
 
     if (loading) {
         return (
-            <div className="glass rounded-xl p-6 animate-pulse">
+            <div className="glass rounded-2xl p-6 animate-pulse">
                 <div className="h-5 w-40 rounded bg-[var(--border-subtle)]" />
                 <div className="mt-4 h-20 rounded-xl bg-[var(--border-subtle)]" />
             </div>
@@ -64,7 +64,7 @@ export default function ActiveWorkflows() {
 
     if (workflows.length === 0) {
         return (
-            <div className="glass rounded-xl p-8 text-center border border-dashed border-[var(--border-subtle)]">
+            <div className="glass rounded-2xl p-8 text-center border border-dashed border-[var(--border-subtle)]">
                 <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] text-[var(--accent-warning)]">
                     <Pause size={18} />
                 </div>
@@ -77,7 +77,7 @@ export default function ActiveWorkflows() {
     return (
         <div className="space-y-3">
             {workflows.map((workflow) => (
-                <div key={workflow.workflowId} className="glass rounded-xl p-5 border border-[var(--border-subtle)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--border-subtle)]">
+                <div key={workflow.workflowId} className="glass rounded-2xl p-5 border border-[var(--border-subtle)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--border-active)]">
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-3 flex-wrap mb-2">
