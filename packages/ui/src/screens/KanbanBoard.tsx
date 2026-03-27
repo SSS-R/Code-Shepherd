@@ -103,13 +103,13 @@ export default function KanbanBoard() {
                 </div>
             </header>
 
-            <div className="flex gap-6 overflow-x-auto pb-6 custom-scrollbar">
+            <div className="flex flex-col gap-10 pb-6">
                 {COLUMNS.map((column) => {
                     const columnTasks = filteredTasks.filter((task) => task.status === column.key)
 
                     return (
-                        <section key={column.key} className="min-h-[640px] w-[320px] shrink-0">
-                            <div className="mb-4 flex items-center justify-between">
+                        <section key={column.key} className="w-full">
+                            <div className="mb-4 flex items-center justify-between border-b border-outline-variant/20 pb-3">
                                 <div className="flex items-center gap-3">
                                     <span className="status-diamond info"></span>
                                     <h2 className="font-headline text-sm font-bold uppercase tracking-[0.14em] text-on-surface">{column.title}</h2>
@@ -120,16 +120,16 @@ export default function KanbanBoard() {
                                 </button>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className={columnTasks.length === 0 ? "flex" : "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}>
                                 {columnTasks.length === 0 ? (
-                                    <div className="surface-card-alt p-8 text-center font-headline text-[10px] font-semibold uppercase tracking-[0.18em] text-on-surface-variant">Empty Dropzone</div>
+                                    <div className="surface-card-alt w-full p-8 text-center font-headline text-[10px] font-semibold uppercase tracking-[0.18em] text-on-surface-variant">Empty Dropzone</div>
                                 ) : (
                                     columnTasks.map((task) => {
                                         const priority = getPriorityTone(task.priority)
                                         const assignedAgent = agents.find((agent) => agent.id === task.assigned_agent_id)
 
                                         return (
-                                            <article key={task.id} className="surface-card relative overflow-hidden p-5">
+                                            <article key={task.id} className="surface-card relative overflow-hidden p-5 transition-transform hover:-translate-y-1">
                                                 <div className={`absolute left-0 top-5 h-[calc(100%-40px)] w-1 ${priority.bar}`}></div>
 
                                                 <div className="mb-4 flex items-start justify-between gap-3">
@@ -178,14 +178,6 @@ export default function KanbanBoard() {
                         </section>
                     )
                 })}
-
-                <aside className="hidden w-[72px] shrink-0 2xl:flex 2xl:flex-col 2xl:items-center 2xl:gap-4">
-                    {[SlidersHorizontal, Filter, MoreVertical].map((Icon, index) => (
-                        <button key={index} className="focus-ring flex h-11 w-11 items-center justify-center bg-surface-container text-on-surface-variant hover:bg-surface-bright hover:text-on-surface">
-                            <Icon size={18} />
-                        </button>
-                    ))}
-                </aside>
             </div>
         </div>
     )
