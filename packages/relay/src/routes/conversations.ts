@@ -204,6 +204,34 @@ export function createConversationRoutes(db: Database) {
         }
     });
 
+    router.post('/', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
+        try {
+            const { agent_id, title, task_id, participant_agent_ids } = req.body as {
+                agent_id?: string;
+                title?: string;
+                task_id?: string | null;
+                participant_agent_ids?: string[];
+            };
+
+            if (!agent_id || !title) {
+                return res.status(400).json({ error: 'agent_id and title are required' });
+            }
+
+            const id = createId('conversation');
+            db.prepare(`
+                INSERT INTO conversations (id, agent_id, task_id, title, status, participant_agent_ids, team_id, last_message_at)
+                VALUES (?, ?, ?, ?, 'active', ?, ?, CURRENT_TIMESTAMP)
+            `).run(id, agent_id, task_id ?? null, title, JSON.stringify(participant_agent_ids?.length ? participant_agent_ids : [agent_id]), req.auth?.teamId ?? null);
+
+            const created = db.prepare('SELECT * FROM conversations WHERE id = ?').get(id) as any;
+            broadcastRealtimeEvent('conversations.updated', { action: 'created', conversationId: id, agentId: agent_id });
+            return res.status(201).json(mapConversation(created));
+        } catch (error) {
+            console.error('Create conversation error:', error);
+            return res.status(500).json({ error: 'Failed to create conversation' });
+        }
+    });
+
     router.post('/ensure', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
         try {
             const { agent_id, title, task_id } = req.body as { agent_id?: string; title?: string; task_id?: string };
@@ -256,6 +284,74 @@ export function createConversationRoutes(db: Database) {
         } catch (error) {
             console.error('Conversation messages error:', error);
             return res.status(500).json({ error: 'Failed to load conversation messages' });
+        }
+    });
+
+    router.get('/:id', (req: Request, res: Response) => {
+        try {
+            const conversation = db.prepare(`
+                SELECT * FROM conversations WHERE id = ? AND (team_id IS ? OR team_id = ?)
+            `).get(req.params.id, req.auth?.teamId ?? null, req.auth?.teamId ?? null) as any;
+
+            if (!conversation) {
+                return res.status(404).json({ error: 'Conversation not found' });
+            }
+
+            return res.json(mapConversation(conversation));
+        } catch (error) {
+            console.error('Get conversation error:', error);
+            return res.status(500).json({ error: 'Failed to load conversation' });
+        }
+    });
+
+    router.patch('/:id', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
+        try {
+            const existing = db.prepare(`
+                SELECT * FROM conversations WHERE id = ? AND (team_id IS ? OR team_id = ?)
+            `).get(req.params.id, req.auth?.teamId ?? null, req.auth?.teamId ?? null) as any;
+
+            if (!existing) {
+                return res.status(404).json({ error: 'Conversation not found' });
+            }
+
+            const {
+                title = existing.title,
+                status = existing.status,
+                participant_agent_ids = existing.participant_agent_ids ? JSON.parse(existing.participant_agent_ids) : [existing.agent_id],
+            } = req.body as { title?: string; status?: string; participant_agent_ids?: string[] };
+
+            db.prepare(`
+                UPDATE conversations
+                SET title = ?, status = ?, participant_agent_ids = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            `).run(title, status, JSON.stringify(participant_agent_ids), req.params.id);
+
+            const updated = db.prepare('SELECT * FROM conversations WHERE id = ?').get(req.params.id) as any;
+            broadcastRealtimeEvent('conversations.updated', { action: 'updated', conversationId: req.params.id });
+            return res.json(mapConversation(updated));
+        } catch (error) {
+            console.error('Update conversation error:', error);
+            return res.status(500).json({ error: 'Failed to update conversation' });
+        }
+    });
+
+    router.delete('/:id', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
+        try {
+            const result = db.prepare(`
+                DELETE FROM conversations WHERE id = ? AND (team_id IS ? OR team_id = ?)
+            `).run(req.params.id, req.auth?.teamId ?? null, req.auth?.teamId ?? null);
+
+            if (result.changes === 0) {
+                return res.status(404).json({ error: 'Conversation not found' });
+            }
+
+            db.prepare('DELETE FROM messages WHERE conversation_id = ?').run(req.params.id);
+            db.prepare('DELETE FROM commands WHERE conversation_id = ?').run(req.params.id);
+            broadcastRealtimeEvent('conversations.updated', { action: 'deleted', conversationId: req.params.id });
+            return res.json({ id: req.params.id, message: 'Conversation deleted' });
+        } catch (error) {
+            console.error('Delete conversation error:', error);
+            return res.status(500).json({ error: 'Failed to delete conversation' });
         }
     });
 

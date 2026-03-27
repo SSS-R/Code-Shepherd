@@ -61,6 +61,32 @@ export function createAgentRoutes(db: Database) {
     }
   });
 
+  router.post('/', (req: Request, res: Response) => {
+    try {
+      const { id, name, capabilities = [], status = 'online' } = req.body;
+
+      if (!id || !name) {
+        return res.status(400).json({ error: 'id and name are required' });
+      }
+
+      db.prepare(`
+        INSERT INTO agents (id, name, capabilities, status, last_heartbeat)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `).run(id, name, JSON.stringify(capabilities), status);
+
+      const created = db.prepare('SELECT * FROM agents WHERE id = ?').get(id) as any;
+      broadcastRealtimeEvent('agents.updated', { action: 'created', agentId: id });
+
+      return res.status(201).json({
+        ...created,
+        capabilities: JSON.parse(created.capabilities || '[]')
+      });
+    } catch (error: any) {
+      console.error('Create agent error:', error);
+      return res.status(500).json({ error: 'Failed to create agent' });
+    }
+  });
+
   /**
    * POST /agents/:id/heartbeat
    * Send heartbeat to keep agent alive (resets 90s timeout)
@@ -135,6 +161,57 @@ export function createAgentRoutes(db: Database) {
     } catch (error: any) {
       console.error('Get agent error:', error);
       return res.status(500).json({ error: 'Failed to get agent' });
+    }
+  });
+
+  router.patch('/:id', (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const existing = db.prepare('SELECT * FROM agents WHERE id = ?').get(id) as any;
+
+      if (!existing) {
+        return res.status(404).json({ error: 'Agent not found' });
+      }
+
+      const {
+        name = existing.name,
+        capabilities = JSON.parse(existing.capabilities || '[]'),
+        status = existing.status,
+      } = req.body as { name?: string; capabilities?: string[]; status?: string };
+
+      db.prepare(`
+        UPDATE agents
+        SET name = ?, capabilities = ?, status = ?, last_heartbeat = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(name, JSON.stringify(capabilities), status, id);
+
+      const updated = db.prepare('SELECT * FROM agents WHERE id = ?').get(id) as any;
+      broadcastRealtimeEvent('agents.updated', { action: 'updated', agentId: id });
+
+      return res.json({
+        ...updated,
+        capabilities: JSON.parse(updated.capabilities || '[]')
+      });
+    } catch (error: any) {
+      console.error('Update agent error:', error);
+      return res.status(500).json({ error: 'Failed to update agent' });
+    }
+  });
+
+  router.delete('/:id', (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const result = db.prepare('DELETE FROM agents WHERE id = ?').run(id);
+
+      if (result.changes === 0) {
+        return res.status(404).json({ error: 'Agent not found' });
+      }
+
+      broadcastRealtimeEvent('agents.updated', { action: 'deleted', agentId: id });
+      return res.json({ id, message: 'Agent deleted' });
+    } catch (error: any) {
+      console.error('Delete agent error:', error);
+      return res.status(500).json({ error: 'Failed to delete agent' });
     }
   });
 

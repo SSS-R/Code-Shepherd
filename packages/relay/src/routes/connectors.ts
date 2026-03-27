@@ -86,6 +86,27 @@ export function createConnectorRoutes(db: Database) {
         }
     });
 
+    router.get('/:connectorId', (req: Request, res: Response) => {
+        try {
+            const connector = db.prepare(`
+                SELECT * FROM trusted_connectors
+                WHERE connector_id = ? AND (team_id IS ? OR team_id = ?)
+            `).get(req.params.connectorId, req.auth?.teamId ?? null, req.auth?.teamId ?? null) as any;
+
+            if (!connector) {
+                return res.status(404).json({ error: 'Connector not found' });
+            }
+
+            return res.json({
+                ...connector,
+                scopes: JSON.parse(connector.scopes || '[]'),
+            });
+        } catch (error) {
+            console.error('Get connector error:', error);
+            return res.status(500).json({ error: 'Failed to get connector' });
+        }
+    });
+
     router.post('/', requireRole(['Admin']), (req: Request, res: Response) => {
         try {
             const {
@@ -163,6 +184,50 @@ export function createConnectorRoutes(db: Database) {
         }
     });
 
+    router.patch('/:connectorId', requireRole(['Admin']), (req: Request, res: Response) => {
+        try {
+            const existing = db.prepare(`
+                SELECT * FROM trusted_connectors
+                WHERE connector_id = ? AND (team_id IS ? OR team_id = ?)
+            `).get(req.params.connectorId, req.auth?.teamId ?? null, req.auth?.teamId ?? null) as any;
+
+            if (!existing) {
+                return res.status(404).json({ error: 'Connector not found' });
+            }
+
+            const {
+                connector_name = existing.connector_name,
+                adapter_kind = existing.adapter_kind,
+                transport = existing.transport,
+                scopes = JSON.parse(existing.scopes || '[]'),
+                trust_status = existing.trust_status,
+            } = req.body as {
+                connector_name?: string;
+                adapter_kind?: string;
+                transport?: string;
+                scopes?: string[];
+                trust_status?: string;
+            };
+
+            db.prepare(`
+                UPDATE trusted_connectors
+                SET connector_name = ?, adapter_kind = ?, transport = ?, scopes = ?, trust_status = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE connector_id = ? AND (team_id IS ? OR team_id = ?)
+            `).run(connector_name, adapter_kind, transport, JSON.stringify(scopes), trust_status, req.params.connectorId, req.auth?.teamId ?? null, req.auth?.teamId ?? null);
+
+            const updated = db.prepare('SELECT * FROM trusted_connectors WHERE connector_id = ? AND (team_id IS ? OR team_id = ?)').get(req.params.connectorId, req.auth?.teamId ?? null, req.auth?.teamId ?? null) as any;
+            broadcastRealtimeEvent('connectors.updated' as any, { action: 'updated', connectorId: req.params.connectorId });
+
+            return res.json({
+                ...updated,
+                scopes: JSON.parse(updated.scopes || '[]'),
+            });
+        } catch (error) {
+            console.error('Update connector error:', error);
+            return res.status(500).json({ error: 'Failed to update connector' });
+        }
+    });
+
     router.post('/:connectorId/revoke', requireRole(['Admin']), (req: Request, res: Response) => {
         try {
             const { connectorId } = req.params as { connectorId: string };
@@ -191,6 +256,25 @@ export function createConnectorRoutes(db: Database) {
         } catch (error) {
             console.error('Revoke connector error:', error);
             return res.status(500).json({ error: 'Failed to revoke connector' });
+        }
+    });
+
+    router.delete('/:connectorId', requireRole(['Admin']), (req: Request, res: Response) => {
+        try {
+            const result = db.prepare(`
+                DELETE FROM trusted_connectors
+                WHERE connector_id = ? AND (team_id IS ? OR team_id = ?)
+            `).run(req.params.connectorId, req.auth?.teamId ?? null, req.auth?.teamId ?? null);
+
+            if (result.changes === 0) {
+                return res.status(404).json({ error: 'Connector not found' });
+            }
+
+            broadcastRealtimeEvent('connectors.updated' as any, { action: 'deleted', connectorId: req.params.connectorId });
+            return res.json({ connector_id: req.params.connectorId, message: 'Connector deleted' });
+        } catch (error) {
+            console.error('Delete connector error:', error);
+            return res.status(500).json({ error: 'Failed to delete connector' });
         }
     });
 

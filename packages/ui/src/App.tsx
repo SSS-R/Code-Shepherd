@@ -28,9 +28,10 @@ import Settings from './screens/Settings'
 import Inbox from './screens/Inbox'
 import AgentsOverview from './screens/AgentsOverview'
 import OperatorProfile from './screens/OperatorProfile'
+import LoginPreview from './screens/LoginPreview'
 import { loadSession } from './utils/authSession'
 
-type Screen = 'dashboard' | 'agents' | 'inbox' | 'approvals' | 'timeline' | 'settings' | 'profile' | 'kanban' | 'agent-detail'
+type Screen = 'dashboard' | 'login' | 'agents' | 'inbox' | 'approvals' | 'timeline' | 'settings' | 'profile' | 'kanban' | 'agent-detail'
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('dashboard')
@@ -38,8 +39,16 @@ function App() {
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
   const session = loadSession()
+
+  const notifications = useMemo(() => ([
+    { id: 1, title: 'Agent Execution Failure: Logic_Gate_7', description: 'System-wide interruption detected in neural processing block 7. Immediate manual bypass suggested.', time: '2m ago', tone: 'error' as const },
+    { id: 2, title: 'Approval Required: Schema Migration', description: 'Ghost-Writer-Alpha requested write access to production SQL cluster for schema expansion.', time: '8m ago', tone: 'warning' as const },
+    { id: 3, title: 'Deployment Approved by Admin_Root', description: 'Traffic rerouted to version 2.4.1-stable after reconciliation completed.', time: '14m ago', tone: 'success' as const },
+    { id: 4, title: 'Ghost-Writer-Alpha Reconnected', description: 'Sub-routine handshake successful via encrypted tunnel 9.', time: '22m ago', tone: 'info' as const },
+  ]), [])
 
   useEffect(() => {
     const savedTheme = window.localStorage.getItem('code-shepherd-theme') as 'dark' | 'light' | null
@@ -61,6 +70,7 @@ function App() {
 
   useEffect(() => {
     setSidebarOpen(false)
+    setNotificationsOpen(false)
   }, [currentScreen])
 
   const navItems = useMemo(() => ([
@@ -82,6 +92,8 @@ function App() {
         return { eyebrow: 'Unified Communication', title: 'Communication Hub' }
       case 'agents':
         return { eyebrow: 'Unified Presence', title: 'Agents Overview' }
+      case 'login':
+        return { eyebrow: 'Auth Preview', title: 'Login / Registration' }
       case 'approvals':
         return { eyebrow: 'Remote Intervention', title: 'Approval Queue' }
       case 'kanban':
@@ -166,7 +178,41 @@ function App() {
               <button className="focus-ring hidden h-10 w-10 items-center justify-center text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary sm:inline-flex" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle theme">
                 {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
               </button>
-              {[Bell, Radio, Network].map((Icon, index) => (
+              <div className="relative hidden md:block">
+                <button className="focus-ring relative hidden h-10 w-10 items-center justify-center text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary md:inline-flex" onClick={() => setNotificationsOpen((value) => !value)} aria-label="Toggle notifications">
+                  <Bell size={18} />
+                  <span className="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center bg-error px-1 font-headline text-[9px] font-semibold text-white">{notifications.length}</span>
+                </button>
+
+                {notificationsOpen ? (
+                  <div className="shell-border absolute right-0 top-12 z-50 w-[400px] max-w-[calc(100vw-2rem)] bg-surface-container-highest shadow-[0_24px_60px_rgba(0,0,0,0.28)]">
+                    <div className="flex items-center justify-between border-b border-outline-variant/20 bg-surface-container px-4 py-4">
+                      <span className="font-headline text-[11px] font-semibold uppercase tracking-[0.18em] text-on-surface">Notifications</span>
+                      <button className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Mark All Read</button>
+                    </div>
+                    <div className="max-h-[480px] overflow-y-auto custom-scrollbar">
+                      {notifications.map((notification) => (
+                        <div key={notification.id} className="relative flex gap-4 border-t border-outline-variant/10 px-4 py-4 hover:bg-surface-bright first:border-t-0">
+                          <div className={`absolute left-0 top-0 h-full w-1 ${notification.tone === 'error' ? 'bg-error' : notification.tone === 'warning' ? 'bg-warning' : notification.tone === 'success' ? 'bg-success' : 'bg-primary'}`}></div>
+                          <div className="pt-1"><span className={`status-diamond ${notification.tone}`}></span></div>
+                          <div className="min-w-0 flex-1">
+                            <div className="mb-1 flex items-start justify-between gap-3">
+                              <span className="font-headline text-[11px] font-semibold uppercase tracking-[0.08em] text-on-surface">{notification.title}</span>
+                              <span className="shrink-0 text-[10px] text-on-surface-variant">{notification.time}</span>
+                            </div>
+                            <p className="text-xs leading-5 text-on-surface-variant">{notification.description}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="bg-surface-container-lowest p-4">
+                      <button className="shell-button shell-button-primary focus-ring w-full min-h-[40px] px-4 py-2">View All Notifications</button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              {[Radio, Network].map((Icon, index) => (
                 <button key={index} className="focus-ring hidden h-10 w-10 items-center justify-center text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary md:inline-flex">
                   <Icon size={18} />
                 </button>
@@ -190,6 +236,8 @@ function App() {
             <div className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10 2xl:px-16 2xl:py-12">
               {currentScreen === 'dashboard' ? (
                 <Dashboard onViewAgent={(id) => { setSelectedAgentId(id); setCurrentScreen('agent-detail'); }} />
+              ) : currentScreen === 'login' ? (
+                <LoginPreview />
               ) : currentScreen === 'agents' ? (
                 <AgentsOverview onViewAgent={(id) => { setSelectedAgentId(id); setCurrentScreen('agent-detail'); }} />
               ) : currentScreen === 'inbox' ? (
