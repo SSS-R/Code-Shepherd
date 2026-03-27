@@ -1,7 +1,8 @@
-import { ReactNode, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Bell,
   BellRing,
+  Bot,
   BookOpen,
   Database,
   History,
@@ -9,7 +10,6 @@ import {
   Menu,
   MessageSquare,
   Moon,
-  Search,
   Settings as SettingsIcon,
   ShieldCheck,
   Sun,
@@ -26,21 +26,31 @@ import KanbanBoard from './screens/KanbanBoard'
 import ExecutionTimeline from './screens/ExecutionTimeline'
 import Settings from './screens/Settings'
 import Inbox from './screens/Inbox'
+import AgentsOverview from './screens/AgentsOverview'
+import OperatorProfile from './screens/OperatorProfile'
 import { loadSession } from './utils/authSession'
 
-type Screen = 'dashboard' | 'inbox' | 'approvals' | 'timeline' | 'settings' | 'kanban' | 'agent-detail'
+type Screen = 'dashboard' | 'agents' | 'inbox' | 'approvals' | 'timeline' | 'settings' | 'profile' | 'kanban' | 'agent-detail'
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('dashboard')
   const [isConnected, setIsConnected] = useState(false)
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [globalSearch, setGlobalSearch] = useState('')
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
   const session = loadSession()
 
   useEffect(() => {
-    document.documentElement.classList.add('dark')
+    const savedTheme = window.localStorage.getItem('code-shepherd-theme') as 'dark' | 'light' | null
+    const initialTheme = savedTheme ?? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+    setTheme(initialTheme)
   }, [])
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    window.localStorage.setItem('code-shepherd-theme', theme)
+  }, [theme])
 
   useEffect(() => {
     fetch('http://localhost:3000/health')
@@ -55,130 +65,133 @@ function App() {
 
   const navItems = useMemo(() => ([
     { key: 'dashboard' as const, label: 'Command Center', icon: <Terminal size={20} /> },
-    { key: 'inbox' as const, label: 'Agents', icon: <Radio size={20} /> },
+    { key: 'agents' as const, label: 'Agents', icon: <Bot size={20} /> },
+    { key: 'inbox' as const, label: 'Inbox', icon: <Radio size={20} /> },
     { key: 'approvals' as const, label: 'Approval Queue', icon: <BellRing size={20} /> },
     { key: 'kanban' as const, label: 'Task Board', icon: <Workflow size={20} /> },
     { key: 'timeline' as const, label: 'Timeline', icon: <History size={20} /> },
     { key: 'settings' as const, label: 'Settings', icon: <SettingsIcon size={20} /> },
+    { key: 'profile' as const, label: 'Profile', icon: <ShieldCheck size={20} /> },
   ]), [])
 
-  const activeTopTab = currentScreen === 'dashboard' ? 'overview' : currentScreen === 'timeline' ? 'network' : 'resources'
+  const headerMeta = useMemo(() => {
+    switch (currentScreen) {
+      case 'dashboard':
+        return { eyebrow: 'Control Plane', title: 'Command Center' }
+      case 'inbox':
+        return { eyebrow: 'Unified Communication', title: 'Communication Hub' }
+      case 'agents':
+        return { eyebrow: 'Unified Presence', title: 'Agents Overview' }
+      case 'approvals':
+        return { eyebrow: 'Remote Intervention', title: 'Approval Queue' }
+      case 'kanban':
+        return { eyebrow: 'Parallel Coordination', title: 'Mission Control' }
+      case 'timeline':
+        return { eyebrow: 'Auditability', title: 'Timeline / Audit Log' }
+      case 'settings':
+        return { eyebrow: 'Configuration', title: 'System Settings' }
+      case 'profile':
+        return { eyebrow: 'Operator Identity', title: 'Operator Profile' }
+      case 'agent-detail':
+        return { eyebrow: 'Agent View', title: 'Agent Detail' }
+    }
+  }, [currentScreen])
 
   return (
-    <div className="min-h-screen bg-surface text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container overflow-x-hidden">
-      {/* Absolute Grid Layout Wrapper */}
-      <div className="grid grid-areas-layout grid-cols-layout grid-rows-layout h-screen w-screen overflow-hidden" 
-           style={{ 
-             display: 'grid', 
-             gridTemplateAreas: '"header header" "sidebar main"',
-             gridTemplateColumns: sidebarOpen ? '288px 1fr' : '0px 1fr',
-             gridTemplateRows: '64px 1fr',
-           }}>
-        
-        {/* Header Area */}
-        <header style={{ gridArea: 'header' }} className="flex justify-between items-center px-4 lg:px-8 bg-background/80 backdrop-blur-xl border-b border-outline-variant/10 shadow-sm z-[100]">
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-3">
-              <button 
-                className="p-2 text-outline hover:text-primary transition-colors focus:outline-none" 
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-              >
-                <Menu size={24} />
-              </button>
-              <span className="text-xl font-bold text-primary-container tracking-[0.15em] uppercase font-headline hidden sm:block">Code Shepherd</span>
-              <span className="text-lg font-bold text-primary-container tracking-widest uppercase font-headline sm:hidden">CS</span>
-            </div>
-            
-            <nav className="hidden lg:flex items-center gap-8 h-16 ml-8">
-              {['overview', 'network', 'resources'].map((tab) => (
-                <button 
-                  key={tab}
-                  className={`${activeTopTab === tab ? 'text-primary border-b-2 border-primary' : 'text-outline/70 hover:text-on-surface'} h-full flex items-center px-1 text-[10px] font-bold uppercase tracking-widest transition-all`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </nav>
-          </div>
-
-          <div className="flex items-center gap-4">
-             <div className="hidden md:flex items-center gap-2">
-                {[Bell, Radio, Network].map((Icon, i) => (
-                  <button key={i} className="p-2 text-outline hover:text-primary hover:bg-white/5 rounded-full transition-all">
-                    <Icon size={18} />
-                  </button>
-                ))}
+    <div className="app-shell min-h-screen bg-surface text-on-surface font-body selection:bg-primary selection:text-on-primary overflow-x-hidden">
+      <div className={`relative z-10 min-h-screen lg:grid ${sidebarCollapsed ? 'lg:grid-cols-[64px_minmax(0,1fr)]' : 'lg:grid-cols-[240px_minmax(0,1fr)]'}`}>
+        <aside className={`shell-panel shell-border fixed inset-y-0 left-0 z-40 flex ${sidebarOpen ? 'w-screen max-w-none sm:w-[280px] sm:max-w-[280px]' : 'w-screen max-w-none sm:w-[280px] sm:max-w-[280px]'} flex-col border-r border-t-0 border-l-0 border-b-0 transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen ${sidebarCollapsed ? 'lg:w-[64px]' : 'lg:w-[240px]'} lg:max-w-none ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+          <div className={`border-b border-outline-variant/20 ${sidebarCollapsed ? 'px-3 py-6' : 'px-6 py-7'}`}>
+            <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-4'}`}>
+              <div className="flex h-11 w-11 items-center justify-center bg-surface-container-high text-primary">
+                <Terminal size={20} />
               </div>
-              <div className="flex items-center gap-3 pl-4 border-l border-outline-variant/20">
-                <div className="text-right hidden sm:block">
-                  <p className="text-[9px] font-bold text-outline-variant uppercase tracking-widest leading-none mb-1">Status</p>
-                  <p className="text-[10px] font-mono text-secondary flex items-center justify-end gap-1.5 leading-none font-bold">
-                    <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
-                    VERIFIED_OP
-                  </p>
-                </div>
-                <div className="w-8 h-8 rounded-full border border-primary/20 bg-surface-container-high flex items-center justify-center text-xs font-bold text-primary shadow-lg">
-                  {(session?.name || session?.userId || 'OP').slice(0, 2).toUpperCase()}
-                </div>
+              <div className={sidebarCollapsed ? 'hidden' : 'block'}>
+                <div className="font-headline text-sm font-bold uppercase tracking-[0.18em] text-primary">Code Shepherd</div>
+                <div className="mt-1 font-headline text-[10px] font-medium uppercase tracking-[0.18em] text-on-surface-variant">V2.4.0-STABLE</div>
               </div>
-          </div>
-        </header>
-
-        {/* Sidebar Area */}
-        <aside style={{ gridArea: 'sidebar' }} className={`
-          bg-[#0d1117] border-r border-outline-variant/10 flex flex-col z-[90] transition-all duration-300 overflow-hidden
-          ${!sidebarOpen ? 'w-0' : 'w-72 lg:w-64'}
-        `}>
-          <div className="p-6 mb-2 flex items-center gap-4 border-b border-outline-variant/5 shrink-0 whitespace-nowrap">
-            <div className="w-10 h-10 bg-primary/10 flex items-center justify-center rounded-lg border border-primary/20 shadow-glow-primary">
-              <Terminal size={20} className="text-primary" />
-            </div>
-            <div>
-              <p className="text-primary font-bold text-[10px] uppercase tracking-[0.2em] font-headline">Orchestrator</p>
-              <p className="text-[9px] text-outline/60 font-mono mt-0.5">RELAY_ALPHA_01</p>
             </div>
           </div>
 
-          <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto custom-scrollbar">
-            {navItems.map(item => {
-              const isActive = currentScreen === item.key;
+          <nav className={`custom-scrollbar flex-1 space-y-1 overflow-y-auto ${sidebarCollapsed ? 'px-2 py-4' : 'px-4 py-6'}`}>
+            {navItems.map((item) => {
+              const isActive = currentScreen === item.key
               return (
                 <button
                   key={item.key}
+                  title={sidebarCollapsed ? item.label : undefined}
                   onClick={() => setCurrentScreen(item.key)}
-                  className={`
-                    w-full text-left flex items-center px-4 py-3 gap-3.5 rounded-lg transition-all duration-200 group whitespace-nowrap
-                    ${isActive 
-                      ? 'bg-primary/10 text-primary border border-primary/20 shadow-inner' 
-                      : 'text-outline hover:bg-white/5 hover:text-on-surface'}
-                  `}
+                  className={`focus-ring flex w-full items-center ${sidebarCollapsed ? 'justify-center min-h-12 px-2 py-3' : 'gap-3 min-h-12 px-4 py-3'} text-left transition-colors ${isActive ? 'bg-surface-container text-primary' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'}`}
                 >
-                  <span className={`${isActive ? 'text-primary' : 'text-outline group-hover:text-primary'} transition-colors`}>
-                    {item.icon}
-                  </span>
-                  <span className="font-bold text-[10px] uppercase tracking-[0.15em]">{item.label}</span>
+                  <span className="flex h-5 w-5 items-center justify-center">{item.icon}</span>
+                  <span className={`${sidebarCollapsed ? 'hidden' : 'inline'} font-headline text-[11px] font-semibold uppercase tracking-[0.16em]`}>{item.label}</span>
                 </button>
               )
             })}
           </nav>
 
-          <div className="p-4 border-t border-outline-variant/10 bg-black/10 shrink-0">
-             <div className="space-y-1">
-              {[ {Icon: Database, label: 'Health'}, {Icon: BookOpen, label: 'Docs'} ].map((item, i) => (
-                <a key={i} className="text-outline flex items-center px-4 py-2.5 gap-3 hover:text-on-surface hover:bg-white/5 rounded-md transition-all text-[9px] font-bold uppercase tracking-widest whitespace-nowrap" href="#">
-                  <item.Icon size={14} />
-                  {item.label}
-                </a>
-              ))}
-            </div>
+          <div className={`border-t border-outline-variant/20 ${sidebarCollapsed ? 'px-2 py-3' : 'px-4 py-4'}`}>
+            {[{ Icon: Database, label: 'System Status' }, { Icon: BookOpen, label: 'Documentation' }].map((item) => (
+              <a
+                key={item.label}
+                title={sidebarCollapsed ? item.label : undefined}
+                className={`focus-ring flex items-center ${sidebarCollapsed ? 'justify-center min-h-12 px-2 py-3' : 'gap-3 min-h-12 px-4 py-3'} text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface`}
+                href="#"
+              >
+                <item.Icon size={16} />
+                <span className={`${sidebarCollapsed ? 'hidden' : 'inline'} font-headline text-[10px] font-semibold uppercase tracking-[0.16em]`}>{item.label}</span>
+              </a>
+            ))}
           </div>
         </aside>
 
-        {/* Main Area */}
-        <main style={{ gridArea: 'main' }} className="bg-surface overflow-y-auto custom-scrollbar relative">
-           <div className="p-4 sm:p-6 md:p-8 lg:p-12 xl:p-16 max-w-[1600px] mx-auto min-h-full">
+        {sidebarOpen && <button className="fixed inset-0 z-30 bg-black/45 lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close navigation" />}
+
+        <div className="min-w-0">
+          <header className="shell-panel shell-border sticky top-0 z-20 flex h-12 items-center justify-between border-x-0 border-t-0 px-4 sm:h-14 sm:px-6 lg:h-16 lg:px-10">
+            <div className="flex min-w-0 items-center gap-4 lg:gap-6">
+              <button className="focus-ring text-on-surface-variant lg:hidden" onClick={() => setSidebarOpen(true)} aria-label="Open navigation">
+                <Menu size={22} />
+              </button>
+              <button className="focus-ring hidden h-10 w-10 items-center justify-center text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary lg:inline-flex" onClick={() => setSidebarCollapsed((value) => !value)} aria-label="Toggle sidebar rail">
+                <LayoutDashboard size={18} />
+              </button>
+              <div className="min-w-0">
+                <p className="font-headline text-[10px] font-semibold uppercase tracking-[0.16em] text-on-surface-variant">{headerMeta.eyebrow}</p>
+                <h1 className="truncate font-headline text-sm font-bold uppercase tracking-[0.12em] text-on-surface sm:text-base">{headerMeta.title}</h1>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 sm:gap-2">
+              <button className="focus-ring hidden h-10 w-10 items-center justify-center text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary sm:inline-flex" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle theme">
+                {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+              {[Bell, Radio, Network].map((Icon, index) => (
+                <button key={index} className="focus-ring hidden h-10 w-10 items-center justify-center text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary md:inline-flex">
+                  <Icon size={18} />
+                </button>
+              ))}
+              <div className="ml-2 flex items-center gap-3 border-l border-outline-variant/25 pl-3 sm:pl-4">
+                <div className="hidden text-right sm:block">
+                  <p className="font-headline text-[10px] font-semibold uppercase tracking-[0.16em] text-on-surface-variant">Operator Status</p>
+                  <p className="mt-1 flex items-center justify-end gap-2 font-mono text-[11px] text-on-surface">
+                    <span className={`status-diamond ${isConnected ? 'success' : 'error'}`}></span>
+                    {isConnected ? 'Relay Online' : 'Relay Offline'}
+                  </p>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center bg-surface-container-high font-headline text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                  {(session?.name || session?.userId || 'OP').slice(0, 2).toUpperCase()}
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <main className="relative min-h-[calc(100vh-48px)] overflow-y-auto custom-scrollbar sm:min-h-[calc(100vh-56px)] lg:min-h-[calc(100vh-96px)]">
+            <div className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10 2xl:px-16 2xl:py-12">
               {currentScreen === 'dashboard' ? (
                 <Dashboard onViewAgent={(id) => { setSelectedAgentId(id); setCurrentScreen('agent-detail'); }} />
+              ) : currentScreen === 'agents' ? (
+                <AgentsOverview onViewAgent={(id) => { setSelectedAgentId(id); setCurrentScreen('agent-detail'); }} />
               ) : currentScreen === 'inbox' ? (
                 <Inbox initialAgentId={selectedAgentId} />
               ) : currentScreen === 'agent-detail' && selectedAgentId ? (
@@ -189,32 +202,23 @@ function App() {
                 <ExecutionTimeline />
               ) : currentScreen === 'settings' ? (
                 <Settings />
+              ) : currentScreen === 'profile' ? (
+                <OperatorProfile />
               ) : currentScreen === 'kanban' ? (
                 <KanbanBoard />
               ) : null}
-           </div>
-        </main>
-      </div>
+            </div>
+          </main>
 
-      {/* Floating UI */}
-      {!sidebarOpen && (
-          <button 
-            onClick={() => setSidebarOpen(true)}
-            className="fixed bottom-10 left-10 w-12 h-12 bg-primary text-on-primary rounded-full shadow-glow-primary z-[200] lg:hidden flex items-center justify-center animate-bounce"
-          >
-            <Menu size={24} />
-          </button>
-      )}
-
-      {/* Floating Hint */}
-      <div className="hidden lg:flex fixed bottom-10 right-10 glass-panel border border-primary/20 px-6 py-3 rounded-full items-center gap-4 z-[200] shadow-glow-primary hover:scale-105 transition-all cursor-pointer">
-        <div className="flex items-center gap-1.5">
-            <kbd className="bg-primary/20 px-2.5 py-1 rounded text-[10px] font-mono border border-primary/30 text-primary uppercase font-bold">Ctrl</kbd>
-            <span className="text-outline text-xs">+</span>
-            <kbd className="bg-primary/20 px-2.5 py-1 rounded text-[10px] font-mono border border-primary/30 text-primary uppercase font-bold">K</kbd>
+          <div className="shell-panel shell-border hidden h-8 items-center justify-between border-x-0 border-b-0 px-4 lg:flex lg:px-10">
+            <div className="flex items-center gap-4 font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">
+              <span className={`status-diamond ${isConnected ? 'success' : 'error'}`}></span>
+              <span>{isConnected ? 'System Online' : 'System Offline'}</span>
+              <span>Cluster Alpha</span>
+            </div>
+            <div className="font-mono text-[11px] text-on-surface-variant">Latency 24ms // {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+          </div>
         </div>
-        <div className="h-4 w-px bg-outline-variant/30"></div>
-        <div className="text-[10px] text-primary font-bold uppercase tracking-[0.2em]">Console</div>
       </div>
     </div>
   )

@@ -1,5 +1,19 @@
-import { useEffect, useMemo, useState, useRef } from 'react'
-import { Bot, Info, ShieldAlert, Paperclip, Terminal, Codesandbox, Search, Send, List, History, Activity, HelpCircle, PlusSquare, Filter } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+    Activity,
+    Bot,
+    Codesandbox,
+    HelpCircle,
+    History,
+    Info,
+    List,
+    Paperclip,
+    PlusSquare,
+    Search,
+    Send,
+    ShieldAlert,
+    Terminal,
+} from 'lucide-react'
 import { buildAuthHeaders, loadSession } from '../utils/authSession'
 
 interface Conversation {
@@ -26,6 +40,23 @@ interface InboxProps {
     initialAgentId?: string | null
 }
 
+function formatTime(value?: string | null) {
+    if (!value) return ''
+    return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+function getConversationTone(status: string, active: boolean) {
+    const normalized = status.toUpperCase()
+    if (active) return { badgeClass: 'text-success', diamond: 'success', containerClass: 'bg-surface-container' }
+    if (normalized.includes('APPROVAL') || normalized.includes('WAITING') || normalized.includes('PENDING')) {
+        return { badgeClass: 'text-warning', diamond: 'warning', containerClass: 'bg-surface-container-low' }
+    }
+    if (normalized.includes('BLOCK') || normalized.includes('ERROR')) {
+        return { badgeClass: 'text-error', diamond: 'error', containerClass: 'bg-surface-container-low' }
+    }
+    return { badgeClass: 'text-on-surface-variant', diamond: 'info', containerClass: 'bg-surface-container-low' }
+}
+
 export default function Inbox({ initialAgentId = null }: InboxProps) {
     const [conversations, setConversations] = useState<Conversation[]>([])
     const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null)
@@ -35,8 +66,6 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
     const [query, setQuery] = useState('')
     const [mobileListOpen, setMobileListOpen] = useState(true)
     const session = loadSession()
-
-    // Auto-scroll messages
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
     const selectedConversation = useMemo(
@@ -135,215 +164,197 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
 
     if (loading) {
         return (
-            <div className="flex-1 flex items-center justify-center min-h-[50vh]">
-                <div className="w-8 h-8 rounded-full border-t-2 border-primary animate-spin"></div>
+            <div className="flex min-h-[50vh] items-center justify-center">
+                <div className="h-10 w-10 animate-spin border-2 border-outline-variant border-t-primary"></div>
             </div>
         )
     }
 
     return (
-        <div className="flex min-h-[calc(100vh-7rem)] flex-col overflow-hidden xl:h-[calc(100vh-7rem)] xl:flex-row">
-            {/* Left Panel: Agent Threads */}
-            <section className={`${mobileListOpen ? 'flex' : 'hidden'} md:flex flex-col w-full xl:w-80 xl:min-w-80 border-r border-outline-variant/10 bg-surface-container-low z-10 transition-all`}>
-                <div className="p-4 space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h2 className="font-headline font-bold text-sm tracking-widest text-on-surface-variant uppercase">Active Threads</h2>
-                        <button className="text-primary hover:bg-primary/10 p-1 rounded-sm transition-all">
-                            <PlusSquare size={18} />
-                        </button>
-                    </div>
-                    <div className="relative">
-                        <Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
-                        <input
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            className="w-full bg-surface-container-lowest border-none text-xs rounded-sm pl-9 pr-4 py-2 focus:ring-1 focus:ring-primary/50 text-on-surface placeholder:text-outline/50 outline-none"
-                            placeholder="Filter agents..."
-                            type="text"
-                        />
-                    </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto pb-4 custom-scrollbar">
-                    {filteredConversations.length === 0 ? (
-                        <div className="px-5 py-8 text-center opacity-60">
-                            <span className="text-xs uppercase tracking-widest font-mono text-outline">No Threads Found</span>
-                        </div>
-                    ) : filteredConversations.map(conv => {
-                        const isActive = selectedConversationId === conv.id;
-
-                        // Infer status styling
-                        let statusColor = 'bg-outline';
-                        let glowClass = '';
-                        let borderClass = 'border-outline-variant/10 hover:bg-surface-container-low/50';
-
-                        if (isActive) {
-                            statusColor = 'bg-secondary';
-                            glowClass = 'shadow-[0_0_8px_#7bdb80]';
-                            borderClass = 'bg-surface-container hover:bg-surface-container-high border-secondary';
-                        } else if (conv.status.includes('PENDING') || conv.status.includes('WAITING') || conv.status.includes('APPROVAL')) {
-                            statusColor = 'bg-tertiary';
-                            glowClass = 'shadow-[0_0_8px_#fabc45]';
-                            borderClass = 'border-outline-variant/10 hover:bg-surface-container-low/50';
-                        } else if (conv.status.includes('ACTIVE') || conv.status.includes('RUNNING')) {
-                            statusColor = 'bg-secondary';
-                            glowClass = 'shadow-[0_0_8px_#7bdb80]';
-                        }
-
-                        return (
-                            <div key={conv.id} className="px-3" onClick={() => setSelectedConversationId(conv.id)}>
-                                <div className={`border-l-2 p-3 rounded-md mb-2 cursor-pointer transition-all relative group ${borderClass}`}>
-                                    <div className="flex gap-3">
-                                        <div className="relative flex-shrink-0">
-                                            <div className={`w-10 h-10 rounded-sm bg-surface-container-highest flex items-center justify-center ${isActive ? '' : 'grayscale opacity-70'}`}>
-                                                <Bot size={20} className="text-outline" />
-                                            </div>
-                                            <span className={`absolute -bottom-1 -right-1 w-3 h-3 ${statusColor} rounded-full border-2 border-surface-container ${glowClass}`}></span>
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex justify-between items-start mb-0.5">
-                                                <span className={`text-xs font-bold font-headline truncate pr-2 ${isActive ? 'text-on-surface' : 'text-on-surface-variant'}`}>{conv.agent_id}</span>
-                                                <span className="font-mono text-[9px] text-outline">
-                                                    {conv.last_message_at ? new Date(conv.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                                                </span>
-                                            </div>
-                                            <p className={`text-[11px] truncate ${isActive ? 'text-on-surface-variant' : 'text-outline'}`}>
-                                                {conv.latest_message_preview || 'New conversation'}
-                                            </p>
-
-                                            {conv.status && (
-                                                <div className="mt-2 flex items-center gap-2">
-                                                    <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded-sm flex items-center gap-1 ${isActive ? 'bg-secondary/10 text-secondary' : 'bg-outline/10 text-outline'}`}>
-                                                        {isActive && <span className="w-1 h-1 bg-secondary rounded-full animate-pulse"></span>}
-                                                        {conv.status.toUpperCase()}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
+        <div className="grid min-h-[calc(100vh-8rem)] grid-cols-1 overflow-hidden xl:grid-cols-[280px_minmax(0,1fr)_72px]">
+            <section className={`${mobileListOpen ? 'flex' : 'hidden'} surface-card-alt border-r border-outline-variant/20 xl:flex xl:min-h-[calc(100vh-8rem)] xl:w-[280px] xl:flex-col`}>
+                <div className="flex min-h-0 w-full flex-col">
+                    <div className="border-b border-outline-variant/20 px-4 py-5">
+                        <div className="mb-4 flex items-center justify-between">
+                            <div>
+                                <p className="mb-1 font-headline text-[10px] font-semibold uppercase tracking-[0.16em] text-on-surface-variant">Unified Communication</p>
+                                <h2 className="font-headline text-sm font-bold uppercase tracking-[0.14em] text-on-surface">Active Sessions</h2>
                             </div>
-                        )
-                    })}
+                            <button className="focus-ring flex h-10 w-10 items-center justify-center bg-surface-container text-primary hover:bg-surface-bright">
+                                <PlusSquare size={18} />
+                            </button>
+                        </div>
+
+                        <label className="relative block">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+                            <input
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                className="focus-ring w-full bg-surface-container-lowest py-3 pl-10 pr-4 text-sm text-on-surface placeholder:text-on-surface-variant"
+                                placeholder="Filter sessions"
+                                type="text"
+                            />
+                        </label>
+                    </div>
+
+                    <div className="custom-scrollbar flex-1 overflow-y-auto px-3 py-3">
+                        {filteredConversations.length === 0 ? (
+                            <div className="px-3 py-10 text-center text-on-surface-variant">
+                                <p className="font-headline text-[11px] font-semibold uppercase tracking-[0.16em]">No Threads Found</p>
+                            </div>
+                        ) : (
+                            filteredConversations.map((conv) => {
+                                const isActive = selectedConversationId === conv.id
+                                const tone = getConversationTone(conv.status, isActive)
+
+                                return (
+                                    <button
+                                        key={conv.id}
+                                        onClick={() => setSelectedConversationId(conv.id)}
+                                        className={`focus-ring mb-3 w-full border-l-2 px-3 py-3 text-left transition-colors ${isActive ? 'border-primary bg-surface-container' : 'border-transparent bg-surface-container-low hover:bg-surface-container'}`}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center bg-surface-container-highest text-on-surface-variant">
+                                                <Bot size={18} />
+                                                <span className={`status-diamond ${tone.diamond} absolute -bottom-1 -right-1`}></span>
+                                            </div>
+
+                                            <div className="min-w-0 flex-1">
+                                                <div className="mb-1 flex items-start justify-between gap-2">
+                                                    <span className={`font-headline text-[12px] font-semibold uppercase tracking-[0.08em] ${isActive ? 'text-on-surface' : 'text-on-surface-variant'}`}>{conv.agent_id}</span>
+                                                    <span className="font-mono text-[10px] text-on-surface-variant">{formatTime(conv.last_message_at) || '—'}</span>
+                                                </div>
+                                                <p className="truncate text-xs text-on-surface-variant">{conv.latest_message_preview || 'New initiative initialized'}</p>
+                                                <div className="mt-3 flex items-center gap-2">
+                                                    <span className={`status-diamond ${tone.diamond}`}></span>
+                                                    <span className={`font-headline text-[10px] font-semibold uppercase tracking-[0.14em] ${tone.badgeClass}`}>{conv.status || 'System'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                )
+                            })
+                        )}
+                    </div>
+
+                    <div className="border-t border-outline-variant/20 px-4 py-4">
+                        <button className="shell-button shell-button-secondary focus-ring w-full">New Initiative</button>
+                    </div>
                 </div>
             </section>
 
-            {/* Main Panel: Session Context */}
-            <section className={`${mobileListOpen ? 'hidden md:flex' : 'flex'} flex-1 flex-col relative bg-surface-container-lowest min-h-[60vh] xl:min-h-0`}>
+            <section className={`${mobileListOpen ? 'hidden' : 'flex'} min-h-[70vh] flex-col bg-surface-container-lowest xl:flex`}>
                 {selectedConversation ? (
                     <>
-                        {/* Context Header */}
-                        <div className="h-14 border-b border-outline-variant/10 flex items-center justify-between px-4 md:px-6 bg-surface flex-shrink-0">
-                            <div className="flex items-center gap-4">
-                                <button className="md:hidden text-outline hover:text-primary transition-colors" onClick={() => setMobileListOpen(true)}>
+                        <div className="flex h-16 items-center justify-between border-b border-outline-variant/20 bg-surface px-4 sm:px-6">
+                            <div className="flex min-w-0 items-center gap-4">
+                                <button className="focus-ring text-on-surface-variant xl:hidden" onClick={() => setMobileListOpen(true)}>
                                     <List size={18} />
                                 </button>
-                                <div className="w-8 h-8 flex items-center justify-center rounded-sm bg-surface-container-high border border-outline-variant/30">
-                                    <Bot size={18} className="text-primary" />
+                                <div className="flex h-10 w-10 items-center justify-center bg-surface-container-high text-primary">
+                                    <Bot size={18} />
                                 </div>
-                                <div>
-                                    <h1 className="font-headline font-bold text-sm tracking-tight text-primary truncate max-w-[200px] sm:max-w-xs">{selectedConversation.title} <span className="text-outline font-normal text-xs ml-2 hidden sm:inline">/ Thread_{selectedConversation.id.substring(0, 6)}</span></h1>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-secondary"></div>
-                                        <span className="text-[10px] text-secondary font-mono tracking-widest uppercase truncate">{selectedConversation.status}</span>
+                                <div className="min-w-0">
+                                    <div className="truncate font-headline text-sm font-bold uppercase tracking-[0.12em] text-primary">{selectedConversation.title}</div>
+                                    <div className="mt-1 flex items-center gap-2">
+                                        <span className="status-diamond success"></span>
+                                        <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-success">{selectedConversation.status}</span>
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <button className="px-3 py-1.5 bg-primary-container text-on-primary-container rounded-sm text-[11px] font-bold flex items-center gap-2 hover:opacity-90 transition-all">
-                                    <Search size={14} />
-                                    <span className="hidden sm:inline">INSPECT</span>
-                                </button>
+
+                            <div className="hidden items-center gap-3 sm:flex">
+                                <button className="shell-button shell-button-secondary focus-ring min-h-10 px-4 py-2">Logs</button>
+                                <button className="shell-button shell-button-primary focus-ring min-h-10 px-4 py-2">Export</button>
                             </div>
                         </div>
 
-                        {/* Content Area: Console View */}
-                        <div className="flex-1 min-h-0 p-4 md:p-6 overflow-y-auto space-y-6 custom-scrollbar bg-surface-container-lowest">
+                        <div className="custom-scrollbar flex-1 space-y-6 overflow-y-auto p-4 sm:p-6">
                             {messages.length === 0 ? (
-                                <div className="h-full flex flex-col items-center justify-center opacity-40">
-                                    <Terminal size={48} className="mb-4 text-outline" />
-                                    <p className="font-mono text-xs text-outline uppercase tracking-widest">Awaiting Directives</p>
+                                <div className="flex h-full flex-col items-center justify-center text-center text-on-surface-variant">
+                                    <Terminal size={40} className="mb-4" />
+                                    <p className="font-headline text-[11px] font-semibold uppercase tracking-[0.16em]">Awaiting Directives</p>
                                 </div>
-                            ) : messages.map((msg) => {
-                                const isUser = msg.sender_type === 'user';
-                                const isApproval = msg.message_type?.includes('approval');
+                            ) : (
+                                messages.map((msg) => {
+                                    const isUser = msg.sender_type === 'user'
+                                    const isApproval = msg.message_type?.includes('approval')
+                                    const isSystem = msg.sender_type === 'system'
 
-                                if (isUser) {
-                                    return (
-                                        <div key={msg.id} className="flex gap-4 flex-row-reverse animate-fade-in">
-                                            <div className="w-8 h-8 flex-shrink-0 bg-primary-container/20 border border-primary/30 rounded-full flex items-center justify-center">
-                                                <span className="text-xs font-bold text-primary">{(session?.name || session?.userId || 'U').charAt(0).toUpperCase()}</span>
-                                            </div>
-                                            <div className="max-w-2xl bg-primary-container/10 p-4 rounded-lg rounded-tr-none border border-primary/20">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <span className="font-mono text-[10px] text-primary uppercase tracking-widest">Operator Directive</span>
-                                                    <span className="font-mono text-[9px] text-outline opacity-50 ml-4">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    if (isUser) {
+                                        return (
+                                            <div key={msg.id} className="flex flex-row-reverse gap-4 animate-fade-in">
+                                                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center bg-surface-container-high font-headline text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                                                    {(session?.name || session?.userId || 'U').charAt(0).toUpperCase()}
                                                 </div>
-                                                <p className="text-xs text-on-surface leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                                                <div className="max-w-2xl bg-primary/12 px-4 py-4">
+                                                    <div className="mb-2 flex items-center justify-between gap-4">
+                                                        <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Operator Directive</span>
+                                                        <span className="font-mono text-[10px] text-on-surface-variant">{formatTime(msg.created_at)}</span>
+                                                    </div>
+                                                    <p className="whitespace-pre-wrap text-sm leading-6 text-on-surface">{msg.content}</p>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )
-                                }
+                                        )
+                                    }
 
-                                if (isApproval) {
+                                    if (isApproval) {
+                                        return (
+                                            <div key={msg.id} className="flex gap-4 animate-fade-in">
+                                                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center bg-warning/15 text-warning">
+                                                    <ShieldAlert size={16} />
+                                                </div>
+                                                <div className="max-w-3xl bg-surface-container px-4 py-4">
+                                                    <div className="mb-2 flex items-center justify-between gap-4">
+                                                        <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-warning">Verification Required</span>
+                                                        <span className="font-mono text-[10px] text-on-surface-variant">{formatTime(msg.created_at)}</span>
+                                                    </div>
+                                                    <p className="mb-4 whitespace-pre-wrap text-sm leading-6 text-on-surface">{msg.content}</p>
+                                                    <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-center">
+                                                        <div className="font-mono text-[11px] text-on-surface-variant">{msg.approval_id ? `Approval ${msg.approval_id.slice(0, 8)}…` : 'Approval request pending review'}</div>
+                                                        <button className="shell-button shell-button-secondary focus-ring min-h-10 px-4 py-2">Decline Request</button>
+                                                        <button className="shell-button shell-button-primary focus-ring min-h-10 px-4 py-2">Grant Permission</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    }
+
                                     return (
                                         <div key={msg.id} className="flex gap-4 animate-fade-in">
-                                            <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-tertiary/20 rounded-sm border border-tertiary/30">
-                                                <ShieldAlert className="text-tertiary" size={16} />
+                                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center bg-surface-container-high text-on-surface-variant">
+                                                {isSystem ? <Terminal size={16} /> : <Bot size={16} />}
                                             </div>
-                                            <div className="max-w-2xl bg-tertiary/10 p-4 rounded-lg rounded-tl-none border border-tertiary/20">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <span className="font-mono text-[10px] text-tertiary uppercase tracking-widest">Verification Required</span>
-                                                    <span className="font-mono text-[9px] text-outline opacity-50 ml-4">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                </div>
-                                                <p className="text-xs text-on-surface leading-relaxed whitespace-pre-wrap mb-3">{msg.content}</p>
-                                                {msg.approval_id && (
-                                                    <div className="bg-surface-container px-3 py-2 rounded border border-outline-variant/20 flex items-center justify-between">
-                                                        <span className="text-[10px] font-mono text-outline">ID: {msg.approval_id.slice(0, 8)}...</span>
-                                                        <button className="text-[10px] font-bold text-tertiary uppercase tracking-widest hover:underline">Review Details</button>
+                                            <div className="max-w-4xl space-y-4">
+                                                <div className="bg-surface-container px-4 py-4">
+                                                    <div className="mb-2 flex items-center justify-between gap-4">
+                                                        <span className={`font-headline text-[10px] font-semibold uppercase tracking-[0.14em] ${isSystem ? 'text-info' : 'text-success'}`}>{isSystem ? 'System Intervention' : `${selectedConversation.agent_id} Analysis`}</span>
+                                                        <span className="font-mono text-[10px] text-on-surface-variant">{formatTime(msg.created_at)}</span>
                                                     </div>
-                                                )}
+                                                    <p className="whitespace-pre-wrap text-sm leading-6 text-on-surface-variant">{msg.content}</p>
+                                                </div>
                                             </div>
                                         </div>
                                     )
-                                }
-
-                                // Standard Agent Message
-                                return (
-                                    <div key={msg.id} className="flex gap-4 animate-fade-in">
-                                        <div className="w-8 h-8 flex-shrink-0 bg-surface-container-high rounded-sm border border-outline-variant/20 flex items-center justify-center">
-                                            <Bot size={16} className="text-secondary" />
-                                        </div>
-                                        <div className="flex-1 max-w-4xl space-y-4">
-                                            <div className="bg-surface-container-low p-4 rounded-lg rounded-tl-none border border-outline-variant/10">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <span className="font-mono text-[10px] text-secondary uppercase tracking-widest">{selectedConversation.agent_id} Response</span>
-                                                    <span className="font-mono text-[9px] text-outline opacity-50 ml-4">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                </div>
-
-                                                <p className="text-xs text-on-surface-variant leading-relaxed whitespace-pre-wrap">
-                                                    {msg.content}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )
-                            })}
+                                })
+                            )}
                             <div ref={messagesEndRef} />
                         </div>
 
-                        {/* Thread Input Anchor */}
-                        <div className="p-4 md:p-6 pt-0 mt-auto bg-surface-container-lowest">
-                            <div className="glass-panel border border-outline-variant/30 rounded-lg shadow-2xl overflow-hidden bg-surface-container-low relative z-10">
-                                <div className="flex items-center gap-2 px-4 py-2 border-b border-outline-variant/10 bg-surface-container/50">
-                                    <button className="p-1 text-outline hover:text-primary transition-colors"><Paperclip size={14} /></button>
-                                    <button className="p-1 text-outline hover:text-primary transition-colors"><Terminal size={14} /></button>
-                                    <button className="p-1 text-outline hover:text-primary transition-colors"><Codesandbox size={14} /></button>
-                                    <div className="h-4 w-[1px] bg-outline-variant/20 mx-1"></div>
-                                    <span className="text-[10px] text-outline uppercase font-mono hidden sm:inline">Agent Selection: </span>
-                                    <span className="text-[10px] text-primary font-mono font-bold">{selectedConversation.agent_id}</span>
+                        <div className="border-t border-outline-variant/20 bg-surface-container-lowest p-4 sm:p-6">
+                            <div className="surface-card shell-border overflow-hidden">
+                                <div className="flex items-center gap-2 border-b border-outline-variant/20 bg-surface-container-low px-4 py-3">
+                                    {[Paperclip, Terminal, Codesandbox].map((Icon, index) => (
+                                        <button key={index} className="focus-ring flex h-8 w-8 items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-primary">
+                                            <Icon size={15} />
+                                        </button>
+                                    ))}
+                                    <div className="mx-1 h-4 w-px bg-outline-variant/30"></div>
+                                    <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">{selectedConversation.agent_id}</span>
+                                    <span className="ml-auto font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-success">2 agents online</span>
                                 </div>
-                                <div className="flex items-end p-3 gap-3">
+
+                                <div className="flex items-end gap-3 px-3 py-3 sm:px-4">
                                     <textarea
                                         value={draft}
                                         onChange={(e) => setDraft(e.target.value)}
@@ -353,49 +364,37 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
                                                 sendMessage()
                                             }
                                         }}
-                                        className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 resize-none text-on-surface placeholder:text-outline/40 outline-none max-h-32"
+                                        className="focus-ring min-h-[52px] flex-1 resize-none bg-transparent px-2 py-3 text-sm text-on-surface placeholder:text-on-surface-variant"
                                         placeholder={`Type a directive for ${selectedConversation.agent_id}...`}
-                                        rows={1}
-                                        style={{ height: draft ? 'auto' : '36px' }}
+                                        rows={2}
                                     />
-                                    <button
-                                        onClick={sendMessage}
-                                        disabled={!draft.trim()}
-                                        className="w-10 h-10 bg-primary text-on-primary rounded-sm flex items-center justify-center shadow-lg shadow-primary/20 hover:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 disabled:shadow-none"
-                                    >
-                                        <Send size={16} className={`${draft.trim() ? 'translate-x-0.5 -translate-y-0.5' : ''} transition-transform`} />
+                                    <button onClick={sendMessage} disabled={!draft.trim()} className="shell-button shell-button-primary focus-ring h-[52px] w-[52px] p-0 disabled:opacity-40">
+                                        <Send size={16} />
                                     </button>
                                 </div>
-                            </div>
-                            <div className="mt-3 flex justify-center pb-2">
-                                <p className="text-[10px] text-outline/50 font-mono">CODE_SHEPHERD v1.0.4 • SECURE_TERMINAL_ENCRYPTED</p>
                             </div>
                         </div>
                     </>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-                        <div className="w-16 h-16 rounded-full border border-dashed border-outline-variant/30 flex items-center justify-center bg-surface-container-low mb-6 opacity-50">
-                            <Bot className="text-outline" size={32} />
-                        </div>
-                        <button className="md:hidden mb-4 inline-flex items-center gap-2 rounded-sm border border-outline-variant/20 px-3 py-2 text-xs uppercase tracking-widest text-outline" onClick={() => setMobileListOpen(true)}>
-                            <List size={14} /> Open Threads
-                        </button>
-                        <p className="text-sm text-outline font-headline tracking-widest uppercase mb-2">No Thread Selected</p>
-                        <p className="text-xs font-mono text-outline/50">Intercept a signal from the left panel</p>
+                    <div className="flex flex-1 flex-col items-center justify-center px-6 text-center text-on-surface-variant">
+                        <Bot size={36} className="mb-5" />
+                        <p className="mb-2 font-headline text-[11px] font-semibold uppercase tracking-[0.16em]">No Session Selected</p>
+                        <p className="text-sm">Choose an active session from the left panel to continue remote supervision.</p>
                     </div>
                 )}
             </section>
 
-            {/* Right Inspector Drawer (Minimized/Contextual) */}
-            <aside className="hidden lg:flex w-14 border-l border-outline-variant/10 flex-col items-center py-6 gap-6 bg-surface-container-low z-10">
-                <button className="p-2 text-primary bg-primary/10 rounded-sm hover:-translate-y-0.5 transition-transform"><Info size={18} /></button>
-                <button className="p-2 text-outline hover:text-on-surface hover:-translate-y-0.5 transition-transform"><List size={18} /></button>
-                <button className="p-2 text-outline hover:text-on-surface hover:-translate-y-0.5 transition-transform"><History size={18} /></button>
-                <button className="p-2 text-outline hover:text-on-surface hover:-translate-y-0.5 transition-transform"><Activity size={18} /></button>
-
-                <div className="mt-auto flex flex-col items-center gap-6">
-                    <div className="w-1 h-12 bg-outline-variant/20 rounded-full"></div>
-                    <button className="p-2 text-outline hover:text-on-surface hover:-translate-y-0.5 transition-transform"><HelpCircle size={18} /></button>
+            <aside className="surface-card-alt hidden border-l border-outline-variant/20 xl:flex xl:w-[72px] xl:flex-col xl:items-center xl:py-6 xl:gap-4">
+                {[Info, List, History, Activity].map((Icon, index) => (
+                    <button key={index} className={`focus-ring flex h-11 w-11 items-center justify-center ${index === 0 ? 'bg-surface-container text-primary' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'}`}>
+                        <Icon size={18} />
+                    </button>
+                ))}
+                <div className="mt-auto flex flex-col items-center gap-4">
+                    <div className="h-12 w-px bg-outline-variant/30"></div>
+                    <button className="focus-ring flex h-11 w-11 items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface">
+                        <HelpCircle size={18} />
+                    </button>
                 </div>
             </aside>
         </div>

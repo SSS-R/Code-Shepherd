@@ -62,86 +62,83 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
   }
 
   return (
-    <div className="animate-fade-in pb-12 pt-8">
-      {/* Dashboard Header */}
-      <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 mb-12 mt-4">
+    <div className="animate-fade-in pb-10 pt-2 lg:pb-12">
+      <div className="mb-10 flex flex-col gap-4 lg:mb-12 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-headline text-3xl font-bold tracking-tight text-on-surface mb-1 uppercase">Command Center</h1>
-          <p className="text-outline text-sm font-body">Operational pulse for cluster <span className="text-primary font-mono">SHEPHERD-ALPHA-09</span></p>
+          <p className="mb-2 font-headline text-[11px] font-semibold uppercase tracking-[0.18em] text-on-surface-variant">Crystalline Architecture</p>
+          <h1 className="font-headline text-[28px] font-bold uppercase tracking-[-0.02em] text-on-surface sm:text-[36px]">Control Plane</h1>
+          <p className="mt-2 max-w-2xl text-sm text-on-surface-variant sm:text-base">Operational pulse for cluster <span className="font-mono text-primary">SHEPHERD-ALPHA-09</span>. Unified communication, approvals, and active agent supervision in one command surface.</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto md:justify-end">
-          <button className="w-full sm:w-auto px-4 py-2 bg-surface-container text-primary text-xs font-medium uppercase tracking-widest rounded-sm border border-outline-variant/20 hover:bg-surface-container-high transition-all">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <button className="shell-button shell-button-secondary focus-ring w-full sm:w-auto">
             Export Log
           </button>
-          <button className="w-full sm:w-auto px-4 py-2 bg-gradient-to-b from-primary-container to-primary text-on-primary-container text-xs font-bold uppercase tracking-widest rounded-sm hover:opacity-90 transition-all flex items-center justify-center gap-2">
+          <button className="shell-button shell-button-primary focus-ring w-full sm:w-auto">
             <Rocket size={14} />
             Deploy Agent
           </button>
         </div>
       </div>
 
-      {/* Metric Grid - More robust breakpoints */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-10">
-        <div className="premium-card p-5 rounded-lg severity-marker-secondary">
-          <p className="text-[10px] font-mono text-on-surface-variant/80 font-bold uppercase tracking-widest mb-2">Total Agents</p>
-          <div className="flex items-baseline gap-2">
-            <span className="font-headline text-3xl font-bold text-on-surface">{agents.length}</span>
-            <span className="text-secondary text-[10px] font-mono font-bold">+12%</span>
+      <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 lg:mb-12 lg:gap-6">
+        <div className="metric-card severity-marker-secondary p-5 lg:p-8">
+          <div className="mb-4 flex items-center justify-between">
+            <p className="font-headline text-[11px] font-semibold uppercase tracking-[0.16em] text-on-surface-variant">Total Managed Agents</p>
+            <Terminal size={18} className="text-on-surface-variant" />
           </div>
+          <div className="flex items-baseline gap-2">
+            <span className="font-headline text-[32px] font-bold text-on-surface lg:text-[48px] lg:leading-[56px]">{agents.length}</span>
+          </div>
+          <div className="mt-4 flex items-center gap-2 font-headline text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant"><span className="status-diamond success"></span> Registry Synchronized</div>
         </div>
 
-        <div className="premium-card p-5 rounded-lg severity-marker-secondary">
-          <p className="text-[10px] font-mono text-on-surface-variant/80 font-bold uppercase tracking-widest mb-2">Online Agents</p>
-          <div className="flex items-baseline gap-2">
-            <span className="font-headline text-3xl font-bold text-on-surface">{stats.activeAgents}</span>
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="w-2 h-2 rounded-full bg-secondary shadow-[0_0_10px_#7bdb80] animate-pulse"></div>
-            </div>
+        <div className="metric-card p-5 lg:p-8">
+          <div className="mb-4 flex items-center justify-between">
+            <p className="font-headline text-[11px] font-semibold uppercase tracking-[0.16em] text-on-surface-variant">Active Conversations</p>
+            <Bot size={18} className="text-on-surface-variant" />
           </div>
+          <div className="font-headline text-[32px] font-bold text-on-surface lg:text-[48px] lg:leading-[56px]">{stats.activeAgents}</div>
+          <div className="mt-4 flex items-center gap-2 font-headline text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant"><span className="status-diamond success"></span> Collaborative Threads Live</div>
         </div>
 
-        <div className="premium-card p-5 rounded-lg severity-marker-error">
-          <p className="text-[10px] font-mono text-on-surface-variant/80 font-bold uppercase tracking-widest mb-2">Blocked Agents</p>
-          <div className="flex items-baseline gap-2">
-            <span className="font-headline text-3xl font-bold text-error">0</span>
-            <span className="text-outline text-[10px] font-mono italic">0.0% rate</span>
+        <div className="metric-card severity-marker-tertiary p-5 lg:p-8">
+          <div className="mb-4 flex items-center justify-between">
+            <p className="font-headline text-[11px] font-semibold uppercase tracking-[0.16em] text-on-surface-variant">Pending Approvals</p>
+            <ShieldAlert size={18} className="text-warning" />
           </div>
+          <div className="font-headline text-[32px] font-bold text-warning lg:text-[48px] lg:leading-[56px]">{stats.pendingApprovals}</div>
+          <div className="mt-4 flex items-center gap-2 font-headline text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant"><span className="status-diamond warning"></span> Action Required</div>
         </div>
 
-        <div className="premium-card p-5 rounded-lg severity-marker-tertiary">
-          <p className="text-[10px] font-mono text-on-surface-variant/80 font-bold uppercase tracking-widest mb-2">Pending Approvals</p>
-          <div className="flex items-baseline gap-2">
-            <span className="font-headline text-3xl font-bold text-tertiary">{stats.pendingApprovals}</span>
-            <span className="text-outline text-[10px] font-mono italic">Action req.</span>
+        <div className="metric-card p-5 lg:p-8">
+          <div className="mb-4 flex items-center justify-between">
+            <p className="font-headline text-[11px] font-semibold uppercase tracking-[0.16em] text-on-surface-variant">System Uptime</p>
+            <Activity size={18} className="text-on-surface-variant" />
           </div>
-        </div>
-
-        <div className="premium-card p-5 rounded-lg border border-outline-variant/10">
-          <p className="text-[10px] font-mono text-on-surface-variant/80 font-bold uppercase tracking-widest mb-2">Active Workflows</p>
-          <div className="flex items-baseline gap-2">
-            <span className="font-headline text-3xl font-bold text-on-surface">{parallelSessions.length}</span>
-            <RefreshCw size={14} className="text-primary animate-spin" style={{ animationDuration: '4s' }} />
+          <div className="flex items-end gap-3">
+            <div className="font-headline text-[32px] font-bold text-on-surface lg:text-[48px] lg:leading-[56px]">99.98%</div>
+            <RefreshCw size={16} className="mb-3 text-primary animate-spin" style={{ animationDuration: '4s' }} />
           </div>
+          <div className="mt-4 flex items-center gap-2 font-headline text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant"><span className="status-diamond info"></span> Relay Integrity Stable</div>
         </div>
       </div>
 
-      {/* Bento Layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
 
-        <div className="xl:col-span-8 bg-surface-container-low rounded-md p-4 sm:p-6 flex flex-col min-h-[320px] sm:min-h-[400px] overflow-hidden">
+        <div className="surface-card-alt xl:col-span-8 flex min-h-[320px] flex-col overflow-hidden p-4 sm:p-6">
           <div className="flex justify-between items-center mb-8">
-            <h3 className="font-headline text-sm font-bold uppercase tracking-wider text-on-surface flex items-center gap-2">
+            <h3 className="font-headline text-sm font-bold uppercase tracking-[0.14em] text-on-surface flex items-center gap-2">
               <Activity size={18} className="text-primary" />
-              Activity Trends <span className="text-[10px] font-mono text-outline font-normal ml-2">24H CYCLE</span>
+              Recent Activity <span className="text-[10px] font-mono text-on-surface-variant font-normal ml-2">24H CYCLE</span>
             </h3>
             <div className="hidden sm:flex gap-4">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-secondary"></div>
-                <span className="text-[10px] text-outline uppercase tracking-widest">Success</span>
+                <span className="status-diamond success"></span>
+                <span className="text-[10px] text-on-surface-variant uppercase tracking-widest">Success</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-error"></div>
-                <span className="text-[10px] text-outline uppercase tracking-widest">Failure</span>
+                <span className="status-diamond error"></span>
+                <span className="text-[10px] text-on-surface-variant uppercase tracking-widest">Failure</span>
               </div>
             </div>
           </div>
@@ -158,11 +155,11 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
                   <stop offset="100%" style={{ stopColor: '#7bdb80', stopOpacity: 0 }}></stop>
                 </linearGradient>
               </defs>
-              <line stroke="#414752" strokeDasharray="4" strokeWidth="0.5" x1="0" x2="1000" y1="50" y2="50"></line>
-              <line stroke="#414752" strokeDasharray="4" strokeWidth="0.5" x1="0" x2="1000" y1="150" y2="150"></line>
-              <line stroke="#414752" strokeDasharray="4" strokeWidth="0.5" x1="0" x2="1000" y1="250" y2="250"></line>
+              <line stroke="currentColor" className="text-outline-variant/30" strokeDasharray="4" strokeWidth="0.5" x1="0" x2="1000" y1="50" y2="50"></line>
+              <line stroke="currentColor" className="text-outline-variant/30" strokeDasharray="4" strokeWidth="0.5" x1="0" x2="1000" y1="150" y2="150"></line>
+              <line stroke="currentColor" className="text-outline-variant/30" strokeDasharray="4" strokeWidth="0.5" x1="0" x2="1000" y1="250" y2="250"></line>
             </svg>
-            <div className="absolute bottom-[-20px] left-0 w-full flex justify-between text-[10px] font-mono text-outline">
+            <div className="absolute bottom-[-20px] left-0 w-full flex justify-between text-[10px] font-mono text-on-surface-variant">
               <span>00:00</span>
               <span>06:00</span>
               <span>12:00</span>
@@ -173,10 +170,10 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
         </div>
 
         {/* Agent Presence Module */}
-        <div className="xl:col-span-4 bg-surface-container-low rounded-md p-4 sm:p-6">
+        <div className="surface-card-alt xl:col-span-4 p-4 sm:p-6">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-headline text-sm font-bold uppercase tracking-wider text-on-surface">Agent Presence</h3>
-            <span className="text-[10px] font-mono bg-surface-container px-2 py-0.5 rounded text-outline">LIVE ({agents.length})</span>
+            <h3 className="font-headline text-sm font-bold uppercase tracking-[0.14em] text-on-surface">Active Threads</h3>
+            <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Live ({agents.length})</span>
           </div>
 
           <div className="space-y-4 max-h-[310px] overflow-y-auto custom-scrollbar pr-2">
@@ -188,47 +185,46 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
             ) : agents.map((agent) => (
               <div
                 key={agent.id}
-                className="flex items-center gap-3 p-3 bg-surface-container rounded transition-all hover:bg-surface-container-high cursor-pointer"
+                className="flex cursor-pointer items-center gap-3 bg-surface-container p-3 transition-all hover:bg-surface-bright"
                 onClick={() => onViewAgent?.(agent.id)}
               >
                 <div className="relative">
-                  <div className="w-8 h-8 rounded-sm bg-surface-container-lowest border border-outline-variant/30 flex items-center justify-center text-outline">
+                  <div className="flex h-10 w-10 items-center justify-center bg-surface-container-lowest text-on-surface-variant">
                     <Bot size={16} />
                   </div>
                   {agent.status === 'online' ? (
-                    <div className="absolute bottom-[-2px] right-[-2px] w-2.5 h-2.5 rounded-full bg-secondary border-2 border-surface-container p-[1px]"></div>
+                    <div className="absolute bottom-[-1px] right-[-1px] h-2.5 w-2.5 rotate-45 bg-success"></div>
                   ) : (
-                    <div className="absolute bottom-[-2px] right-[-2px] w-2.5 h-2.5 rounded-full bg-outline border-2 border-surface-container p-[1px]"></div>
+                    <div className="absolute bottom-[-1px] right-[-1px] h-2.5 w-2.5 rotate-45 bg-outline"></div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-mono font-bold text-on-surface truncate">{agent.name}</span>
-                    <span className={`text-[9px] font-mono ${agent.status === 'online' ? 'text-secondary' : 'text-outline'}`}>
+                    <span className="font-headline text-[12px] font-semibold uppercase tracking-[0.08em] text-on-surface truncate">{agent.name}</span>
+                    <span className={`font-headline text-[10px] font-semibold uppercase tracking-[0.14em] ${agent.status === 'online' ? 'text-success' : 'text-on-surface-variant'}`}>
                       {agent.status.toUpperCase()}
                     </span>
                   </div>
-                  <div className="w-full h-1 bg-surface-container-lowest mt-1.5 rounded-full overflow-hidden">
+                  <div className="w-full h-1 bg-surface-container-lowest mt-2 overflow-hidden">
                     <div className={`h-full ${agent.status === 'online' ? 'bg-secondary w-full' : 'bg-outline w-0 transition-all'}`}></div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-          <button className="w-full mt-4 py-2 border border-outline-variant/10 text-[10px] font-mono text-outline uppercase tracking-widest hover:bg-surface-container transition-colors">
+          <button className="shell-button shell-button-secondary focus-ring mt-4 w-full">
             View Registry ({agents.length})
           </button>
         </div>
 
-        {/* Live Parallel Sessions as Incidents Replacement */}
-        <div className="xl:col-span-12 bg-surface-container-low rounded-md overflow-hidden pb-4">
-          <div className="px-6 py-4 border-b border-outline-variant/10 flex justify-between items-center">
-            <h3 className="font-headline text-sm font-bold uppercase tracking-wider text-on-surface flex items-center gap-2">
+        <div className="surface-card-alt xl:col-span-12 overflow-hidden pb-4">
+          <div className="flex items-center justify-between border-b border-outline-variant/20 px-6 py-4">
+            <h3 className="font-headline text-sm font-bold uppercase tracking-[0.14em] text-on-surface flex items-center gap-2">
               <Terminal size={18} className="text-tertiary" />
-              Live Operator Sessions
+              Active Operator Sessions
             </h3>
             <div className="flex gap-2">
-              <span className="text-[10px] px-2 py-0.5 rounded-sm bg-primary/10 text-primary font-mono uppercase tracking-widest border border-primary/20">
+              <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
                 {parallelSessions.length} Active Workflows
               </span>
             </div>
@@ -236,7 +232,7 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
 
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead className="bg-surface-container-lowest text-[10px] font-mono text-outline uppercase tracking-widest">
+              <thead className="bg-surface-container-lowest font-headline text-[10px] text-on-surface-variant uppercase tracking-[0.14em]">
                 <tr>
                   <th className="px-6 py-3 font-medium">Task ID</th>
                   <th className="px-6 py-3 font-medium">Status</th>
@@ -245,16 +241,16 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
                   <th className="px-6 py-3 font-medium text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-outline-variant/5">
+              <tbody>
                 {parallelSessions.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-xs font-mono text-outline italic">
+                    <td colSpan={5} className="px-6 py-8 text-center text-xs font-body text-on-surface-variant italic">
                       No active operator sessions.
                     </td>
                   </tr>
                 ) : (
                   parallelSessions.map(session => (
-                    <tr key={session.task_id} className="hover:bg-surface-container transition-colors group">
+                    <tr key={session.task_id} className="border-t border-outline-variant/15 hover:bg-surface-container transition-colors group">
                       <td className="px-6 py-4 text-xs font-mono text-primary truncate max-w-[120px]">
                         {session.task_id}
                       </td>
