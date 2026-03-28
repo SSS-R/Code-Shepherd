@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Activity, ArrowRight, Calendar, ChevronRight, Search, ShieldCheck, Terminal } from 'lucide-react'
 import SessionTimeline, { TimelineEvent } from '../components/SessionTimeline'
-import { buildAuthHeaders } from '../utils/authSession'
+import { relayFetch } from '../utils/relay'
 
 export default function ExecutionTimeline() {
     const [events, setEvents] = useState<TimelineEvent[]>([])
@@ -11,8 +11,7 @@ export default function ExecutionTimeline() {
     const [filterCategory, setFilterCategory] = useState<'all' | 'errors' | 'approvals' | 'agent_state'>('all')
 
     useEffect(() => {
-        fetch(`http://localhost:3000/audit-logs?limit=${limit}`, { headers: buildAuthHeaders() })
-            .then((res) => res.json())
+        relayFetch<TimelineEvent[]>(`/audit-logs?limit=${limit}`)
             .then((data) => {
                 setEvents(data)
                 setLoading(false)

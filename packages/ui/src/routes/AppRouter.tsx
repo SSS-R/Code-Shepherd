@@ -58,7 +58,7 @@ export default function AppRouter({ route }: { route: ParsedRoute }) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
     const [notificationsOpen, setNotificationsOpen] = useState(false)
     const session = loadSession()
-    const { preferences, updatePreferences } = useOperator()
+    const { loading, preferences, profile, updatePreferences } = useOperator()
     const { notifications, unreadCount, markAllRead } = useRealtimeNotifications(Boolean(session && preferences.desktop_notifications))
 
     useEffect(() => {
@@ -107,7 +107,15 @@ export default function AppRouter({ route }: { route: ParsedRoute }) {
         [],
     )
 
-    if (route.key === 'login') {
+    if (loading) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-surface text-on-surface">
+                <div className="h-10 w-10 animate-spin border-2 border-outline-variant border-t-primary"></div>
+            </div>
+        )
+    }
+
+    if (!profile || route.key === 'login') {
         return <LoginPreview />
     }
 

@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react'
-import { loadSession } from '../utils/authSession'
+import { clearSession, loadSession, saveSession } from '../utils/authSession'
 import { MeResponse, OperatorPreferences, relayFetch, ThemeMode } from '../utils/relay'
 
 const PREFERENCES_CACHE_KEY = 'code-shepherd.preferences'
@@ -41,11 +41,10 @@ function applyTheme(themeMode: ThemeMode) {
 }
 
 export function OperatorProvider({ children }: { children: ReactNode }) {
-    const session = loadSession()
     const [profile, setProfile] = useState<MeResponse['user'] | null>(null)
     const [teams, setTeams] = useState<MeResponse['teams']>([])
     const [activeTeam, setActiveTeam] = useState<MeResponse['activeTeam']>(null)
-    const [role, setRole] = useState<string>(session?.role ?? 'Developer')
+    const [role, setRole] = useState<string>(loadSession()?.role ?? 'Developer')
     const [preferences, setPreferences] = useState<OperatorPreferences>(loadCachedPreferences)
     const [loading, setLoading] = useState(true)
 
@@ -55,14 +54,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     }, [preferences])
 
     const refreshProfile = async () => {
-        if (!session) {
-            setProfile(null)
-            setTeams([])
-            setActiveTeam(null)
-            setRole('Developer')
-            setLoading(false)
-            return
-        }
+        const session = loadSession()
 
         try {
             const me = await relayFetch<MeResponse>('/auth/me')
@@ -71,14 +63,21 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
             setActiveTeam(me.activeTeam)
             setRole(me.role)
             setPreferences(me.preferences)
+            if (me.user) {
+                saveSession({
+                    userId: me.user.id,
+                    teamId: me.activeTeam?.id ?? null,
+                    role: me.role as 'Admin' | 'Developer' | 'Viewer',
+                    name: me.user.name,
+                    email: me.user.email,
+                })
+            }
         } catch {
-            setProfile({
-                id: session.userId,
-                email: session.email ?? null,
-                name: session.name ?? null,
-                created_at: null,
-            })
-            setRole(session.role)
+            clearSession()
+            setProfile(null)
+            setTeams([])
+            setActiveTeam(null)
+            setRole(session?.role ?? 'Developer')
         } finally {
             setLoading(false)
         }
@@ -86,15 +85,11 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         void refreshProfile()
-    }, [session?.userId])
+    }, [])
 
     const updatePreferences = async (patch: Partial<OperatorPreferences>) => {
         const optimistic = { ...preferences, ...patch }
         setPreferences(optimistic)
-
-        if (!session) {
-            return
-        }
 
         try {
             const response = await relayFetch<{ preferences: OperatorPreferences }>('/auth/preferences', {

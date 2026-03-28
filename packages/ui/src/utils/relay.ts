@@ -156,6 +156,8 @@ function buildHeaders(extra?: HeadersInit): HeadersInit {
     return headers
 }
 
+let refreshPromise: Promise<void> | null = null
+
 async function parseResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
         let message = `Request failed with status ${response.status}`
@@ -177,11 +179,35 @@ async function parseResponse<T>(response: Response): Promise<T> {
     return response.json() as Promise<T>
 }
 
-export async function relayFetch<T>(path: string, init?: RequestInit): Promise<T> {
+async function attemptRefresh(): Promise<void> {
+    if (!refreshPromise) {
+        refreshPromise = fetch(`${RELAY_BASE_URL}/auth/refresh`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: buildHeaders(),
+        }).then(async (response) => {
+            if (!response.ok) {
+                throw new Error('Unable to refresh session')
+            }
+        }).finally(() => {
+            refreshPromise = null
+        })
+    }
+
+    return refreshPromise
+}
+
+export async function relayFetch<T>(path: string, init?: RequestInit, hasRetried = false): Promise<T> {
     const response = await fetch(`${RELAY_BASE_URL}${path}`, {
         ...init,
         headers: buildHeaders(init?.headers),
+        credentials: 'include',
     })
+
+    if (response.status === 401 && !hasRetried && !path.startsWith('/auth/')) {
+        await attemptRefresh()
+        return relayFetch<T>(path, init, true)
+    }
 
     return parseResponse<T>(response)
 }

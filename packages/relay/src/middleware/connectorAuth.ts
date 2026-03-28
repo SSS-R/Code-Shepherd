@@ -28,13 +28,17 @@ export function requireConnectorAuth(db: Database, requiredScopes: string[] = []
         }
 
         const connector = db.prepare(`
-      SELECT connector_id, team_id, scopes, trust_status, connector_secret_hash
+      SELECT connector_id, team_id, scopes, trust_status, connector_secret_hash, secret_expires_at
       FROM trusted_connectors
       WHERE connector_id = ?
-    `).get(connectorId) as { connector_id: string; team_id: string | null; scopes: string; trust_status: string; connector_secret_hash: string | null } | undefined;
+    `).get(connectorId) as { connector_id: string; team_id: string | null; scopes: string; trust_status: string; connector_secret_hash: string | null; secret_expires_at?: string | null } | undefined;
 
         if (!connector || connector.trust_status !== 'trusted' || !connector.connector_secret_hash) {
             return res.status(401).json({ error: 'Connector is not trusted' });
+        }
+
+        if (connector.secret_expires_at && new Date(connector.secret_expires_at).getTime() <= Date.now()) {
+            return res.status(401).json({ error: 'Connector secret has expired and must be rotated' });
         }
 
         const expected = Buffer.from(connector.connector_secret_hash, 'hex');

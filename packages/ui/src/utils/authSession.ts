@@ -2,8 +2,8 @@ export interface StoredSession {
     userId: string;
     teamId: string | null;
     role: 'Admin' | 'Developer' | 'Viewer';
-    name?: string;
-    email?: string;
+    name?: string | null;
+    email?: string | null;
 }
 
 const SESSION_KEY = 'code-shepherd.session';
@@ -26,14 +26,8 @@ export function clearSession(): void {
 }
 
 export function buildAuthHeaders(extra?: HeadersInit): HeadersInit {
-    const session = loadSession();
     return {
         'Content-Type': 'application/json',
-        ...(session ? {
-            'x-user-id': session.userId,
-            'x-team-id': session.teamId ?? '',
-            'x-role': session.role,
-        } : {}),
         ...(extra || {}),
     };
 }

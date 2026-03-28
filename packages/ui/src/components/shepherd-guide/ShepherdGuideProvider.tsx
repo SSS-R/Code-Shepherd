@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { buildAuthHeaders, loadSession } from '../../utils/authSession'
+import { relayFetch } from '../../utils/relay'
 
 type GuideFeedback = 'up' | 'down' | null
 type GuideConnectionState = 'connected' | 'fallback' | 'loading'
@@ -129,48 +129,21 @@ export function ShepherdGuideProvider({ children }: { children: ReactNode }) {
         let cancelled = false
 
         async function initializeGuide() {
-            const session = loadSession()
-
-            if (!session) {
-                if (!cancelled) {
-                    setConversationId(null)
-                    setConnectionState('fallback')
-                    setMessages(defaultMessages)
-                    setIsLoading(false)
-                }
-                return
-            }
-
             try {
-                const ensureResponse = await fetch('http://localhost:3000/conversations/ensure', {
+                const ensured = await relayFetch<{ conversation?: { id?: string } }>('/conversations/ensure', {
                     method: 'POST',
-                    headers: buildAuthHeaders(),
                     body: JSON.stringify({
                         agent_id: GUIDE_AGENT_ID,
                         title: 'Shepherd Guide',
                     }),
                 })
-
-                if (!ensureResponse.ok) {
-                    throw new Error('Failed to ensure guide conversation')
-                }
-
-                const ensured = await ensureResponse.json() as { conversation?: { id?: string } }
                 const nextConversationId = ensured.conversation?.id ?? null
 
                 if (!nextConversationId) {
                     throw new Error('Guide conversation id missing')
                 }
 
-                const messagesResponse = await fetch(`http://localhost:3000/conversations/${nextConversationId}/messages`, {
-                    headers: buildAuthHeaders(),
-                })
-
-                if (!messagesResponse.ok) {
-                    throw new Error('Failed to load guide messages')
-                }
-
-                const data = await messagesResponse.json() as { messages?: RelayMessageRecord[] }
+                const data = await relayFetch<{ messages?: RelayMessageRecord[] }>(`/conversations/${nextConversationId}/messages`)
 
                 if (!cancelled) {
                     setConversationId(nextConversationId)
@@ -255,9 +228,8 @@ export function ShepherdGuideProvider({ children }: { children: ReactNode }) {
         setIsSending(true)
 
         try {
-            const response = await fetch(`http://localhost:3000/conversations/${conversationId}/messages`, {
+            const data = await relayFetch<{ message?: RelayMessageRecord; reply?: RelayMessageRecord }>(`/conversations/${conversationId}/messages`, {
                 method: 'POST',
-                headers: buildAuthHeaders(),
                 body: JSON.stringify({
                     content: trimmed,
                     target_agent_id: GUIDE_AGENT_ID,
@@ -265,12 +237,6 @@ export function ShepherdGuideProvider({ children }: { children: ReactNode }) {
                     metadata: { source: 'shepherd-guide-ui' },
                 }),
             })
-
-            if (!response.ok) {
-                throw new Error('Failed to send guide message')
-            }
-
-            const data = await response.json() as { message?: RelayMessageRecord; reply?: RelayMessageRecord }
             const nextMessages = [data.message, data.reply].filter(Boolean).map((message) => mapRelayMessage(message as RelayMessageRecord))
 
             setMessages((current) => [...current, ...nextMessages])
@@ -303,17 +269,10 @@ export function ShepherdGuideProvider({ children }: { children: ReactNode }) {
         }
 
         try {
-            const response = await fetch(`http://localhost:3000/conversations/messages/${messageId}/feedback`, {
+            const data = await relayFetch<{ message?: RelayMessageRecord }>(`/conversations/messages/${messageId}/feedback`, {
                 method: 'PATCH',
-                headers: buildAuthHeaders(),
                 body: JSON.stringify({ feedback }),
             })
-
-            if (!response.ok) {
-                throw new Error('Failed to submit guide feedback')
-            }
-
-            const data = await response.json() as { message?: RelayMessageRecord }
             if (data.message) {
                 setMessages((current) => current.map((message) => (
                     message.id === messageId

@@ -23,6 +23,7 @@ import { getVapidKeys } from './utils/vapidKeys';
 import * as activities from './activities';
 import { initializeRealtime } from './realtime';
 import { ensureShepherdGuideAgent } from './guide/shepherdGuide';
+import { createRateLimiter } from './middleware/rateLimit';
 
 const app = express();
 const server = createServer(app);
@@ -31,12 +32,55 @@ const DATABASE_PATH = process.env.DATABASE_PATH || './relay.db';
 const TEMPORAL_ADDRESS = process.env.TEMPORAL_ADDRESS || 'localhost:7233';
 const TEMPORAL_NAMESPACE = process.env.TEMPORAL_NAMESPACE || 'default';
 const TEMPORAL_TASK_QUEUE = process.env.TEMPORAL_TASK_QUEUE || 'code-shepherd-queue';
+const UI_ORIGIN = process.env.UI_ORIGIN || 'http://localhost:5173';
 
 // Get VAPID keys for Web Push
 const vapidKeys = getVapidKeys();
 
 // Middleware
-app.use(express.json());
+app.disable('x-powered-by');
+app.use((req: Request, res: Response, next: Function) => {
+  const origin = req.header('origin');
+
+  if (origin && origin === UI_ORIGIN) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Connector-Id, X-Connector-Secret');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
+  }
+
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "frame-ancestors 'none'",
+      "object-src 'none'",
+      "img-src 'self' data: blob:",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      `connect-src 'self' ${UI_ORIGIN} ws://localhost:3000 http://localhost:3000 ws://localhost:5173 http://localhost:5173`,
+    ].join('; ')
+  );
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).send();
+  }
+
+  return next();
+});
+app.use(createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 240,
+  message: 'Too many requests. Please slow down.',
+}));
+app.use(express.json({ limit: '256kb' }));
 app.use((req: Request, res: Response, next: Function) => {
   // Log all requests to audit trail
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);

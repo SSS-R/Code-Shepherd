@@ -8,6 +8,7 @@
 import { Request, Response } from 'express';
 import { WorkflowClient } from '@temporalio/client';
 import { resumeSignal } from '../workflows/approvalWorkflow';
+import { requireAuth, requireRole } from '../middleware/auth';
 
 interface WorkflowInfo {
   workflowId: string;
@@ -20,12 +21,13 @@ interface WorkflowInfo {
 
 export function createWorkflowRoutes(client: WorkflowClient | null): ReturnType<typeof require>['Router'] {
   const router = require('express').Router();
+  router.use(requireAuth);
 
   /**
    * GET /workflows
    * List all active workflows from Temporal
    */
-  router.get('/', async (req: Request, res: Response) => {
+  router.get('/', requireRole(['Admin', 'Developer', 'Viewer']), async (req: Request, res: Response) => {
     try {
       if (!client) {
         return res.json([]);
@@ -59,7 +61,7 @@ export function createWorkflowRoutes(client: WorkflowClient | null): ReturnType<
     }
   });
 
-  router.post('/:id/resume', async (req: Request, res: Response) => {
+  router.post('/:id/resume', requireRole(['Admin', 'Developer']), async (req: Request, res: Response) => {
     try {
       const { id } = req.params as { id: string };
 

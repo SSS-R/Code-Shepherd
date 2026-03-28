@@ -24,6 +24,8 @@ export function createConnectorRoutes(db: Database) {
       connector_secret_hash TEXT,
       trust_status TEXT NOT NULL DEFAULT 'trusted',
       scopes TEXT DEFAULT '[]',
+      secret_expires_at DATETIME,
+      last_rotated_at DATETIME,
       last_verified_at DATETIME,
       revoked_at DATETIME,
       team_id TEXT,
@@ -34,6 +36,18 @@ export function createConnectorRoutes(db: Database) {
 
     try {
         db.exec('ALTER TABLE trusted_connectors ADD COLUMN connector_secret_hash TEXT');
+    } catch {
+        // already exists
+    }
+
+    try {
+        db.exec('ALTER TABLE trusted_connectors ADD COLUMN secret_expires_at DATETIME');
+    } catch {
+        // already exists
+    }
+
+    try {
+        db.exec('ALTER TABLE trusted_connectors ADD COLUMN last_rotated_at DATETIME');
     } catch {
         // already exists
     }
@@ -131,11 +145,12 @@ export function createConnectorRoutes(db: Database) {
 
             const id = createId('connector');
             const connectorSecret = `cs_${Math.random().toString(36).slice(2)}${Date.now()}`;
+            const secretExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
             db.prepare(`
-        INSERT INTO trusted_connectors (id, connector_id, connector_name, adapter_kind, transport, connector_secret_hash, trust_status, scopes, last_verified_at, team_id)
-        VALUES (?, ?, ?, ?, ?, ?, 'trusted', ?, ?, ?)
-      `).run(id, connector_id, connector_name, adapter_kind, transport, hashSecret(connectorSecret), JSON.stringify(scopes), last_verified_at, req.auth?.teamId ?? null);
+        INSERT INTO trusted_connectors (id, connector_id, connector_name, adapter_kind, transport, connector_secret_hash, trust_status, scopes, secret_expires_at, last_rotated_at, last_verified_at, team_id)
+        VALUES (?, ?, ?, ?, ?, ?, 'trusted', ?, ?, CURRENT_TIMESTAMP, ?, ?)
+      `).run(id, connector_id, connector_name, adapter_kind, transport, hashSecret(connectorSecret), JSON.stringify(scopes), secretExpiresAt, last_verified_at, req.auth?.teamId ?? null);
 
             db.prepare(`
         INSERT INTO connector_events (id, connector_id, event_type, event_details, team_id)
@@ -161,12 +176,13 @@ export function createConnectorRoutes(db: Database) {
         try {
             const { connectorId } = req.params as { connectorId: string };
             const connectorSecret = `cs_${Math.random().toString(36).slice(2)}${Date.now()}`;
+            const secretExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
             const result = db.prepare(`
         UPDATE trusted_connectors
-        SET connector_secret_hash = ?, updated_at = CURRENT_TIMESTAMP
+        SET connector_secret_hash = ?, secret_expires_at = ?, last_rotated_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
         WHERE connector_id = ? AND (team_id IS ? OR team_id = ?)
-      `).run(hashSecret(connectorSecret), connectorId, req.auth?.teamId ?? null, req.auth?.teamId ?? null);
+      `).run(hashSecret(connectorSecret), secretExpiresAt, connectorId, req.auth?.teamId ?? null, req.auth?.teamId ?? null);
 
             if (result.changes === 0) {
                 return res.status(404).json({ error: 'Connector not found' });

@@ -10,9 +10,11 @@
 import { Request, Response } from 'express';
 import type { Database } from 'better-sqlite3';
 import webPush from 'web-push';
+import { requireAuth, requireRole } from '../middleware/auth';
 
 export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: string; privateKey: string }): ReturnType<typeof require>['Router'] {
   const router = require('express').Router();
+  router.use(requireAuth);
 
   // Configure VAPID keys
   webPush.setVapidDetails(
@@ -95,7 +97,7 @@ export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: s
    * POST /notifications/test
    * Send test notification to all subscribers
    */
-  router.post('/test', async (req: Request, res: Response) => {
+  router.post('/test', requireRole(['Admin', 'Developer']), async (req: Request, res: Response) => {
     try {
       const { title = 'Test Notification', body = 'This is a test notification' } = req.body as { title?: string; body?: string };
 
@@ -139,7 +141,7 @@ export function createNotificationRoutes(db: Database, vapidKeys: { publicKey: s
    * GET /notifications/subscriptions
    * List all push subscriptions
    */
-  router.get('/subscriptions', (req: Request, res: Response) => {
+  router.get('/subscriptions', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
     try {
       const stmt = db.prepare('SELECT id, endpoint, created_at FROM push_subscriptions');
       const subscriptions = stmt.all();

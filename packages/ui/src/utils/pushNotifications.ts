@@ -56,10 +56,11 @@ export async function subscribeToPushNotifications(): Promise<PushSubscription |
   })
 
   // Send subscription to server
-  await fetch('http://localhost:3000/notifications/subscribe', {
+  await fetch(`${RELAY_BASE_URL}/notifications/subscribe`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(subscription)
+    body: JSON.stringify(subscription),
+    credentials: 'include',
   })
 
   console.log('Subscribed to push notifications')
@@ -81,10 +82,11 @@ export async function unsubscribeFromPushNotifications(): Promise<boolean> {
   
   if (success) {
     // Notify server
-    await fetch('http://localhost:3000/notifications/subscribe', {
+    await fetch(`${RELAY_BASE_URL}/notifications/subscribe`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ endpoint: subscription.endpoint })
+      body: JSON.stringify({ endpoint: subscription.endpoint }),
+      credentials: 'include',
     })
   }
 
@@ -108,3 +110,4 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   }
   return outputArray
 }
+import { RELAY_BASE_URL } from './relay'
