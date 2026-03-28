@@ -1,175 +1,280 @@
-# Code Shepherd — Remaining Tasks
+# Code Shepherd — Project Audit & Progress Tracker
 
-> **Status:** Architecture reset in progress
-> **Goal:** Reframe Code Shepherd as a unified multi-agent communication and control plane
-
----
-
-## What is already true in the repo
-
-These foundations already exist and should be preserved:
-
-- monorepo structure for relay, UI, shared types, and SDK
-- agent registration and heartbeat APIs
-- approval request and decision flow
-- risk scoring foundation
-- audit and timeline foundation
-- realtime event broadcasting foundation
-- local auth and team scaffolding
-- task and workflow scaffolding
-
-These are valuable because they form the operational backbone for the larger product direction.
+> **Audited:** 2026-03-28  
+> **Current Phase:** Architecture aligned, backend core done, UI screens done, integration & security hardening remain  
+> **Product Goal:** Unified multi-agent communication and control plane
 
 ---
 
-## What changes in product direction
+## ✅ COMPLETED — What Is Already Done
 
-Code Shepherd is no longer being treated as an approvals-only mobile dashboard.
+### Architecture & Documentation
 
-The new primary goal is:
-
-> connect many existing agents from IDEs and local systems into one place so the user can communicate with them, control them, approve risky actions, and manage them simultaneously from any device.
-
-That means the next work should prioritize:
-
-- conversations
-- message routing
-- adapters and bridges
-- capability tiers
-- multi-agent control UX
+- [x] Product thesis rewritten — Code Shepherd repositioned as a multi-agent control plane (not approvals-only)
+- [x] `CODE_SHEPHERD.md` — Full product roadmap with phases A–F, killer loop, capability tiers, architecture diagram
+- [x] `api-spec.md` — Complete backend API contract (REST + WebSocket spec)
+- [x] `final_design_system.md` — Full "Crystalline Architecture" design system, Obsidian + Platinum modes, all 11 screens specified
+- [x] `shepherd_guide_design.md` — Complete Shepherd Guide component spec (trigger, preview, modal — all 3 states, responsive behavior, animations)
+- [x] `max-context-optimizer.md` — Context Optimizer Max-tier feature fully planned (3-stage pipeline, relay middleware plan, DB schema extension, UI stats card)
+- [x] `SECURITY_AUDIT.md` — Full security audit with 10 blocker items documented
+- [x] `phase-1-plan.md` — **Deleted** (outdated, superseded by CODE_SHEPHERD.md phases)
 
 ---
 
-## Priority order
+### Backend — Relay (`packages/relay`)
 
-## Phase 1 — Product and data-model alignment
-
-### Critical
-- [ ] Define canonical entities for `Agent`, `Adapter`, `Conversation`, `Message`, `Command`, and `Approval`
-- [ ] Define capability tiers for monitor, approval, chat, and steering modes
-- [ ] Decide how approvals appear inside conversations while still supporting a separate approval queue
-- [ ] Define the normalized adapter contract for native integrations and custom bridges
-- [ ] Update shared documentation so all future implementation follows the same product center
-
-### Outcome
-After this phase, the repo should have a stable product language and system model.
-
----
-
-## Phase 2 — Adapter and bridge foundation
-
-### Critical
-- [ ] Design adapter interfaces for IDE-native agents, MCP agents, and custom bridges
-- [ ] Define connector onboarding flow for plugin install, helper process install, or command-based setup
-- [ ] Support direct-session integrations such as the OpenClaw main session path
-- [ ] Define heartbeat, reconnect, and offline semantics for bridge-connected agents
-- [ ] Define capability negotiation so each integration advertises what it can actually do
-
-### Outcome
-After this phase, Code Shepherd can connect many types of external agents realistically.
+- [x] Express server with SQLite (`better-sqlite3`) — running on port 3000
+- [x] Temporal.io integration — worker + workflow client wired up (graceful fallback if not running)
+- [x] `GET /health` — server status with Temporal + agent count
+- [x] **Agent Registry** (`/agents`) — register, heartbeat, list, get-by-id
+- [x] **Approval Queue** (`/approvals`) — create, list pending, get, decide (approve/reject)
+- [x] **Audit Logs** (`/audit-logs`) — list all events, per-agent timeline with icons/categories
+- [x] **Push Notifications** (`/notifications`) — subscribe, unsubscribe, test send (Web Push / VAPID)
+- [x] **Workflows** (`/workflows`) — list Temporal open workflows
+- [x] **Auth routes** (`/auth`) — register, login, refresh, me (SHA-256 passwords — insecure, documented)
+- [x] **Tasks / Kanban** (`/tasks`) — full CRUD with status transitions
+- [x] **Conversations** (`/conversations`) — full conversation + message + command + reply system
+- [x] **Connectors** (`/connectors`) — connector registration, trust, revocation, hashed secrets
+- [x] **Operations** (`/operations`) — operational runtime scaffolding
+- [x] **Demo** (`/demo`) — seed data routes for local dev
+- [x] Realtime WebSocket (`/realtime`) — event broadcasting (unauthenticated — security blocker)
+- [x] Risk policy middleware (`middleware/riskPolicy.ts`)
+- [x] Connector auth middleware (`middleware/connectorAuth.ts`) — scoped connector auth for command polling
+- [x] Header-based user auth middleware (`middleware/auth.ts`) — placeholder, not production-safe
+- [x] Temporal workflows — `approvalWorkflow.ts`, `agentSession.ts`
+- [x] Utilities: `diffGenerator.ts`, `summaryGenerator.ts`, `approvalTimeout.ts`, `vapidKeys.ts`
+- [x] Adapter contracts defined (`contracts/adapters.ts`)
 
 ---
 
-## Phase 3 — Inbox and communication surface
+### Shared Types (`packages/shared`)
 
-### Critical
-- [ ] Add a first-class inbox model to the UI and backend design
-- [ ] Create conversation threads per agent or per task context
-- [ ] Add message send and receive flows through the relay
-- [ ] Support one-agent and multi-agent selection flows
-- [ ] Decide how live status, agent replies, and system events appear in a shared thread model
-
-### Outcome
-After this phase, the product finally delivers the core user promise of talking to many agents from one place.
-
----
-
-## Phase 4 — Embedded approvals and remote intervention
-
-### Critical
-- [ ] Keep approval queue support for fast triage
-- [ ] Also render approval requests inside the related conversation or task thread
-- [ ] Support reject with reason, revise instruction, and resume actions from the same control surface
-- [ ] Define how approval decisions map back into bridge-specific agent behavior
-- [ ] Harden workflow pause and resume semantics for disconnected sessions
-
-### Outcome
-After this phase, approvals become part of the communication workflow instead of a separate product island.
+- [x] `CapabilityTier` — monitor / approval / chat / steering
+- [x] `AdapterKind` — native-ide / mcp / bridge / direct-session / custom
+- [x] `AdapterTransport` types
+- [x] `AgentAdapterDescriptor`, `AgentReconnectPolicy`, `CapabilityNegotiation`
+- [x] `ConnectorOnboardingFlow`, `BridgeInstallStep`
+- [x] `ConversationRecord`, `MessageRecord`, `CommandRecord`
+- [x] `ApprovalRecord`, `ApprovalRequestPayload`, `ApprovalDecisionPayload`
+- [x] `CodeShepherdAdapter` interface — full adapter contract defined
+- [x] Full registration / heartbeat / message request+response types
 
 ---
 
-## Phase 5 — Parallel multi-agent operations
+### SDK (`packages/sdk`)
 
-### Critical
-- [ ] Support sending tasks to multiple agents in parallel
-- [ ] Support viewing several active sessions at once
-- [ ] Define task assignment and ownership across agents
-- [ ] Align Kanban with conversation and approval flows instead of keeping it isolated
-- [ ] Preserve audit trace across multi-agent coordination events
-
-### Outcome
-After this phase, Code Shepherd becomes an operational hub instead of a single-thread monitor.
+- [x] `client.ts` — `CodeShepherdClient` wrapping all key relay calls
+- [x] `adapter.ts` — SDK adapter base
+- [x] `approvals.ts` — approval helpers
+- [x] `heartbeat.ts` — heartbeat utility
+- [x] `index.ts` — SDK exports
 
 ---
 
-## Phase 6 — Connector hardening and SaaS readiness
+### Frontend — UI (`packages/ui`)
 
-### Critical
-- [ ] Add connector trust and permission model
-- [ ] Define secure registration and revocation for local bridges
-- [ ] Improve audit completeness across messages, approvals, tasks, and reconnects
-- [ ] Prepare team-safe multi-user and organization-level governance
-- [ ] Separate local-prototype assumptions from hosted SaaS deployment assumptions
+#### Design System
 
-### Outcome
-After this phase, the architecture is credible as a cross-agent SaaS control plane.
+- [x] `index.css` — CSS custom properties for Obsidian (dark) + Platinum (light) — full token layer
+- [x] Theme switching — `data-theme` attribute toggled on `<html>`, persisted in `localStorage`
+- [x] Crystalline Architecture: zero border-radius, diamond status indicators, ghost borders, tonal surface system
+- [x] Typography — Space Grotesk + Manrope + JetBrains Mono loaded and applied
+- [x] Custom scrollbar styles
+
+#### Routing & Shell
+
+- [x] `AppRouter.tsx` — custom client-side hash/URL routing (replaces `useState<Screen>` anti-pattern)
+- [x] `routeConfig.ts` — route definitions for all screens
+- [x] Sidebar — collapsible icon-rail toggle on desktop, hamburger overlay on mobile
+- [x] Top bar — theme toggle, notification dropdown (4 hardcoded items), relay status indicator
+- [x] Bottom status bar — system online / latency
+
+#### Screens (10 total)
+
+- [x] `LoginPreview.tsx` — login / registration UI (no auth wired)
+- [x] `Dashboard.tsx` — control plane, hero metrics, activity feed, system health panel, active threads
+- [x] `AgentsOverview.tsx` — agent table, live execution stream, node health
+- [x] `AgentDetail.tsx` — breadcrumb, agent header, activity/tasks/configuration tabs, performance metrics
+- [x] `ApprovalQueue.tsx` — approval cards with inline diff, risk severity bars, approve/reject actions
+- [x] `Inbox.tsx` — 3-panel communication hub (sessions list, thread, tools panel)
+- [x] `KanbanBoard.tsx` — mission control task board, kanban columns, task cards
+- [x] `ExecutionTimeline.tsx` — audit timeline with analytics sidebar
+- [x] `Settings.tsx` — system configuration, connector management, theme selector
+- [x] `OperatorProfile.tsx` — operator identity, security settings, interface config
+
+#### Components
+
+- [x] `DiffViewer.tsx` — inline diff rendering for approvals
+- [x] `SessionTimeline.tsx` — timeline component
+- [x] `ActiveWorkflows.tsx` — workflow display component
+
+#### Shepherd Guide (all 7 components built)
+
+- [x] `ShepherdGuideProvider.tsx` — context: open/close state, messages, connection
+- [x] `ShepherdGuideTrigger.tsx` — floating button + unread badge
+- [x] `ShepherdGuidePreview.tsx` — preview tooltip (proactive message)
+- [x] `ShepherdGuideModal.tsx` — full chat modal container
+- [x] `ShepherdGuideMessage.tsx` — individual message (user/assistant variants)
+- [x] `ShepherdGuideSuggestions.tsx` — quick suggestion chips
+- [x] `ShepherdGuideInput.tsx` — input field + send + disclaimer
+- [x] Shepherd Guide wired into `AppRouter.tsx` inside `<ShepherdGuideProvider>` — rendered on all authenticated pages
+
+#### PWA
+
+- [x] `service-worker.js` — push notification handling, offline cache shell
+- [x] `pushNotifications.ts` — browser subscription utility
 
 ---
 
-## Immediate next markdown-to-code handoff
+## ⏳ REMAINING — What Still Needs To Be Done
 
-Before writing new product code, the implementation plan should follow this sequence:
+### Priority 1 — Backend ↔ UI Integration (Blocking real product value)
 
-1. define shared types for conversations, messages, adapters, and capability tiers
-2. design relay routes for communication flows
-3. redesign UI navigation around inbox, agents, approvals, timeline, tasks, and settings
-4. decide the first connector target and bridge strategy
-5. implement one end-to-end communication slice before broad connector expansion
+These screens exist as UI only — they render mock/hardcoded data. None are connected to the live relay API yet.
 
----
-
-## Recommended first implementation slice
-
-The smallest useful next build slice is:
-
-- one conversation model
-- one message route
-- one agent-thread UI
-- one adapter contract
-- one real connector path or bridge proof of concept
-
-This should be done before broad polishing or deeper enterprise work.
+- [ ] **Dashboard** — connect to `GET /agents`, `GET /approvals/pending`, `GET /audit-logs` for live data
+- [ ] **Agents Overview** — connect to `GET /agents`, live status polling or WebSocket subscription
+- [ ] **Agent Detail** — connect to `GET /agents/:id`, `GET /audit-logs/:agentId/timeline`
+- [ ] **Approval Queue** — connect to `GET /approvals/pending`, `PATCH /approvals/:id` (approve/reject); real diffs from relay
+- [ ] **Inbox** — connect to `GET /conversations`, `POST /conversations`, `GET /conversations/:id/messages`, `POST /conversations/:id/messages`; wire agent reply polling
+- [ ] **Kanban Board** — connect to `GET /tasks`, `POST /tasks`, `PATCH /tasks/:id`, `DELETE /tasks/:id`
+- [ ] **Timeline** — connect to `GET /audit-logs` with grouping and filtering
+- [ ] **Settings** — connect to `GET /connectors`, connector registration and revocation
+- [ ] **Operator Profile** — connect to `GET /auth/me` session data, theme/preferences persistence to backend
+- [ ] **Notification dropdown** — replace hardcoded list with real-time events from WebSocket (`/realtime`)
 
 ---
 
-## Notable de-prioritization for now
+### Priority 2 — Shepherd Guide Integration (Design done, backend not connected)
 
-These items still matter, but they should not lead the roadmap until communication is first-class:
+The Shepherd Guide UI is fully built and wired into the app shell. It is NOT yet connected to any backend.
 
-- cosmetic UI polish without inbox functionality
-- enterprise compliance surfaces before connector usability
-- advanced worktree automation before agent communication is unified
-- broad marketplace support before the base adapter model is stable
+- [ ] Pre-register `shepherd-guide` agent in the relay (first-party, auto-registered on startup)
+- [ ] Create `POST /conversations` + `GET /conversations/:id/messages` routes for Shepherd Guide sessions (uses existing conversation endpoint with `agent_id = 'shepherd-guide'`)
+- [ ] Wire `ShepherdGuideProvider.tsx` to conversation endpoints — replace mock messages with real API calls
+- [ ] Implement Shepherd Guide response logic in relay (scripted Q&A about Code Shepherd features, or forward to an LLM endpoint)
+- [ ] Store feedback (thumbs up/down) on message records via `metadata` field
+- [ ] Add `ShepherdGuideHeader.tsx` component (missing from current build — design spec exists in `shepherd_guide_design.md`)
 
 ---
 
-## Working rule for future tasks
+### Priority 3 — Context Optimizer (Max Tier Feature, planned but not built)
 
-Every new feature proposal should answer:
+Fully designed in `max-context-optimizer.md`, zero code written.
 
-1. does it improve unified communication with existing agents
-2. does it improve remote control or intervention
-3. does it improve simultaneous multi-agent coordination
-4. does it improve auditability and safe operation
+- [ ] Create `packages/context-optimizer/` package
+  - [ ] `compressor.ts` — strip comments, blank lines, normalize indent
+  - [ ] `symbolMap.ts` — α-alias replacement for identifiers >12 chars + §MAP lookup
+  - [ ] `tokenCounter.ts` — wrap `gpt-tokenizer` for before/after token counts
+  - [ ] `index.ts` — `optimize(content) → { compressed, stats }`
+- [ ] Add relay middleware `middleware/contextOptimizer.ts` — tier check + pipeline execution
+- [ ] Extend `commands` DB schema: `original_token_count`, `optimized_token_count`, `tokens_saved`
+- [ ] Extend `audit_logs` with `optimization_applied` event
+- [ ] Add Context Optimizer stats card to UI (agent profile or settings — Max-only, greyed out for Free/Pro)
 
-If not, it is probably a secondary priority.
+---
+
+### Priority 4 — Real Authentication (Security blocker)
+
+Current auth is prototype-grade. All 10 security blockers from `SECURITY_AUDIT.md` must be resolved before any real deployment.
+
+- [ ] Replace `x-user-id` / `x-role` header trust with signed JWT middleware
+- [ ] Migrate password hashing from SHA-256 to `argon2id` or `bcrypt`
+- [ ] Add login rate limiting and account lockout
+- [ ] Add Zod schema validation on all relay endpoints
+- [ ] Add IP and identity-based rate limiting (`express-rate-limit` or equivalent)
+- [ ] Harden connector authentication — add expiry + rotation semantics for connector secrets
+- [ ] Review all `team_id` queries for strict tenant isolation
+- [ ] Add HTTP security headers (HSTS, CSP, X-Frame-Options) — consider `helmet`
+- [ ] Secure WebSocket `/realtime` endpoint — require auth token during handshake
+- [ ] Restrict agent bridge command payloads — validate against command injection / RCE
+- [ ] Migrate session tokens from `localStorage` to `HttpOnly` + `Secure` cookies (currently in `authSession.ts`)
+- [ ] Implement strict Content Security Policy in the UI
+
+---
+
+### Priority 5 — Missing API Surface (Spec exists, not yet built)
+
+Per `api-spec.md`:
+
+- [ ] `GET /policies` — list active risk policies
+- [ ] `POST /policies` — create new policy rule
+- [ ] `PUT /policies/:id` — update policy rule
+- [ ] `POST /teams` — create team
+- [ ] `GET /teams/:id` — get team + members
+- [ ] `POST /teams/:id/invite` — invite member by email
+- [ ] `PATCH /teams/:id/members/:userId` — update member role
+
+---
+
+### Priority 6 — PWA & Assets (Polish + Production Readiness)
+
+- [ ] Generate and add PWA icons in all required sizes: 72, 96, 128, 144, 152, 192, 384, 512px
+- [ ] Add favicon — 16×16 and 32×32
+- [ ] Create logo SVG vector source for clean scaling
+- [ ] Create OG/social share image (1200×630px)
+- [ ] Wire `vite-plugin-pwa` for full service worker + manifest generation
+- [ ] Test offline experience via service worker caching
+
+---
+
+### Priority 7 — State Management Upgrade (Optional but strongly recommended)
+
+Current UI uses `useState` locally in each screen. Per `final_design_system.md` recommendation:
+
+- [ ] Install and configure `zustand`
+- [ ] Create `useThemeStore` — centralized theme (currently duplicated via localStorage + AppRouter)
+- [ ] Create `useAuthStore` — session data, JWT, operator identity
+- [ ] Create `useAgentStore` — registry state, online/offline, last heartbeat
+- [ ] Create `useNotificationStore` — unread count, notification list
+- [ ] Create `useWebSocketStore` — WebSocket connection status, event subscriptions, reconnect logic
+- [ ] Install `@tanstack/react-query` for server state caching (API calls, stale/refresh logic)
+
+---
+
+### Priority 8 — Connector Implementations (Future — Phase B/C)
+
+These require external integration work. None started.
+
+- [ ] Claude Code connector (IDE native bridge)
+- [ ] Antigravity connector (MCP or direct session)
+- [ ] VS Code extension plugin bridge
+- [ ] Generic MCP connector
+- [ ] OpenClaw direct-session integration
+- [ ] Connector onboarding flow UI — step-by-step install wizard for each bridge type
+
+---
+
+## 📊 Overall Progress Summary
+
+| Area | Status | Completion |
+|------|--------|------------|
+| Product architecture & docs | ✅ Done | 100% |
+| Design system spec | ✅ Done | 100% |
+| Shepherd Guide design spec | ✅ Done | 100% |
+| Context Optimizer spec | ✅ Done | 100% |
+| Security audit | ✅ Done | 100% |
+| Backend relay (routes + DB) | ✅ Done | ~90% |
+| Shared types + SDK | ✅ Done | ~90% |
+| UI screens (visual) | ✅ Done | ~95% |
+| Shepherd Guide UI components | ✅ Done | ~85% (Header component missing) |
+| UI ↔ Backend integration | ❌ Not started | 0% |
+| Shepherd Guide backend | ❌ Not started | 0% |
+| Context Optimizer package | ❌ Not started | 0% |
+| Real auth / security hardening | ❌ Not started | 0% |
+| PWA assets | ❌ Not started | 0% |
+| State management (Zustand) | ❌ Not started | 0% |
+| Connector implementations | ❌ Not started | 0% |
+
+---
+
+## Working Rule
+
+Every new feature should answer:
+
+1. Does it improve unified communication with existing agents?
+2. Does it improve remote control or intervention?
+3. Does it improve simultaneous multi-agent coordination?
+4. Does it improve auditability and safe operation?
+
+If not, it is a secondary priority.
