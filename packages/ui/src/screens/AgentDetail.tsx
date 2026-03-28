@@ -1,60 +1,70 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Activity, ArrowLeft, Bot, Cpu, Gauge, Network, ShieldAlert, Zap } from 'lucide-react'
 import SessionTimeline, { TimelineEvent } from '../components/SessionTimeline'
-import { buildAuthHeaders } from '../utils/authSession'
-
-interface Agent {
-    id: string
-    name: string
-    status: 'online' | 'offline'
-    capabilities: string[]
-    last_heartbeat: string
-}
+import { AgentRecord, ConversationRecord, formatRelativeTime, relayFetch, TaskRecord } from '../utils/relay'
 
 interface AgentDetailProps {
     agentId: string
     onBack: () => void
 }
 
-function timeAgo(timestamp: string): string {
-    const now = new Date()
-    const eventTime = new Date(timestamp)
-    const diffMs = now.getTime() - eventTime.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMins / 60)
-    const diffDays = Math.floor(diffHours / 24)
-
-    if (diffDays > 0) return `${diffDays}d ago`
-    if (diffHours > 0) return `${diffHours}h ago`
-    if (diffMins > 0) return `${diffMins}m ago`
-    return 'Just now'
-}
-
-function connectorLabel(agent: Agent) {
+function connectorLabel(agent: AgentRecord) {
     const capabilityText = agent.capabilities.join(' ').toLowerCase()
-    if (capabilityText.includes('mcp')) return 'MCP Node 4'
+    if (capabilityText.includes('mcp')) return 'MCP Connector'
     if (capabilityText.includes('github')) return 'GitHub Bridge'
     if (capabilityText.includes('vscode')) return 'VS Code Connector'
     return 'Relay Connector'
 }
 
 export default function AgentDetail({ agentId, onBack }: AgentDetailProps) {
-    const [agent, setAgent] = useState<Agent | null>(null)
+    const [agent, setAgent] = useState<AgentRecord | null>(null)
     const [events, setEvents] = useState<TimelineEvent[]>([])
+    const [tasks, setTasks] = useState<TaskRecord[]>([])
+    const [conversations, setConversations] = useState<ConversationRecord[]>([])
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState<'activity' | 'tasks' | 'configuration'>('activity')
 
     useEffect(() => {
-        Promise.all([
-            fetch(`http://localhost:3000/agents/${agentId}`, { headers: buildAuthHeaders() }).then((res) => res.json()),
-            fetch(`http://localhost:3000/audit-logs/${agentId}/timeline`, { headers: buildAuthHeaders() }).then((res) => res.json()),
-        ])
-            .then(([agentData, eventsData]) => {
+        let cancelled = false
+
+        const load = async () => {
+            try {
+                const [agentData, eventsData, taskData, conversationData] = await Promise.all([
+                    relayFetch<AgentRecord>(`/agents/${agentId}`),
+                    relayFetch<TimelineEvent[]>(`/audit-logs/${agentId}/timeline`),
+                    relayFetch<TaskRecord[]>('/tasks'),
+                    relayFetch<ConversationRecord[]>('/conversations'),
+                ])
+
+                if (cancelled) return
+
                 setAgent(agentData)
                 setEvents(eventsData)
-                setLoading(false)
-            })
-            .catch(() => setLoading(false))
+                setTasks(taskData.filter((task) => task.assigned_agent_id === agentId))
+                setConversations(conversationData.filter((conversation) => conversation.agent_id === agentId))
+            } catch {
+                if (!cancelled) {
+                    setAgent(null)
+                    setEvents([])
+                    setTasks([])
+                    setConversations([])
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false)
+                }
+            }
+        }
+
+        void load()
+        const interval = window.setInterval(() => {
+            void load()
+        }, 10000)
+
+        return () => {
+            cancelled = true
+            window.clearInterval(interval)
+        }
     }, [agentId])
 
     const performanceStats = useMemo(() => {
@@ -64,10 +74,10 @@ export default function AgentDetail({ agentId, onBack }: AgentDetailProps) {
         return {
             successRate,
             responseTime: `${(0.8 + totalEvents / 40).toFixed(2)}s`,
-            tokensToday: `${(events.length * 7.2 + 94).toFixed(1)}k`,
-            taskCompletion: `${successEvents}/${totalEvents}`,
+            eventVolume: `${events.length}`,
+            taskCompletion: `${tasks.filter((task) => task.status === 'Done').length}/${tasks.length || 0}`,
         }
-    }, [events])
+    }, [events, tasks])
 
     if (loading) {
         return (
@@ -107,14 +117,14 @@ export default function AgentDetail({ agentId, onBack }: AgentDetailProps) {
                         <div className="flex-1">
                             <div className="mb-4 flex flex-wrap items-center gap-4">
                                 <h1 className="font-headline text-[28px] font-black uppercase tracking-[-0.03em] text-on-surface sm:text-[36px]">{agent.name}</h1>
-                                <span className={`px-3 py-1 font-headline text-[10px] font-semibold uppercase tracking-[0.14em] ${agent.status === 'online' ? 'bg-success/12 text-success' : 'bg-warning/12 text-warning'}`}>{agent.status === 'online' ? 'Idle' : 'Blocked'}</span>
+                                <span className={`px-3 py-1 font-headline text-[10px] font-semibold uppercase tracking-[0.14em] ${agent.status === 'online' ? 'bg-success/12 text-success' : 'bg-warning/12 text-warning'}`}>{agent.status === 'online' ? 'Online' : 'Attention Needed'}</span>
                             </div>
 
                             <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
-                                <Meta label="Model Architecture" value="GPT-4O-REASONING-V2" />
                                 <Meta label="Connector" value={connectorLabel(agent)} />
-                                <Meta label="Session Uptime" value={timeAgo(agent.last_heartbeat)} />
-                                <Meta label="Active Threads" value={`${Math.max(1, Math.min(12, agent.capabilities.length + 2))}/12`} />
+                                <Meta label="Last Heartbeat" value={formatRelativeTime(agent.last_heartbeat)} />
+                                <Meta label="Open Threads" value={String(conversations.length)} />
+                                <Meta label="Assigned Tasks" value={String(tasks.length)} />
                             </div>
                         </div>
                     </div>
@@ -142,8 +152,22 @@ export default function AgentDetail({ agentId, onBack }: AgentDetailProps) {
                     </section>
                 ) : activeTab === 'tasks' ? (
                     <section className="surface-card-alt p-6">
-                        <div className="font-headline text-sm font-bold uppercase tracking-[0.14em] text-on-surface">Task Assignment Surface</div>
-                        <p className="mt-3 text-sm leading-6 text-on-surface-variant">This agent is enrolled in remote execution, approval handling, and supervised recovery flows. Detailed task board integration will align with the next implementation slice.</p>
+                        <div className="mb-4 font-headline text-sm font-bold uppercase tracking-[0.14em] text-on-surface">Task Assignment Surface</div>
+                        <div className="space-y-3">
+                            {tasks.length === 0 ? (
+                                <p className="text-sm leading-6 text-on-surface-variant">This agent has no active task assignments yet.</p>
+                            ) : tasks.map((task) => (
+                                <div key={task.id} className="bg-surface-container px-4 py-4">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div>
+                                            <div className="font-headline text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface">{task.title}</div>
+                                            <div className="mt-1 text-xs text-on-surface-variant">{task.description || 'No extra task context provided.'}</div>
+                                        </div>
+                                        <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">{task.status}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </section>
                 ) : (
                     <section className="surface-card-alt p-6">
@@ -172,7 +196,7 @@ export default function AgentDetail({ agentId, onBack }: AgentDetailProps) {
                     </div>
 
                     <MetricRow icon={Gauge} label="Avg. Response Time" value={performanceStats.responseTime} />
-                    <MetricRow icon={Zap} label="Tokens Today" value={performanceStats.tokensToday} />
+                    <MetricRow icon={Zap} label="Event Volume" value={performanceStats.eventVolume} />
                     <MetricRow icon={Activity} label="Task Completion" value={performanceStats.taskCompletion} border={false} />
                 </section>
 
@@ -182,13 +206,13 @@ export default function AgentDetail({ agentId, onBack }: AgentDetailProps) {
                         <span className={`status-diamond ${agent.status === 'online' ? 'success' : 'warning'}`}></span>
                         <div>
                             <p className={`font-headline text-[10px] font-semibold uppercase tracking-[0.16em] ${agent.status === 'online' ? 'text-success' : 'text-warning'}`}>{agent.status === 'online' ? 'Heartbeat Active' : 'Heartbeat Delayed'}</p>
-                            <p className="text-[11px] text-on-surface-variant">Last Ping: {timeAgo(agent.last_heartbeat)}</p>
+                            <p className="text-[11px] text-on-surface-variant">Last Ping: {formatRelativeTime(agent.last_heartbeat)}</p>
                         </div>
                     </div>
                     <div className="space-y-3">
-                        <HealthLine icon={Network} label="Ingress" value="1.2 GB/s" tone="success" />
-                        <HealthLine icon={Cpu} label="Egress" value="0.8 GB/s" tone="success" />
-                        <HealthLine icon={ShieldAlert} label="Packet Loss" value="0.00%" tone="info" />
+                        <HealthLine icon={Network} label="Ingress" value={`${Math.max(1, conversations.length)} threads`} tone="success" />
+                        <HealthLine icon={Cpu} label="Capabilities" value={`${agent.capabilities.length} enabled`} tone="success" />
+                        <HealthLine icon={ShieldAlert} label="Approvals" value={`${events.filter((event) => event.category === 'approval').length} tracked`} tone="info" />
                     </div>
                 </section>
 

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { useEffect, useState } from 'react'
 import './index.css'
 import AppRouter from './routes/AppRouter'
+import { OperatorProvider } from './context/OperatorContext'
 import { parsePathRoute, ParsedRoute } from './routes/routeConfig'
 
 function RootRouter() {
@@ -23,6 +24,8 @@ function RootRouter() {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <RootRouter />
+    <OperatorProvider>
+      <RootRouter />
+    </OperatorProvider>
   </StrictMode>,
 )

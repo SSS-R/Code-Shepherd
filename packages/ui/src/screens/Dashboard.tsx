@@ -1,61 +1,87 @@
-import { useState, useEffect } from 'react'
+import type { ReactNode } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Activity,
-  AlertTriangle,
   Bot,
   Database,
   Network,
   Rocket,
   ShieldAlert,
   Terminal,
-  Cpu,
-  RefreshCw,
 } from 'lucide-react'
-import { buildAuthHeaders } from '../utils/authSession'
+import {
+  AgentRecord,
+  ApprovalRecord,
+  AuditEvent,
+  ConversationRecord,
+  formatRelativeTime,
+  ParallelSession,
+  relayFetch,
+} from '../utils/relay'
 
-interface Agent {
-  id: string
-  name: string
-  capabilities: string[]
-  status: 'online' | 'offline'
-  last_heartbeat: string
+interface DashboardProps {
+  onViewAgent?: (id: string) => void
 }
 
-interface Stats {
-  activeAgents: number
-  pendingApprovals: number
-  totalSessions: number
-}
-
-interface ParallelSession {
-  task_id: string
-  title: string
-  assigned_agent_id: string | null
-  terminal_status: string
-}
-
-export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) => void }) {
-  const [agents, setAgents] = useState<Agent[]>([])
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState<Stats>({ activeAgents: 0, pendingApprovals: 0, totalSessions: 0 })
+export default function Dashboard({ onViewAgent }: DashboardProps) {
+  const [agents, setAgents] = useState<AgentRecord[]>([])
+  const [approvals, setApprovals] = useState<ApprovalRecord[]>([])
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([])
+  const [conversations, setConversations] = useState<ConversationRecord[]>([])
   const [parallelSessions, setParallelSessions] = useState<ParallelSession[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([
-      fetch('http://localhost:3000/agents', { headers: buildAuthHeaders() }).then(res => res.json()),
-      fetch('http://localhost:3000/approvals/pending', { headers: buildAuthHeaders() }).then(res => res.json()),
-      fetch('http://localhost:3000/operations/parallel-sessions', { headers: buildAuthHeaders() }).then(res => res.json()).catch(() => [])
-    ]).then(([agentsData, approvalsData, sessionsData]) => {
-      setAgents(agentsData)
-      setStats({
-        activeAgents: agentsData.filter((a: Agent) => a.status === 'online').length,
-        pendingApprovals: approvalsData.length,
-        totalSessions: agentsData.length
-      })
-      setParallelSessions(sessionsData)
-      setLoading(false)
-    }).catch(() => setLoading(false))
+    let cancelled = false
+
+    const load = async () => {
+      try {
+        const [agentsData, approvalsData, auditData, conversationData, sessionsData] = await Promise.all([
+          relayFetch<AgentRecord[]>('/agents'),
+          relayFetch<ApprovalRecord[]>('/approvals/pending'),
+          relayFetch<AuditEvent[]>('/audit-logs?limit=8'),
+          relayFetch<ConversationRecord[]>('/conversations'),
+          relayFetch<ParallelSession[]>('/operations/parallel-sessions').catch(() => []),
+        ])
+
+        if (cancelled) return
+
+        setAgents(agentsData)
+        setApprovals(approvalsData)
+        setAuditEvents(auditData)
+        setConversations(conversationData)
+        setParallelSessions(sessionsData)
+      } catch {
+        if (!cancelled) {
+          setAgents([])
+          setApprovals([])
+          setAuditEvents([])
+          setConversations([])
+          setParallelSessions([])
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void load()
+    const interval = window.setInterval(() => {
+      void load()
+    }, 10000)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+    }
   }, [])
+
+  const stats = useMemo(() => ({
+    activeAgents: agents.filter((agent) => agent.status === 'online').length,
+    pendingApprovals: approvals.length,
+    activeConversations: conversations.filter((conversation) => conversation.status === 'active').length,
+  }), [agents, approvals.length, conversations])
 
   if (loading) {
     return <DashboardSkeleton />
@@ -81,97 +107,70 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
       </div>
 
       <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 lg:mb-12 lg:gap-6">
-        <div className="metric-card severity-marker-secondary p-5 lg:p-8">
-          <div className="mb-4 flex items-center justify-between">
-            <p className="font-headline text-[11px] font-semibold uppercase tracking-[0.16em] text-on-surface-variant">Total Managed Agents</p>
-            <Terminal size={18} className="text-on-surface-variant" />
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="font-headline text-[32px] font-bold text-on-surface lg:text-[48px] lg:leading-[56px]">{agents.length}</span>
-          </div>
-          <div className="mt-4 flex items-center gap-2 font-headline text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant"><span className="status-diamond success"></span> Registry Synchronized</div>
-        </div>
-
-        <div className="metric-card p-5 lg:p-8">
-          <div className="mb-4 flex items-center justify-between">
-            <p className="font-headline text-[11px] font-semibold uppercase tracking-[0.16em] text-on-surface-variant">Active Conversations</p>
-            <Bot size={18} className="text-on-surface-variant" />
-          </div>
-          <div className="font-headline text-[32px] font-bold text-on-surface lg:text-[48px] lg:leading-[56px]">{stats.activeAgents}</div>
-          <div className="mt-4 flex items-center gap-2 font-headline text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant"><span className="status-diamond success"></span> Collaborative Threads Live</div>
-        </div>
-
-        <div className="metric-card severity-marker-tertiary p-5 lg:p-8">
-          <div className="mb-4 flex items-center justify-between">
-            <p className="font-headline text-[11px] font-semibold uppercase tracking-[0.16em] text-on-surface-variant">Pending Approvals</p>
-            <ShieldAlert size={18} className="text-warning" />
-          </div>
-          <div className="font-headline text-[32px] font-bold text-warning lg:text-[48px] lg:leading-[56px]">{stats.pendingApprovals}</div>
-          <div className="mt-4 flex items-center gap-2 font-headline text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant"><span className="status-diamond warning"></span> Action Required</div>
-        </div>
-
-        <div className="metric-card p-5 lg:p-8">
-          <div className="mb-4 flex items-center justify-between">
-            <p className="font-headline text-[11px] font-semibold uppercase tracking-[0.16em] text-on-surface-variant">System Uptime</p>
-            <Activity size={18} className="text-on-surface-variant" />
-          </div>
-          <div className="flex items-end gap-3">
-            <div className="font-headline text-[32px] font-bold text-on-surface lg:text-[48px] lg:leading-[56px]">99.98%</div>
-            <RefreshCw size={16} className="mb-3 text-primary animate-spin" style={{ animationDuration: '4s' }} />
-          </div>
-          <div className="mt-4 flex items-center gap-2 font-headline text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant"><span className="status-diamond info"></span> Relay Integrity Stable</div>
-        </div>
+        <MetricCard
+          label="Total Managed Agents"
+          value={String(agents.length)}
+          note="Registry synchronized"
+          icon={<Terminal size={18} className="text-on-surface-variant" />}
+          tone="success"
+        />
+        <MetricCard
+          label="Active Conversations"
+          value={String(stats.activeConversations)}
+          note="Collaborative threads live"
+          icon={<Bot size={18} className="text-on-surface-variant" />}
+          tone="success"
+        />
+        <MetricCard
+          label="Pending Approvals"
+          value={String(stats.pendingApprovals)}
+          note="Action required"
+          icon={<ShieldAlert size={18} className="text-warning" />}
+          tone="warning"
+        />
+        <MetricCard
+          label="Online Agents"
+          value={String(stats.activeAgents)}
+          note="Relay heartbeat stable"
+          icon={<Activity size={18} className="text-on-surface-variant" />}
+          tone="info"
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
-
-        <div className="surface-card-alt xl:col-span-8 flex min-h-[320px] flex-col overflow-hidden p-4 sm:p-6">
-          <div className="flex justify-between items-center mb-8">
+        <section className="surface-card-alt xl:col-span-8 flex min-h-[320px] flex-col overflow-hidden p-4 sm:p-6">
+          <div className="mb-6 flex items-center justify-between">
             <h3 className="font-headline text-sm font-bold uppercase tracking-[0.14em] text-on-surface flex items-center gap-2">
               <Activity size={18} className="text-primary" />
-              Recent Activity <span className="text-[10px] font-mono text-on-surface-variant font-normal ml-2">24H CYCLE</span>
+              Recent Activity
             </h3>
-            <div className="hidden sm:flex gap-4">
-              <div className="flex items-center gap-2">
-                <span className="status-diamond success"></span>
-                <span className="text-[10px] text-on-surface-variant uppercase tracking-widest">Success</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="status-diamond error"></span>
-                <span className="text-[10px] text-on-surface-variant uppercase tracking-widest">Failure</span>
-              </div>
-            </div>
+            <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">{auditEvents.length} events loaded</span>
           </div>
 
-          <div className="flex-1 w-full relative group min-h-[220px]">
-            {/* SVG Trends placeholder from Stitch markup */}
-            <svg className="w-full h-full min-h-[250px]" preserveAspectRatio="none" viewBox="0 0 1000 300">
-              <path className="opacity-80" d="M0,250 Q100,220 200,240 T400,180 T600,210 T800,140 T1000,160" fill="none" stroke="#7bdb80" strokeWidth="2"></path>
-              <path className="opacity-10" d="M0,250 Q100,220 200,240 T400,180 T600,210 T800,140 T1000,160 L1000,300 L0,300 Z" fill="url(#grad-success)"></path>
-              <path className="opacity-60" d="M0,280 Q150,270 300,285 T600,260 T900,275 T1000,265" fill="none" stroke="#ffb4ab" strokeWidth="2"></path>
-              <defs>
-                <linearGradient id="grad-success" x1="0%" x2="0%" y1="0%" y2="100%">
-                  <stop offset="0%" style={{ stopColor: '#7bdb80', stopOpacity: 1 }}></stop>
-                  <stop offset="100%" style={{ stopColor: '#7bdb80', stopOpacity: 0 }}></stop>
-                </linearGradient>
-              </defs>
-              <line stroke="currentColor" className="text-outline-variant/30" strokeDasharray="4" strokeWidth="0.5" x1="0" x2="1000" y1="50" y2="50"></line>
-              <line stroke="currentColor" className="text-outline-variant/30" strokeDasharray="4" strokeWidth="0.5" x1="0" x2="1000" y1="150" y2="150"></line>
-              <line stroke="currentColor" className="text-outline-variant/30" strokeDasharray="4" strokeWidth="0.5" x1="0" x2="1000" y1="250" y2="250"></line>
-            </svg>
-            <div className="absolute bottom-[-20px] left-0 w-full flex justify-between text-[10px] font-mono text-on-surface-variant">
-              <span>00:00</span>
-              <span>06:00</span>
-              <span>12:00</span>
-              <span>18:00</span>
-              <span>23:59</span>
-            </div>
+          <div className="space-y-3">
+            {auditEvents.length === 0 ? (
+              <div className="flex min-h-[220px] items-center justify-center text-center text-on-surface-variant">
+                No audit activity has been recorded yet.
+              </div>
+            ) : auditEvents.map((event) => (
+              <div key={event.id} className="flex items-start gap-4 bg-surface-container px-4 py-4">
+                <span className={`status-diamond ${event.status === 'failure' ? 'error' : event.status === 'pending' ? 'warning' : 'success'} mt-1`}></span>
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 flex items-center justify-between gap-3">
+                    <span className="font-headline text-[11px] font-semibold uppercase tracking-[0.1em] text-on-surface">{event.event_type.replace(/_/g, ' ')}</span>
+                    <span className="font-mono text-[10px] text-on-surface-variant">{formatRelativeTime(event.timestamp)}</span>
+                  </div>
+                  <p className="text-sm text-on-surface-variant">
+                    {event.agent_id ? `${event.agent_id} reported ${event.event_type.replace(/_/g, ' ')}.` : `System recorded ${event.event_type.replace(/_/g, ' ')}.`}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        </section>
 
-        {/* Agent Presence Module */}
-        <div className="surface-card-alt xl:col-span-4 p-4 sm:p-6">
-          <div className="flex justify-between items-center mb-6">
+        <section className="surface-card-alt xl:col-span-4 p-4 sm:p-6">
+          <div className="mb-6 flex items-center justify-between">
             <h3 className="font-headline text-sm font-bold uppercase tracking-[0.14em] text-on-surface">Active Threads</h3>
             <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Live ({agents.length})</span>
           </div>
@@ -192,11 +191,7 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
                   <div className="flex h-10 w-10 items-center justify-center bg-surface-container-lowest text-on-surface-variant">
                     <Bot size={16} />
                   </div>
-                  {agent.status === 'online' ? (
-                    <div className="absolute bottom-[-1px] right-[-1px] h-2.5 w-2.5 rotate-45 bg-success"></div>
-                  ) : (
-                    <div className="absolute bottom-[-1px] right-[-1px] h-2.5 w-2.5 rotate-45 bg-outline"></div>
-                  )}
+                  <div className={`absolute bottom-[-1px] right-[-1px] h-2.5 w-2.5 rotate-45 ${agent.status === 'online' ? 'bg-success' : 'bg-outline'}`}></div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-center">
@@ -205,9 +200,7 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
                       {agent.status.toUpperCase()}
                     </span>
                   </div>
-                  <div className="w-full h-1 bg-surface-container-lowest mt-2 overflow-hidden">
-                    <div className={`h-full ${agent.status === 'online' ? 'bg-secondary w-full' : 'bg-outline w-0 transition-all'}`}></div>
-                  </div>
+                  <p className="mt-2 text-[11px] text-on-surface-variant">{formatRelativeTime(agent.last_heartbeat)}</p>
                 </div>
               </div>
             ))}
@@ -215,19 +208,17 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
           <button className="shell-button shell-button-secondary focus-ring mt-4 w-full">
             View Registry ({agents.length})
           </button>
-        </div>
+        </section>
 
-        <div className="surface-card-alt xl:col-span-12 overflow-hidden pb-4">
+        <section className="surface-card-alt xl:col-span-12 overflow-hidden pb-4">
           <div className="flex items-center justify-between border-b border-outline-variant/20 px-6 py-4">
             <h3 className="font-headline text-sm font-bold uppercase tracking-[0.14em] text-on-surface flex items-center gap-2">
               <Terminal size={18} className="text-tertiary" />
               Active Operator Sessions
             </h3>
-            <div className="flex gap-2">
-              <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
-                {parallelSessions.length} Active Workflows
-              </span>
-            </div>
+            <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+              {parallelSessions.length} Active Workflows
+            </span>
           </div>
 
           <div className="overflow-x-auto">
@@ -238,7 +229,7 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
                   <th className="px-6 py-3 font-medium">Status</th>
                   <th className="px-6 py-3 font-medium">Assigned To</th>
                   <th className="px-6 py-3 font-medium">Title</th>
-                  <th className="px-6 py-3 font-medium text-right">Action</th>
+                  <th className="px-6 py-3 font-medium">Updated</th>
                 </tr>
               </thead>
               <tbody>
@@ -248,36 +239,33 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
                       No active operator sessions.
                     </td>
                   </tr>
-                ) : (
-                  parallelSessions.map(session => (
-                    <tr key={session.task_id} className="border-t border-outline-variant/15 hover:bg-surface-container transition-colors group">
-                      <td className="px-6 py-4 text-xs font-mono text-primary truncate max-w-[120px]">
-                        {session.task_id}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-outline/20 text-on-surface uppercase font-bold tracking-tighter">
-                          {session.terminal_status || 'RUNNING'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-xs font-mono text-on-surface">
-                        {session.assigned_agent_id || 'IDLE'}
-                      </td>
-                      <td className="px-6 py-4 text-xs text-on-surface-variant max-w-[200px] truncate">
-                        {session.title}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button className="text-primary hover:underline text-[10px] font-bold uppercase tracking-widest">Inspect</button>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                ) : parallelSessions.map((session) => (
+                  <tr key={session.task_id} className="border-t border-outline-variant/15 hover:bg-surface-container transition-colors group">
+                    <td className="px-6 py-4 text-xs font-mono text-primary truncate max-w-[120px]">
+                      {session.task_id}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-outline/20 text-on-surface uppercase font-bold tracking-tighter">
+                        {session.terminal_status || 'RUNNING'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-xs font-mono text-on-surface">
+                      {session.assigned_agent_id || 'IDLE'}
+                    </td>
+                    <td className="px-6 py-4 text-xs text-on-surface-variant max-w-[200px] truncate">
+                      {session.title}
+                    </td>
+                    <td className="px-6 py-4 text-xs text-on-surface-variant">
+                      {formatRelativeTime(session.updated_at)}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
       </div>
 
-      {/* System Heartbeat Footer */}
       <footer className="mt-12 flex flex-col gap-4 md:flex-row md:justify-between md:items-center border-t border-outline-variant/10 pt-6">
         <div className="flex flex-wrap items-center gap-4 md:gap-6">
           <div className="flex items-center gap-2">
@@ -302,12 +290,40 @@ export default function Dashboard({ onViewAgent }: { onViewAgent?: (id: string) 
   )
 }
 
+function MetricCard({
+  label,
+  value,
+  note,
+  icon,
+  tone,
+}: {
+  label: string
+  value: string
+  note: string
+  icon: ReactNode
+  tone: 'success' | 'warning' | 'info'
+}) {
+  return (
+    <div className="metric-card p-5 lg:p-8">
+      <div className="mb-4 flex items-center justify-between">
+        <p className="font-headline text-[11px] font-semibold uppercase tracking-[0.16em] text-on-surface-variant">{label}</p>
+        {icon}
+      </div>
+      <div className={`font-headline text-[32px] font-bold lg:text-[48px] lg:leading-[56px] ${tone === 'warning' ? 'text-warning' : 'text-on-surface'}`}>{value}</div>
+      <div className="mt-4 flex items-center gap-2 font-headline text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">
+        <span className={`status-diamond ${tone}`}></span>
+        {note}
+      </div>
+    </div>
+  )
+}
+
 function DashboardSkeleton() {
   return (
     <div className="animate-pulse space-y-6">
       <div className="h-20 w-full bg-surface-container-low rounded-md" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-24 bg-surface-container-low rounded-md" />)}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-24 bg-surface-container-low rounded-md" />)}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 bg-surface-container-low rounded-md h-[400px]"></div>

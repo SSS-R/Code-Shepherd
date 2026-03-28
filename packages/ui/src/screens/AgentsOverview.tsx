@@ -1,35 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Bot, Cpu, Gauge, ShieldCheck, Terminal } from 'lucide-react'
-import { buildAuthHeaders } from '../utils/authSession'
-
-interface AgentRecord {
-    id: string
-    name: string
-    capabilities: string[]
-    status: 'online' | 'offline'
-    last_heartbeat: string
-}
+import { AgentRecord, AuditEvent, formatRelativeTime, relayFetch } from '../utils/relay'
 
 interface AgentsOverviewProps {
     onViewAgent?: (id: string) => void
 }
 
-function timeAgo(dateString: string) {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffMinutes = Math.max(1, Math.floor(diffMs / 60000))
-    if (diffMinutes < 60) return `${diffMinutes}m ago`
-    const diffHours = Math.floor(diffMinutes / 60)
-    if (diffHours < 24) return `${diffHours}h ago`
-    return `${Math.floor(diffHours / 24)}d ago`
-}
-
 function connectorLabel(agent: AgentRecord) {
     const capabilityText = agent.capabilities.join(' ').toLowerCase()
-    if (capabilityText.includes('mcp')) return 'MCP Server'
+    if (capabilityText.includes('mcp')) return 'MCP Connector'
     if (capabilityText.includes('github')) return 'GitHub Connector'
     if (capabilityText.includes('vscode')) return 'VS Code Bridge'
+    if (capabilityText.includes('chat')) return 'Internal Guide'
     return 'Relay Connector'
 }
 
@@ -40,16 +22,44 @@ function successRate(agent: AgentRecord, index: number) {
 
 export default function AgentsOverview({ onViewAgent }: AgentsOverviewProps) {
     const [agents, setAgents] = useState<AgentRecord[]>([])
+    const [events, setEvents] = useState<AuditEvent[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        fetch('http://localhost:3000/agents', { headers: buildAuthHeaders() })
-            .then((res) => res.json())
-            .then((data) => {
-                setAgents(data)
-                setLoading(false)
-            })
-            .catch(() => setLoading(false))
+        let cancelled = false
+
+        const load = async () => {
+            try {
+                const [agentsData, auditData] = await Promise.all([
+                    relayFetch<AgentRecord[]>('/agents'),
+                    relayFetch<AuditEvent[]>('/audit-logs?limit=20'),
+                ])
+
+                if (!cancelled) {
+                    setAgents(agentsData)
+                    setEvents(auditData)
+                }
+            } catch {
+                if (!cancelled) {
+                    setAgents([])
+                    setEvents([])
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false)
+                }
+            }
+        }
+
+        void load()
+        const interval = window.setInterval(() => {
+            void load()
+        }, 10000)
+
+        return () => {
+            cancelled = true
+            window.clearInterval(interval)
+        }
     }, [])
 
     const stats = useMemo(() => {
@@ -113,7 +123,7 @@ export default function AgentsOverview({ onViewAgent }: AgentsOverviewProps) {
                             <thead className="bg-surface-container-lowest font-headline text-[10px] text-on-surface-variant uppercase tracking-[0.14em]">
                                 <tr>
                                     <th className="px-6 py-3 font-medium">#</th>
-                                    <th className="px-6 py-3 font-medium">Agent Identity & Model</th>
+                                    <th className="px-6 py-3 font-medium">Agent Identity</th>
                                     <th className="px-6 py-3 font-medium">Status</th>
                                     <th className="px-6 py-3 font-medium">Connector Type</th>
                                     <th className="px-6 py-3 font-medium">Success Rate</th>
@@ -165,12 +175,14 @@ export default function AgentsOverview({ onViewAgent }: AgentsOverviewProps) {
                         <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Realtime</span>
                     </div>
                     <div className="space-y-3 font-mono text-[12px]">
-                        {agents.slice(0, 6).map((agent, index) => (
-                            <div key={agent.id} className="flex items-start gap-3 bg-surface-container px-4 py-3">
-                                <span className="text-on-surface-variant">{timeAgo(agent.last_heartbeat)}</span>
-                                <span className={`status-diamond ${agent.status === 'online' ? 'success' : 'warning'} mt-1`}></span>
+                        {events.length === 0 ? (
+                            <div className="bg-surface-container px-4 py-3 text-on-surface-variant">No recent relay events.</div>
+                        ) : events.slice(0, 6).map((event) => (
+                            <div key={event.id} className="flex items-start gap-3 bg-surface-container px-4 py-3">
+                                <span className="text-on-surface-variant">{formatRelativeTime(event.timestamp)}</span>
+                                <span className={`status-diamond ${event.status === 'failure' ? 'error' : event.status === 'pending' ? 'warning' : 'success'} mt-1`}></span>
                                 <div className="text-on-surface-variant">
-                                    <span className="text-on-surface">{agent.name}</span> {agent.status === 'online' ? 'reported active execution state and connector heartbeat.' : 'is idle or awaiting reconnection.'}
+                                    <span className="text-on-surface">{event.agent_id ?? 'System'}</span> reported {event.event_type.replace(/_/g, ' ')}.
                                 </div>
                             </div>
                         ))}
@@ -180,13 +192,13 @@ export default function AgentsOverview({ onViewAgent }: AgentsOverviewProps) {
                 <section className="surface-card-alt xl:col-span-4 p-4 sm:p-6">
                     <div className="mb-5 flex items-center justify-between">
                         <h2 className="font-headline text-sm font-bold uppercase tracking-[0.14em] text-on-surface">Node Health</h2>
-                        <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-success">Auth Guard</span>
+                        <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-success">Live</span>
                     </div>
                     <div className="space-y-4">
                         {[
-                            { label: 'Core Engine', value: 82 },
-                            { label: 'Memory Cluster', value: 64 },
-                            { label: 'Network IO', value: 71 },
+                            { label: 'Heartbeat Coverage', value: agents.length ? Math.round((stats.online / agents.length) * 100) : 0 },
+                            { label: 'Connected Nodes', value: Math.min(100, 48 + stats.online * 8) },
+                            { label: 'Relay Stability', value: Math.max(72, 100 - stats.offline * 9) },
                         ].map((item) => (
                             <div key={item.label}>
                                 <div className="mb-2 flex items-center justify-between text-sm">

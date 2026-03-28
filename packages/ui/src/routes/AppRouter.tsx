@@ -8,19 +8,20 @@ import {
     LayoutDashboard,
     Menu,
     Moon,
+    Network,
     Radio,
     Settings as SettingsIcon,
     ShieldCheck,
     Sun,
     Terminal,
     Workflow,
-    Network,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import ShepherdGuideModal from '../components/shepherd-guide/ShepherdGuideModal'
 import ShepherdGuidePreview from '../components/shepherd-guide/ShepherdGuidePreview'
 import { ShepherdGuideProvider } from '../components/shepherd-guide/ShepherdGuideProvider'
 import ShepherdGuideTrigger from '../components/shepherd-guide/ShepherdGuideTrigger'
+import { useOperator } from '../context/OperatorContext'
 import ApprovalQueue from '../screens/ApprovalQueue'
 import AgentDetail from '../screens/AgentDetail'
 import AgentsOverview from '../screens/AgentsOverview'
@@ -32,7 +33,9 @@ import LoginPreview from '../screens/LoginPreview'
 import OperatorProfile from '../screens/OperatorProfile'
 import Settings from '../screens/Settings'
 import { loadSession } from '../utils/authSession'
-import { AppRouteKey, navigateTo, navigationRoutes, ParsedRoute } from './routeConfig'
+import { formatRelativeTime, relayFetch, RelayHealthResponse } from '../utils/relay'
+import { useRealtimeNotifications } from '../utils/realtime'
+import { AppRouteKey, navigateTo, ParsedRoute } from './routeConfig'
 
 const sidebarLogo = '/code-shepherd-logo.png'
 
@@ -54,32 +57,35 @@ export default function AppRouter({ route }: { route: ParsedRoute }) {
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
     const [notificationsOpen, setNotificationsOpen] = useState(false)
-    const [theme, setTheme] = useState<'dark' | 'light'>('dark')
     const session = loadSession()
-
-    const notifications = useMemo(() => ([
-        { id: 1, title: 'Agent Execution Failure: Logic_Gate_7', description: 'System-wide interruption detected in neural processing block 7. Immediate manual bypass suggested.', time: '2m ago', tone: 'error' as const },
-        { id: 2, title: 'Approval Required: Schema Migration', description: 'Ghost-Writer-Alpha requested write access to production SQL cluster for schema expansion.', time: '8m ago', tone: 'warning' as const },
-        { id: 3, title: 'Deployment Approved by Admin_Root', description: 'Traffic rerouted to version 2.4.1-stable after reconciliation completed.', time: '14m ago', tone: 'success' as const },
-        { id: 4, title: 'Ghost-Writer-Alpha Reconnected', description: 'Sub-routine handshake successful via encrypted tunnel 9.', time: '22m ago', tone: 'info' as const },
-    ]), [])
+    const { preferences, updatePreferences } = useOperator()
+    const { notifications, unreadCount, markAllRead } = useRealtimeNotifications(Boolean(session && preferences.desktop_notifications))
 
     useEffect(() => {
-        const savedTheme = window.localStorage.getItem('code-shepherd-theme') as 'dark' | 'light' | null
-        const initialTheme = savedTheme ?? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
-        setTheme(initialTheme)
-    }, [])
+        let cancelled = false
 
-    useEffect(() => {
-        document.documentElement.dataset.theme = theme
-        window.localStorage.setItem('code-shepherd-theme', theme)
-    }, [theme])
+        const loadHealth = async () => {
+            try {
+                await relayFetch<RelayHealthResponse>('/health')
+                if (!cancelled) {
+                    setIsConnected(true)
+                }
+            } catch {
+                if (!cancelled) {
+                    setIsConnected(false)
+                }
+            }
+        }
 
-    useEffect(() => {
-        fetch('http://localhost:3000/health')
-            .then((res) => res.json())
-            .then(() => setIsConnected(true))
-            .catch(() => setIsConnected(false))
+        void loadHealth()
+        const interval = window.setInterval(() => {
+            void loadHealth()
+        }, 15000)
+
+        return () => {
+            cancelled = true
+            window.clearInterval(interval)
+        }
     }, [])
 
     useEffect(() => {
@@ -172,30 +178,36 @@ export default function AppRouter({ route }: { route: ParsedRoute }) {
                             </div>
 
                             <div className="flex items-center gap-1 sm:gap-2">
-                                <button className="focus-ring hidden h-10 w-10 items-center justify-center text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary sm:inline-flex" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle theme">
-                                    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                                <button
+                                    className="focus-ring hidden h-10 w-10 items-center justify-center text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary sm:inline-flex"
+                                    onClick={() => updatePreferences({ theme_mode: preferences.theme_mode === 'dark' ? 'light' : 'dark' })}
+                                    aria-label="Toggle theme"
+                                >
+                                    {preferences.theme_mode === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
                                 </button>
                                 <div className="relative hidden md:block">
                                     <button className="focus-ring relative hidden h-10 w-10 items-center justify-center text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary md:inline-flex" onClick={() => setNotificationsOpen((value) => !value)} aria-label="Toggle notifications">
                                         <Bell size={18} />
-                                        <span className="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center bg-error px-1 font-headline text-[9px] font-semibold text-white">{notifications.length}</span>
+                                        <span className="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center bg-error px-1 font-headline text-[9px] font-semibold text-white">{unreadCount}</span>
                                     </button>
 
                                     {notificationsOpen ? (
                                         <div className="shell-border absolute right-0 top-12 z-50 w-[400px] max-w-[calc(100vw-2rem)] bg-surface-container-highest shadow-[0_24px_60px_rgba(0,0,0,0.28)]">
                                             <div className="flex items-center justify-between border-b border-outline-variant/20 bg-surface-container px-4 py-4">
                                                 <span className="font-headline text-[11px] font-semibold uppercase tracking-[0.18em] text-on-surface">Notifications</span>
-                                                <button className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Mark All Read</button>
+                                                <button onClick={markAllRead} className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Mark All Read</button>
                                             </div>
                                             <div className="max-h-[480px] overflow-y-auto custom-scrollbar">
-                                                {notifications.map((notification) => (
+                                                {notifications.length === 0 ? (
+                                                    <div className="px-4 py-10 text-center text-sm text-on-surface-variant">Realtime updates will appear here.</div>
+                                                ) : notifications.map((notification) => (
                                                     <div key={notification.id} className="relative flex gap-4 border-t border-outline-variant/10 px-4 py-4 hover:bg-surface-bright first:border-t-0">
                                                         <div className={`absolute left-0 top-0 h-full w-1 ${notification.tone === 'error' ? 'bg-error' : notification.tone === 'warning' ? 'bg-warning' : notification.tone === 'success' ? 'bg-success' : 'bg-primary'}`}></div>
                                                         <div className="pt-1"><span className={`status-diamond ${notification.tone}`}></span></div>
                                                         <div className="min-w-0 flex-1">
                                                             <div className="mb-1 flex items-start justify-between gap-3">
                                                                 <span className="font-headline text-[11px] font-semibold uppercase tracking-[0.08em] text-on-surface">{notification.title}</span>
-                                                                <span className="shrink-0 text-[10px] text-on-surface-variant">{notification.time}</span>
+                                                                <span className="shrink-0 text-[10px] text-on-surface-variant">{formatRelativeTime(notification.timestamp)}</span>
                                                             </div>
                                                             <p className="text-xs leading-5 text-on-surface-variant">{notification.description}</p>
                                                         </div>
@@ -249,7 +261,7 @@ export default function AppRouter({ route }: { route: ParsedRoute }) {
                                 <span>{isConnected ? 'System Online' : 'System Offline'}</span>
                                 <span>Cluster Alpha</span>
                             </div>
-                            <div className="font-mono text-[11px] text-on-surface-variant">Latency 24ms // {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                            <div className="font-mono text-[11px] text-on-surface-variant">Latency Live // {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                         </div>
                     </div>
                 </div>

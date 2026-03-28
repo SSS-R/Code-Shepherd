@@ -20,7 +20,7 @@ const playbooks: Array<ShepherdGuideReply & { match: RegExp }> = [
         match: /connect|connector|agent|register|bridge|mcp/i,
         topic: 'connectors',
         fallback: false,
-        content: 'Open Settings to register a connector, choose the adapter path, then trust the connector before you start issuing commands. Native IDE, MCP, bridge, and direct-session paths all flow back through the relay so audit logs and approvals stay intact.',
+        content: 'Open Settings to register a connector, choose the adapter path, then trust the connector before you start issuing commands. Native IDE, MCP, bridge, and direct-session paths all flow back through the relay so audit logs and approvals stay intact. OpenClaw should connect through the MCP path rather than as a separate guide model.',
         code: 'SETTINGS -> CONNECTORS -> ADD CONNECTOR\nChoose adapter type\nVerify transport\nConfirm trust state\nStart heartbeats',
     },
     {
@@ -71,7 +71,7 @@ const welcomeMessages: ShepherdGuideSeedMessage[] = [
     },
     {
         content: 'For example, if you want to connect an agent, I can explain the adapter path and where to configure it.',
-        code: 'CONNECTOR TYPES\n- Native connector\n- MCP connector\n- Bridge connector\n- Direct session path',
+        code: 'CONNECTOR TYPES\n- Native connector\n- MCP connector\n- Bridge connector\n- Direct session path\n- OpenClaw via MCP',
     },
 ];
 

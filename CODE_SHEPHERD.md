@@ -22,7 +22,7 @@ Code Shepherd is a **multi-agent communication and control plane** for:
 - MCP-capable agents
 - custom-built AI agents
 - local agents started through scripts, CLIs, or helper runtimes
-- direct-session integrations such as OpenClaw
+- OpenClaw integrations exposed through an MCP server path
 
 The product does **not** aim to build a new foundation model or replace existing coding agents.
 
@@ -196,7 +196,7 @@ flowchart TB
     Bridges --> Copilot[Copilot or Codex Connector]
     Bridges --> MCP[Generic MCP Connector]
     Bridges --> Custom[Custom Agent Bridge]
-    Bridges --> OpenClaw[OpenClaw Direct Session]
+    Bridges --> OpenClaw[OpenClaw MCP Connector]
 ```
 
 ### Architectural meaning
@@ -244,7 +244,9 @@ For tools that need:
 - a local service
 
 ### 9.4 Direct session path
-For tools where Code Shepherd can attach to the main session directly, such as the OpenClaw path you described.
+For tools where Code Shepherd can attach to the main session directly.
+
+OpenClaw should be treated differently in this repo: it is expected to connect through an MCP server path rather than through a special direct-session assistant runtime.
 
 ---
 

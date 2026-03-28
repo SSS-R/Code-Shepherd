@@ -1,9 +1,17 @@
 import { Request, Response } from 'express';
+import {
+    ACCESS_COOKIE_NAME,
+    extractBearerToken,
+    parseCookies,
+    UserRole,
+    verifyAccessToken,
+} from '../utils/authSecurity';
 
 export interface AuthContext {
     userId: string;
     teamId: string | null;
-    role: 'Admin' | 'Developer' | 'Viewer';
+    role: UserRole;
+    tokenId: string;
 }
 
 declare module 'express-serve-static-core' {
@@ -12,20 +20,39 @@ declare module 'express-serve-static-core' {
     }
 }
 
-export function requireAuth(req: Request, res: Response, next: Function) {
-    const userId = req.header('x-user-id');
-    const teamId = req.header('x-team-id') || null;
-    const role = (req.header('x-role') || 'Developer') as AuthContext['role'];
-
-    if (!userId) {
-        return res.status(401).json({ error: 'Missing x-user-id header' });
+function resolveAccessToken(req: Request): string | null {
+    const bearerToken = extractBearerToken(req);
+    if (bearerToken) {
+        return bearerToken;
     }
 
-    req.auth = { userId, teamId, role };
+    const cookies = parseCookies(req.headers.cookie);
+    return cookies[ACCESS_COOKIE_NAME] || null;
+}
+
+export function requireAuth(req: Request, res: Response, next: Function) {
+    const token = resolveAccessToken(req);
+
+    if (!token) {
+        return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const payload = verifyAccessToken(token);
+    if (!payload) {
+        return res.status(401).json({ error: 'Invalid or expired session' });
+    }
+
+    req.auth = {
+        userId: payload.sub,
+        teamId: payload.teamId,
+        role: payload.role,
+        tokenId: payload.jti,
+    };
+
     return next();
 }
 
-export function requireRole(allowedRoles: AuthContext['role'][]) {
+export function requireRole(allowedRoles: UserRole[]) {
     return (req: Request, res: Response, next: Function) => {
         if (!req.auth) {
             return res.status(401).json({ error: 'Authentication required' });

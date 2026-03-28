@@ -54,12 +54,12 @@ const defaultMessages: ShepherdGuideMessage[] = [
         role: 'assistant',
         content: 'For example, if you want to connect an agent, I can explain the adapter path and where to configure it.',
         timestamp: 'NOW',
-        code: 'CONNECTOR TYPES\n- Native connector\n- MCP connector\n- Bridge connector\n- Direct session path',
+        code: 'CONNECTOR TYPES\n- Native connector\n- MCP connector\n- Bridge connector\n- Direct session path\n- OpenClaw via MCP',
     },
 ]
 
 const cannedResponses: Array<{ match: RegExp; response: string }> = [
-    { match: /connect|connector|agent/i, response: 'To connect an agent, open Settings, register a connector, and confirm the adapter type. MCP and bridge connectors are the main paths in the current product model.' },
+    { match: /connect|connector|agent/i, response: 'To connect an agent, open Settings, register a connector, and confirm the adapter type. MCP and bridge connectors are the main paths in the current product model, and OpenClaw should be connected through MCP rather than treated as a separate guide model.' },
     { match: /approval|risk/i, response: 'Approvals appear both in the Approval Queue and in related context surfaces. High-risk actions should always keep thread context and audit trace together.' },
     { match: /task|kanban|board/i, response: 'The Task Board is your coordination surface. Ready, Active, Validation, and Action Required columns reflect operational state across agents.' },
     { match: /timeline|audit|log/i, response: 'Timeline / Audit Log is where state changes, approvals, reconnects, and failures are preserved as the product audit trail.' },
@@ -96,7 +96,7 @@ function buildFallbackReply(content: string): ShepherdGuideMessage {
         content: matched?.response ?? 'I can answer questions about Code Shepherd only. Ask about agents, connectors, approvals, inbox flows, tasks, settings, or troubleshooting.',
         timestamp: createLocalTimestamp(),
         code: /connect|connector/i.test(content)
-            ? 'SETTINGS -> ADAPTER CONNECTORS -> ADD NEW CONNECTOR\nChoose connector type\nValidate transport\nConfirm trust state'
+            ? 'SETTINGS -> ADAPTER CONNECTORS -> ADD NEW CONNECTOR\nChoose connector type\nValidate transport\nConfirm trust state\nUse MCP for OpenClaw'
             : null,
         feedback: null,
     }

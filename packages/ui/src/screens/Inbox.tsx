@@ -14,27 +14,8 @@ import {
     ShieldAlert,
     Terminal,
 } from 'lucide-react'
-import { buildAuthHeaders, loadSession } from '../utils/authSession'
-
-interface Conversation {
-    id: string
-    agent_id: string
-    title: string
-    status: string
-    latest_message_preview?: string | null
-    last_message_at?: string | null
-}
-
-interface Message {
-    id: string
-    conversation_id: string
-    sender_type: 'user' | 'agent' | 'system'
-    sender_id: string
-    message_type: string
-    content: string
-    approval_id?: string | null
-    created_at: string
-}
+import { loadSession } from '../utils/authSession'
+import { AgentRecord, ConversationMessagesResponse, ConversationRecord, formatRelativeTime, MessageRecord, relayFetch } from '../utils/relay'
 
 interface InboxProps {
     initialAgentId?: string | null
@@ -47,24 +28,28 @@ function formatTime(value?: string | null) {
 
 function getConversationTone(status: string, active: boolean) {
     const normalized = status.toUpperCase()
-    if (active) return { badgeClass: 'text-success', diamond: 'success', containerClass: 'bg-surface-container' }
+    if (active) return { badgeClass: 'text-success', diamond: 'success' }
     if (normalized.includes('APPROVAL') || normalized.includes('WAITING') || normalized.includes('PENDING')) {
-        return { badgeClass: 'text-warning', diamond: 'warning', containerClass: 'bg-surface-container-low' }
+        return { badgeClass: 'text-warning', diamond: 'warning' }
     }
     if (normalized.includes('BLOCK') || normalized.includes('ERROR')) {
-        return { badgeClass: 'text-error', diamond: 'error', containerClass: 'bg-surface-container-low' }
+        return { badgeClass: 'text-error', diamond: 'error' }
     }
-    return { badgeClass: 'text-on-surface-variant', diamond: 'info', containerClass: 'bg-surface-container-low' }
+    return { badgeClass: 'text-on-surface-variant', diamond: 'info' }
 }
 
 export default function Inbox({ initialAgentId = null }: InboxProps) {
-    const [conversations, setConversations] = useState<Conversation[]>([])
+    const [conversations, setConversations] = useState<ConversationRecord[]>([])
+    const [agents, setAgents] = useState<AgentRecord[]>([])
     const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null)
-    const [messages, setMessages] = useState<Message[]>([])
+    const [messages, setMessages] = useState<MessageRecord[]>([])
     const [draft, setDraft] = useState('')
     const [loading, setLoading] = useState(true)
     const [query, setQuery] = useState('')
     const [mobileListOpen, setMobileListOpen] = useState(true)
+    const [composeOpen, setComposeOpen] = useState(false)
+    const [composeAgentId, setComposeAgentId] = useState(initialAgentId ?? '')
+    const [composeTitle, setComposeTitle] = useState('')
     const session = loadSession()
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -86,38 +71,48 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
         )
     }, [conversations, query])
 
+    const loadConversations = async (preferredAgentId?: string | null) => {
+        const [conversationData, agentData] = await Promise.all([
+            relayFetch<ConversationRecord[]>('/conversations'),
+            relayFetch<AgentRecord[]>('/agents'),
+        ])
+
+        setConversations(conversationData)
+        setAgents(agentData)
+
+        if (preferredAgentId) {
+            const existing = conversationData.find((conversation) => conversation.agent_id === preferredAgentId)
+            if (existing) {
+                setSelectedConversationId(existing.id)
+                return
+            }
+        }
+
+        setSelectedConversationId((current) => current && conversationData.some((conversation) => conversation.id === current) ? current : (conversationData[0]?.id ?? null))
+    }
+
     useEffect(() => {
-        fetch('http://localhost:3000/conversations', { headers: buildAuthHeaders() })
-            .then((res) => res.json())
-            .then(async (data: Conversation[]) => {
-                let nextConversations = data
-                let nextSelected = data[0]?.id ?? null
+        let cancelled = false
 
-                if (initialAgentId) {
-                    const existing = data.find((conversation) => conversation.agent_id === initialAgentId)
-
-                    if (existing) {
-                        nextSelected = existing.id
-                    } else {
-                        const ensureRes = await fetch('http://localhost:3000/conversations/ensure', {
-                            method: 'POST',
-                            headers: buildAuthHeaders(),
-                            body: JSON.stringify({ agent_id: initialAgentId, title: `Conversation with ${initialAgentId}` }),
-                        })
-
-                        if (ensureRes.ok) {
-                            const ensured = await ensureRes.json()
-                            nextConversations = [ensured.conversation, ...data]
-                            nextSelected = ensured.conversation.id
-                        }
-                    }
+        const initialize = async () => {
+            try {
+                await loadConversations(initialAgentId)
+            } finally {
+                if (!cancelled) {
+                    setLoading(false)
                 }
+            }
+        }
 
-                setConversations(nextConversations)
-                setSelectedConversationId(nextSelected)
-                setLoading(false)
-            })
-            .catch(() => setLoading(false))
+        void initialize()
+        const interval = window.setInterval(() => {
+            void loadConversations(null)
+        }, 8000)
+
+        return () => {
+            cancelled = true
+            window.clearInterval(interval)
+        }
     }, [initialAgentId])
 
     useEffect(() => {
@@ -128,21 +123,38 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
 
         setMobileListOpen(false)
 
-        fetch(`http://localhost:3000/conversations/${selectedConversationId}/messages`, { headers: buildAuthHeaders() })
-            .then((res) => res.json())
-            .then((data) => {
-                setMessages(data.messages || [])
-                setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
-            })
-            .catch(() => setMessages([]))
+        let cancelled = false
+
+        const loadMessages = async () => {
+            try {
+                const data = await relayFetch<ConversationMessagesResponse>(`/conversations/${selectedConversationId}/messages`)
+                if (!cancelled) {
+                    setMessages(data.messages || [])
+                    window.setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+                }
+            } catch {
+                if (!cancelled) {
+                    setMessages([])
+                }
+            }
+        }
+
+        void loadMessages()
+        const interval = window.setInterval(() => {
+            void loadMessages()
+        }, 4000)
+
+        return () => {
+            cancelled = true
+            window.clearInterval(interval)
+        }
     }, [selectedConversationId])
 
     const sendMessage = async () => {
         if (!selectedConversation || !draft.trim()) return
 
-        const res = await fetch(`http://localhost:3000/conversations/${selectedConversation.id}/messages`, {
+        await relayFetch(`/conversations/${selectedConversation.id}/messages`, {
             method: 'POST',
-            headers: buildAuthHeaders(),
             body: JSON.stringify({
                 content: draft.trim(),
                 target_agent_id: selectedConversation.agent_id,
@@ -151,15 +163,28 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
             }),
         })
 
-        if (res.ok) {
-            setDraft('')
-            const refresh = await fetch(`http://localhost:3000/conversations/${selectedConversation.id}/messages`, { headers: buildAuthHeaders() })
-            if (refresh.ok) {
-                const data = await refresh.json()
-                setMessages(data.messages || [])
-                setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
-            }
-        }
+        setDraft('')
+        const data = await relayFetch<ConversationMessagesResponse>(`/conversations/${selectedConversation.id}/messages`)
+        setMessages(data.messages || [])
+        window.setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+        await loadConversations(selectedConversation.agent_id)
+    }
+
+    const createConversation = async () => {
+        if (!composeAgentId.trim()) return
+
+        const ensured = await relayFetch<{ conversation: ConversationRecord }>('/conversations/ensure', {
+            method: 'POST',
+            body: JSON.stringify({
+                agent_id: composeAgentId.trim(),
+                title: composeTitle.trim() || `Conversation with ${composeAgentId.trim()}`,
+            }),
+        })
+
+        setComposeOpen(false)
+        setComposeTitle('')
+        await loadConversations(composeAgentId)
+        setSelectedConversationId(ensured.conversation.id)
     }
 
     if (loading) {
@@ -180,16 +205,34 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
                                 <p className="mb-1 font-headline text-[10px] font-semibold uppercase tracking-[0.16em] text-on-surface-variant">Unified Communication</p>
                                 <h2 className="font-headline text-sm font-bold uppercase tracking-[0.14em] text-on-surface">Active Sessions</h2>
                             </div>
-                            <button className="focus-ring flex h-10 w-10 items-center justify-center bg-surface-container text-primary hover:bg-surface-bright">
+                            <button className="focus-ring flex h-10 w-10 items-center justify-center bg-surface-container text-primary hover:bg-surface-bright" onClick={() => setComposeOpen((value) => !value)}>
                                 <PlusSquare size={18} />
                             </button>
                         </div>
+
+                        {composeOpen ? (
+                            <div className="mb-4 space-y-3 bg-surface-container p-3">
+                                <select value={composeAgentId} onChange={(event) => setComposeAgentId(event.target.value)} className="focus-ring w-full bg-surface-container-lowest px-3 py-3 text-sm text-on-surface">
+                                    <option value="">Choose agent</option>
+                                    {agents.map((agent) => (
+                                        <option key={agent.id} value={agent.id}>{agent.name}</option>
+                                    ))}
+                                </select>
+                                <input
+                                    value={composeTitle}
+                                    onChange={(event) => setComposeTitle(event.target.value)}
+                                    className="focus-ring w-full bg-surface-container-lowest px-3 py-3 text-sm text-on-surface"
+                                    placeholder="Optional title"
+                                />
+                                <button onClick={() => void createConversation()} className="shell-button shell-button-primary focus-ring w-full">Create Thread</button>
+                            </div>
+                        ) : null}
 
                         <label className="relative block">
                             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
                             <input
                                 value={query}
-                                onChange={(e) => setQuery(e.target.value)}
+                                onChange={(event) => setQuery(event.target.value)}
                                 className="focus-ring w-full bg-surface-container-lowest py-3 pl-10 pr-4 text-sm text-on-surface placeholder:text-on-surface-variant"
                                 placeholder="Filter sessions"
                                 type="text"
@@ -202,43 +245,37 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
                             <div className="px-3 py-10 text-center text-on-surface-variant">
                                 <p className="font-headline text-[11px] font-semibold uppercase tracking-[0.16em]">No Threads Found</p>
                             </div>
-                        ) : (
-                            filteredConversations.map((conv) => {
-                                const isActive = selectedConversationId === conv.id
-                                const tone = getConversationTone(conv.status, isActive)
+                        ) : filteredConversations.map((conv) => {
+                            const isActive = selectedConversationId === conv.id
+                            const tone = getConversationTone(conv.status, isActive)
 
-                                return (
-                                    <button
-                                        key={conv.id}
-                                        onClick={() => setSelectedConversationId(conv.id)}
-                                        className={`focus-ring mb-3 w-full border-l-2 px-3 py-3 text-left transition-colors ${isActive ? 'border-primary bg-surface-container' : 'border-transparent bg-surface-container-low hover:bg-surface-container'}`}
-                                    >
-                                        <div className="flex items-start gap-3">
-                                            <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center bg-surface-container-highest text-on-surface-variant">
-                                                <Bot size={18} />
-                                                <span className={`status-diamond ${tone.diamond} absolute -bottom-1 -right-1`}></span>
+                            return (
+                                <button
+                                    key={conv.id}
+                                    onClick={() => setSelectedConversationId(conv.id)}
+                                    className={`focus-ring mb-3 w-full border-l-2 px-3 py-3 text-left transition-colors ${isActive ? 'border-primary bg-surface-container' : 'border-transparent bg-surface-container-low hover:bg-surface-container'}`}
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center bg-surface-container-highest text-on-surface-variant">
+                                            <Bot size={18} />
+                                            <span className={`status-diamond ${tone.diamond} absolute -bottom-1 -right-1`}></span>
+                                        </div>
+
+                                        <div className="min-w-0 flex-1">
+                                            <div className="mb-1 flex items-start justify-between gap-2">
+                                                <span className={`font-headline text-[12px] font-semibold uppercase tracking-[0.08em] ${isActive ? 'text-on-surface' : 'text-on-surface-variant'}`}>{conv.agent_id}</span>
+                                                <span className="font-mono text-[10px] text-on-surface-variant">{formatTime(conv.last_message_at) || '-'}</span>
                                             </div>
-
-                                            <div className="min-w-0 flex-1">
-                                                <div className="mb-1 flex items-start justify-between gap-2">
-                                                    <span className={`font-headline text-[12px] font-semibold uppercase tracking-[0.08em] ${isActive ? 'text-on-surface' : 'text-on-surface-variant'}`}>{conv.agent_id}</span>
-                                                    <span className="font-mono text-[10px] text-on-surface-variant">{formatTime(conv.last_message_at) || '—'}</span>
-                                                </div>
-                                                <p className="truncate text-xs text-on-surface-variant">{conv.latest_message_preview || 'New initiative initialized'}</p>
-                                                <div className="mt-3 flex items-center gap-2">
-                                                    <span className={`status-diamond ${tone.diamond}`}></span>
-                                                    <span className={`font-headline text-[10px] font-semibold uppercase tracking-[0.14em] ${tone.badgeClass}`}>{conv.status || 'System'}</span>
-                                                </div>
+                                            <p className="truncate text-xs text-on-surface-variant">{conv.latest_message_preview || 'New initiative initialized'}</p>
+                                            <div className="mt-3 flex items-center gap-2">
+                                                <span className={`status-diamond ${tone.diamond}`}></span>
+                                                <span className={`font-headline text-[10px] font-semibold uppercase tracking-[0.14em] ${tone.badgeClass}`}>{conv.status || 'System'}</span>
                                             </div>
                                         </div>
-                                    </button>
-                                )
-                            })
-                        )}
-                    </div>
-
-                    <div className="border-t border-outline-variant/20 px-4 py-4">
-                        <button className="shell-button shell-button-secondary focus-ring w-full">New Initiative</button>
+                                    </div>
+                                </button>
+                            )
+                        })}
                     </div>
                 </div>
             </section>
@@ -264,8 +301,8 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
                             </div>
 
                             <div className="hidden items-center gap-3 sm:flex">
+                                <span className="text-xs text-on-surface-variant">{formatRelativeTime(selectedConversation.last_message_at)}</span>
                                 <button className="shell-button shell-button-secondary focus-ring min-h-10 px-4 py-2">Logs</button>
-                                <button className="shell-button shell-button-primary focus-ring min-h-10 px-4 py-2">Export</button>
                             </div>
                         </div>
 
@@ -275,69 +312,62 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
                                     <Terminal size={40} className="mb-4" />
                                     <p className="font-headline text-[11px] font-semibold uppercase tracking-[0.16em]">Awaiting Directives</p>
                                 </div>
-                            ) : (
-                                messages.map((msg) => {
-                                    const isUser = msg.sender_type === 'user'
-                                    const isApproval = msg.message_type?.includes('approval')
-                                    const isSystem = msg.sender_type === 'system'
+                            ) : messages.map((msg) => {
+                                const isUser = msg.sender_type === 'user'
+                                const isApproval = msg.message_type?.includes('approval')
+                                const isSystem = msg.sender_type === 'system'
 
-                                    if (isUser) {
-                                        return (
-                                            <div key={msg.id} className="flex flex-row-reverse gap-4 animate-fade-in">
-                                                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center bg-surface-container-high font-headline text-xs font-bold uppercase tracking-[0.14em] text-primary">
-                                                    {(session?.name || session?.userId || 'U').charAt(0).toUpperCase()}
-                                                </div>
-                                                <div className="max-w-2xl bg-primary/12 px-4 py-4">
-                                                    <div className="mb-2 flex items-center justify-between gap-4">
-                                                        <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Operator Directive</span>
-                                                        <span className="font-mono text-[10px] text-on-surface-variant">{formatTime(msg.created_at)}</span>
-                                                    </div>
-                                                    <p className="whitespace-pre-wrap text-sm leading-6 text-on-surface">{msg.content}</p>
-                                                </div>
-                                            </div>
-                                        )
-                                    }
-
-                                    if (isApproval) {
-                                        return (
-                                            <div key={msg.id} className="flex gap-4 animate-fade-in">
-                                                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center bg-warning/15 text-warning">
-                                                    <ShieldAlert size={16} />
-                                                </div>
-                                                <div className="max-w-3xl bg-surface-container px-4 py-4">
-                                                    <div className="mb-2 flex items-center justify-between gap-4">
-                                                        <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-warning">Verification Required</span>
-                                                        <span className="font-mono text-[10px] text-on-surface-variant">{formatTime(msg.created_at)}</span>
-                                                    </div>
-                                                    <p className="mb-4 whitespace-pre-wrap text-sm leading-6 text-on-surface">{msg.content}</p>
-                                                    <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-center">
-                                                        <div className="font-mono text-[11px] text-on-surface-variant">{msg.approval_id ? `Approval ${msg.approval_id.slice(0, 8)}…` : 'Approval request pending review'}</div>
-                                                        <button className="shell-button shell-button-secondary focus-ring min-h-10 px-4 py-2">Decline Request</button>
-                                                        <button className="shell-button shell-button-primary focus-ring min-h-10 px-4 py-2">Grant Permission</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )
-                                    }
-
+                                if (isUser) {
                                     return (
-                                        <div key={msg.id} className="flex gap-4 animate-fade-in">
-                                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center bg-surface-container-high text-on-surface-variant">
-                                                {isSystem ? <Terminal size={16} /> : <Bot size={16} />}
+                                        <div key={msg.id} className="flex flex-row-reverse gap-4 animate-fade-in">
+                                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center bg-surface-container-high font-headline text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                                                {(session?.name || session?.userId || 'U').charAt(0).toUpperCase()}
                                             </div>
-                                            <div className="max-w-4xl space-y-4">
-                                                <div className="bg-surface-container px-4 py-4">
-                                                    <div className="mb-2 flex items-center justify-between gap-4">
-                                                        <span className={`font-headline text-[10px] font-semibold uppercase tracking-[0.14em] ${isSystem ? 'text-info' : 'text-success'}`}>{isSystem ? 'System Intervention' : `${selectedConversation.agent_id} Analysis`}</span>
-                                                        <span className="font-mono text-[10px] text-on-surface-variant">{formatTime(msg.created_at)}</span>
-                                                    </div>
-                                                    <p className="whitespace-pre-wrap text-sm leading-6 text-on-surface-variant">{msg.content}</p>
+                                            <div className="max-w-2xl bg-primary/12 px-4 py-4">
+                                                <div className="mb-2 flex items-center justify-between gap-4">
+                                                    <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Operator Directive</span>
+                                                    <span className="font-mono text-[10px] text-on-surface-variant">{formatTime(msg.created_at)}</span>
                                                 </div>
+                                                <p className="whitespace-pre-wrap text-sm leading-6 text-on-surface">{msg.content}</p>
                                             </div>
                                         </div>
                                     )
-                                })
-                            )}
+                                }
+
+                                if (isApproval) {
+                                    return (
+                                        <div key={msg.id} className="flex gap-4 animate-fade-in">
+                                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center bg-warning/15 text-warning">
+                                                <ShieldAlert size={16} />
+                                            </div>
+                                            <div className="max-w-3xl bg-surface-container px-4 py-4">
+                                                <div className="mb-2 flex items-center justify-between gap-4">
+                                                    <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-warning">Verification Required</span>
+                                                    <span className="font-mono text-[10px] text-on-surface-variant">{formatTime(msg.created_at)}</span>
+                                                </div>
+                                                <p className="mb-4 whitespace-pre-wrap text-sm leading-6 text-on-surface">{msg.content}</p>
+                                            </div>
+                                        </div>
+                                    )
+                                }
+
+                                return (
+                                    <div key={msg.id} className="flex gap-4 animate-fade-in">
+                                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center bg-surface-container-high text-on-surface-variant">
+                                            {isSystem ? <Terminal size={16} /> : <Bot size={16} />}
+                                        </div>
+                                        <div className="max-w-4xl space-y-4">
+                                            <div className="bg-surface-container px-4 py-4">
+                                                <div className="mb-2 flex items-center justify-between gap-4">
+                                                    <span className={`font-headline text-[10px] font-semibold uppercase tracking-[0.14em] ${isSystem ? 'text-info' : 'text-success'}`}>{isSystem ? 'System Intervention' : `${selectedConversation.agent_id} Analysis`}</span>
+                                                    <span className="font-mono text-[10px] text-on-surface-variant">{formatTime(msg.created_at)}</span>
+                                                </div>
+                                                <p className="whitespace-pre-wrap text-sm leading-6 text-on-surface-variant">{msg.content}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
+                            })}
                             <div ref={messagesEndRef} />
                         </div>
 
@@ -351,24 +381,24 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
                                     ))}
                                     <div className="mx-1 h-4 w-px bg-outline-variant/30"></div>
                                     <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">{selectedConversation.agent_id}</span>
-                                    <span className="ml-auto font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-success">2 agents online</span>
+                                    <span className="ml-auto font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-success">{agents.filter((agent) => agent.status === 'online').length} agents online</span>
                                 </div>
 
                                 <div className="flex items-end gap-3 px-3 py-3 sm:px-4">
                                     <textarea
                                         value={draft}
-                                        onChange={(e) => setDraft(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                e.preventDefault()
-                                                sendMessage()
+                                        onChange={(event) => setDraft(event.target.value)}
+                                        onKeyDown={(event) => {
+                                            if (event.key === 'Enter' && !event.shiftKey) {
+                                                event.preventDefault()
+                                                void sendMessage()
                                             }
                                         }}
                                         className="focus-ring min-h-[52px] flex-1 resize-none bg-transparent px-2 py-3 text-sm text-on-surface placeholder:text-on-surface-variant"
                                         placeholder={`Type a directive for ${selectedConversation.agent_id}...`}
                                         rows={2}
                                     />
-                                    <button onClick={sendMessage} disabled={!draft.trim()} className="shell-button shell-button-primary focus-ring h-[52px] w-[52px] p-0 disabled:opacity-40">
+                                    <button onClick={() => void sendMessage()} disabled={!draft.trim()} className="shell-button shell-button-primary focus-ring h-[52px] w-[52px] p-0 disabled:opacity-40">
                                         <Send size={16} />
                                     </button>
                                 </div>

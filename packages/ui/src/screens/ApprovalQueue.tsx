@@ -1,21 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Bolt, Check, ChevronRight, Clock, FileText, MemoryStick, ShieldAlert, Terminal, TriangleAlert } from 'lucide-react'
+import { Check, ChevronRight, Clock, FileText, MemoryStick, Terminal, TriangleAlert } from 'lucide-react'
 import DiffViewer from '../components/DiffViewer'
-import { buildAuthHeaders } from '../utils/authSession'
-
-interface Approval {
-    id: string
-    agent_id: string
-    action_type: string
-    summary: string
-    action_details: Record<string, unknown>
-    risk_level: string
-    risk_reason: string
-    status: string
-    requested_at: string
-    diff?: string | null
-    is_new_file?: boolean
-}
+import { ApprovalRecord, formatRelativeTime, relayFetch } from '../utils/relay'
 
 interface Stats {
     pending: number
@@ -24,82 +10,75 @@ interface Stats {
 }
 
 export default function ApprovalQueue() {
-    const [approvals, setApprovals] = useState<Approval[]>([])
-    const [loading, setLoading] = useState(true)
+    const [approvals, setApprovals] = useState<ApprovalRecord[]>([])
     const [stats, setStats] = useState<Stats>({ pending: 0, approved: 0, rejected: 0 })
+    const [loading, setLoading] = useState(true)
     const [rejectingId, setRejectingId] = useState<string | null>(null)
     const [rejectReason, setRejectReason] = useState('')
     const [showReasonError, setShowReasonError] = useState(false)
     const [riskFilter, setRiskFilter] = useState('all')
 
     useEffect(() => {
-        fetch('http://localhost:3000/approvals/pending', { headers: buildAuthHeaders() })
-            .then((res) => res.json())
-            .then((data) => {
-                setApprovals(data)
-                setStats((prev) => ({ ...prev, pending: data.length }))
-                setLoading(false)
-            })
-            .catch(() => setLoading(false))
+        let cancelled = false
+
+        const load = async () => {
+            try {
+                const [pending, all] = await Promise.all([
+                    relayFetch<ApprovalRecord[]>('/approvals/pending'),
+                    relayFetch<ApprovalRecord[]>('/approvals'),
+                ])
+
+                if (cancelled) return
+
+                setApprovals(pending)
+                setStats({
+                    pending: pending.length,
+                    approved: all.filter((approval) => approval.status === 'approved').length,
+                    rejected: all.filter((approval) => approval.status === 'rejected').length,
+                })
+            } catch {
+                if (!cancelled) {
+                    setApprovals([])
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false)
+                }
+            }
+        }
+
+        void load()
+        const interval = window.setInterval(() => {
+            void load()
+        }, 8000)
+
+        return () => {
+            cancelled = true
+            window.clearInterval(interval)
+        }
     }, [])
 
-    const filteredApprovals = useMemo(() => {
-        return approvals.filter((approval) => riskFilter === 'all' || approval.risk_level.toLowerCase() === riskFilter)
-    }, [approvals, riskFilter])
+    const filteredApprovals = useMemo(
+        () => approvals.filter((approval) => riskFilter === 'all' || approval.risk_level.toLowerCase() === riskFilter),
+        [approvals, riskFilter],
+    )
 
-    const handleApprove = async (id: string) => {
-        try {
-            const res = await fetch(`http://localhost:3000/approvals/${id}`, {
-                method: 'PATCH',
-                headers: buildAuthHeaders(),
-                body: JSON.stringify({
-                    decision: 'approved',
-                    decision_reason: 'Approved via dashboard',
-                    decidedBy: 'dashboard-user',
-                }),
-            })
+    const decideApproval = async (id: string, decision: 'approved' | 'rejected', decisionReason: string) => {
+        await relayFetch(`/approvals/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+                decision,
+                decision_reason: decisionReason,
+                decidedBy: 'dashboard-user',
+            }),
+        })
 
-            if (res.ok) {
-                setApprovals(approvals.filter((a) => a.id !== id))
-                setStats((prev) => ({ ...prev, pending: prev.pending - 1, approved: prev.approved + 1 }))
-            }
-        } catch (error) {
-            console.error('Failed to approve:', error)
-        }
-    }
-
-    const handleRejectClick = (id: string) => {
-        setRejectingId(id)
-        setRejectReason('')
-        setShowReasonError(false)
-    }
-
-    const handleRejectConfirm = async (id: string) => {
-        if (!rejectReason.trim()) {
-            setShowReasonError(true)
-            return
-        }
-
-        try {
-            const res = await fetch(`http://localhost:3000/approvals/${id}`, {
-                method: 'PATCH',
-                headers: buildAuthHeaders(),
-                body: JSON.stringify({
-                    decision: 'rejected',
-                    decision_reason: rejectReason.trim(),
-                    decidedBy: 'dashboard-user',
-                }),
-            })
-
-            if (res.ok) {
-                setApprovals(approvals.filter((a) => a.id !== id))
-                setStats((prev) => ({ ...prev, pending: prev.pending - 1, rejected: prev.rejected + 1 }))
-                setRejectingId(null)
-                setRejectReason('')
-            }
-        } catch (error) {
-            console.error('Failed to reject:', error)
-        }
+        setApprovals((current) => current.filter((approval) => approval.id !== id))
+        setStats((current) => ({
+            pending: Math.max(0, current.pending - 1),
+            approved: decision === 'approved' ? current.approved + 1 : current.approved,
+            rejected: decision === 'rejected' ? current.rejected + 1 : current.rejected,
+        }))
     }
 
     if (loading) {
@@ -124,14 +103,16 @@ export default function ApprovalQueue() {
                     </div>
 
                     <div className="flex flex-col gap-3 sm:flex-row">
-                        <select value={riskFilter} onChange={(e) => setRiskFilter(e.target.value)} className="focus-ring min-h-[44px] bg-surface-container px-4 py-3 text-sm text-on-surface">
+                        <select value={riskFilter} onChange={(event) => setRiskFilter(event.target.value)} className="focus-ring min-h-[44px] bg-surface-container px-4 py-3 text-sm text-on-surface">
                             <option value="all">All Risks</option>
                             <option value="high">High Risk</option>
                             <option value="medium">Medium Risk</option>
                             <option value="low">Low Risk</option>
                         </select>
-                        <button className="shell-button shell-button-secondary focus-ring">Bulk Reject</button>
-                        <button className="shell-button shell-button-primary focus-ring">Approve All Safe</button>
+                        <div className="surface-card-alt flex items-center gap-4 px-4 py-3 text-xs uppercase tracking-[0.14em] text-on-surface-variant">
+                            <span>Approved {stats.approved}</span>
+                            <span>Rejected {stats.rejected}</span>
+                        </div>
                     </div>
                 </div>
 
@@ -153,9 +134,22 @@ export default function ApprovalQueue() {
                                 key={approval.id}
                                 approval={approval}
                                 index={index}
-                                onApprove={handleApprove}
-                                onRejectClick={handleRejectClick}
-                                onRejectConfirm={handleRejectConfirm}
+                                onApprove={() => void decideApproval(approval.id, 'approved', 'Approved via dashboard')}
+                                onRejectConfirm={() => {
+                                    if (!rejectReason.trim()) {
+                                        setShowReasonError(true)
+                                        return
+                                    }
+                                    void decideApproval(approval.id, 'rejected', rejectReason.trim())
+                                    setRejectingId(null)
+                                    setRejectReason('')
+                                    setShowReasonError(false)
+                                }}
+                                onRejectClick={() => {
+                                    setRejectingId(approval.id)
+                                    setRejectReason('')
+                                    setShowReasonError(false)
+                                }}
                                 onRejectCancel={() => {
                                     setRejectingId(null)
                                     setRejectReason('')
@@ -188,11 +182,11 @@ function ApprovalCard({
     showReasonError,
     setShowReasonError,
 }: {
-    approval: Approval
+    approval: ApprovalRecord
     index: number
-    onApprove: (id: string) => void
-    onRejectClick: (id: string) => void
-    onRejectConfirm: (id: string) => void
+    onApprove: () => void
+    onRejectClick: () => void
+    onRejectConfirm: () => void
     onRejectCancel: () => void
     isRejecting: boolean
     rejectReason: string
@@ -201,7 +195,6 @@ function ApprovalCard({
     setShowReasonError: (value: boolean) => void
 }) {
     const { riskColor, riskBadgeClass, riskLabel, barClass, buttonClass, RiskIcon } = getRiskStyles(approval.risk_level)
-    const timeAgo = getTimeAgo(approval.requested_at)
 
     return (
         <div className={`relative overflow-hidden bg-surface-container transition-transform ${isRejecting ? 'ring-1 ring-error/40' : ''}`} style={{ animationFillMode: 'both', animationDuration: '250ms', animationName: 'fade-in', animationDelay: `${index * 40}ms` }}>
@@ -226,7 +219,7 @@ function ApprovalCard({
                     <div className="font-mono text-[11px] text-primary">Object_{approval.id.substring(0, 6)}</div>
                 </div>
 
-                {approval.risk_reason && (
+                {approval.risk_reason ? (
                     <div className="mb-5 bg-surface-container-lowest px-4 py-4">
                         <div className="flex items-start gap-3">
                             <FileText size={16} className="mt-0.5 text-on-surface-variant" />
@@ -236,9 +229,9 @@ function ApprovalCard({
                             </div>
                         </div>
                     </div>
-                )}
+                ) : null}
 
-                {approval.diff && (
+                {approval.diff ? (
                     <div className="mb-5 overflow-hidden bg-surface-container-lowest font-mono text-xs">
                         <div className="flex items-center justify-between border-b border-outline-variant/20 bg-surface-container-low px-4 py-3">
                             <span className="text-[11px] text-on-surface-variant">{approval.is_new_file ? 'New File Creation' : 'Inline Diff Preview'}</span>
@@ -248,20 +241,18 @@ function ApprovalCard({
                             <DiffViewer diff={approval.diff} isNewFile={approval.is_new_file ?? false} />
                         </div>
                     </div>
-                )}
-
-                {approval.action_details && Object.keys(approval.action_details).length > 0 && !approval.diff && (
+                ) : approval.action_details && Object.keys(approval.action_details).length > 0 ? (
                     <div className="mb-5 overflow-hidden bg-surface-container-lowest font-mono text-xs">
                         <div className="border-b border-outline-variant/20 bg-surface-container-low px-4 py-3">
                             <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Payload Data</span>
                         </div>
                         <pre className="custom-scrollbar overflow-x-auto whitespace-pre-wrap px-4 py-4 text-[11px] leading-6 text-on-surface-variant">{JSON.stringify(approval.action_details, null, 2)}</pre>
                     </div>
-                )}
+                ) : null}
 
                 <div className="flex flex-col gap-4 border-t border-outline-variant/20 pt-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex flex-wrap gap-4 text-[11px] text-on-surface-variant">
-                        <span className="flex items-center gap-2 font-headline uppercase tracking-[0.12em]"><Clock size={14} /> {timeAgo}</span>
+                        <span className="flex items-center gap-2 font-headline uppercase tracking-[0.12em]"><Clock size={14} /> {formatRelativeTime(approval.requested_at)}</span>
                         <span className="flex items-center gap-2 font-headline uppercase tracking-[0.12em]"><Terminal size={14} /> {approval.action_type}</span>
                     </div>
 
@@ -270,21 +261,21 @@ function ApprovalCard({
                             <input
                                 type="text"
                                 value={rejectReason}
-                                onChange={(e) => {
-                                    setRejectReason(e.target.value)
-                                    if (e.target.value) setShowReasonError(false)
+                                onChange={(event) => {
+                                    setRejectReason(event.target.value)
+                                    if (event.target.value) setShowReasonError(false)
                                 }}
                                 className={`focus-ring min-h-[44px] bg-surface-container-low px-4 py-3 text-sm text-on-surface ${showReasonError ? 'border border-error' : ''}`}
                                 placeholder="Enter rejection reason"
                                 autoFocus
                             />
                             <button onClick={onRejectCancel} className="shell-button shell-button-secondary focus-ring">Cancel</button>
-                            <button onClick={() => onRejectConfirm(approval.id)} className="shell-button focus-ring bg-error text-white">Confirm Reject</button>
+                            <button onClick={onRejectConfirm} className="shell-button focus-ring bg-error text-white">Confirm Reject</button>
                         </div>
                     ) : (
                         <div className="flex flex-col gap-3 sm:flex-row">
-                            <button onClick={() => onRejectClick(approval.id)} className="shell-button shell-button-secondary focus-ring">Reject</button>
-                            <button onClick={() => onApprove(approval.id)} className={`shell-button focus-ring ${buttonClass}`}>{riskLabel === 'High Risk' ? 'Authorize Action' : 'Approve Changes'}</button>
+                            <button onClick={onRejectClick} className="shell-button shell-button-secondary focus-ring">Reject</button>
+                            <button onClick={onApprove} className={`shell-button focus-ring ${buttonClass}`}>{riskLabel === 'High Risk' ? 'Authorize Action' : 'Approve Changes'}</button>
                         </div>
                     )}
                 </div>
@@ -326,21 +317,4 @@ function getRiskStyles(level: string) {
         buttonClass: 'shell-button-primary',
         RiskIcon: FileText,
     }
-}
-
-function getTimeAgo(dateString: string) {
-    if (!dateString) return 'Just now'
-
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffSecs = Math.floor(diffMs / 1000)
-
-    if (diffSecs < 60) return `${diffSecs}s ago`
-    const diffMins = Math.floor(diffSecs / 60)
-    if (diffMins < 60) return `${diffMins}m ago`
-    const diffHours = Math.floor(diffMins / 60)
-    if (diffHours < 24) return `${diffHours}h ago`
-    const diffDays = Math.floor(diffHours / 24)
-    return `${diffDays}d ago`
 }

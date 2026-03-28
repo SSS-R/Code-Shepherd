@@ -47,14 +47,14 @@ flowchart TB
     Adapters --> IDE3[Copilot or Codex Adapter]
     Adapters --> MCP[Generic MCP Adapter]
     Adapters --> Custom[Custom Agent Bridge]
-    Adapters --> OC[OpenClaw Direct Session Path]
+    Adapters --> OC[OpenClaw MCP Path]
 
     IDE1 --> A1[IDE Agent Session]
     IDE2 --> A2[IDE Agent Session]
     IDE3 --> A3[IDE Agent Session]
     MCP --> A4[MCP Agent Session]
     Custom --> A5[Local or Remote Custom Agent]
-    OC --> A6[OpenClaw Main Session]
+    OC --> A6[OpenClaw MCP Server Session]
 ```
 
 ### Target architectural pillars
@@ -273,4 +273,4 @@ Code Shepherd should be understood as:
 - **not** a replacement IDE
 - **not** a single-agent dashboard
 
-It is a **control plane for many existing agents**, connected through native integrations, bridges, plugins, local helpers, and direct sessions, with unified communication, approvals, and operational visibility.
+It is a **control plane for many existing agents**, connected through native integrations, bridges, plugins, local helpers, direct sessions where appropriate, and MCP-backed runtimes such as OpenClaw, with unified communication, approvals, and operational visibility.
