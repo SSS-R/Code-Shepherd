@@ -4,11 +4,11 @@ import { useShepherdGuide } from './ShepherdGuideProvider'
 
 export default function ShepherdGuideInput() {
     const [draft, setDraft] = useState('')
-    const { sendMessage } = useShepherdGuide()
+    const { sendMessage, isSending } = useShepherdGuide()
 
     const submit = () => {
         if (!draft.trim()) return
-        sendMessage(draft)
+        void sendMessage(draft)
         setDraft('')
     }
 
@@ -26,10 +26,11 @@ export default function ShepherdGuideInput() {
                     value={draft}
                     onChange={(event) => setDraft(event.target.value)}
                     onKeyDown={onKeyDown}
+                    disabled={isSending}
                     placeholder="Describe your request..."
                     className="focus-ring h-11 flex-1 border-l-2 border-primary bg-surface-container px-4 text-sm text-on-surface placeholder:text-on-surface-variant"
                 />
-                <button onClick={submit} className="focus-ring flex h-11 w-11 items-center justify-center bg-[linear-gradient(180deg,var(--color-primary),var(--color-primary-container))] text-on-primary active:scale-95">
+                <button onClick={submit} disabled={isSending || !draft.trim()} className="focus-ring flex h-11 w-11 items-center justify-center bg-[linear-gradient(180deg,var(--color-primary),var(--color-primary-container))] text-on-primary active:scale-95 disabled:cursor-not-allowed disabled:opacity-60">
                     <ArrowRight size={20} />
                 </button>
             </div>

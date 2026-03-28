@@ -1,7 +1,9 @@
 import { ThumbsDown, ThumbsUp } from 'lucide-react'
-import { ShepherdGuideMessage as Message } from './ShepherdGuideProvider'
+import { ShepherdGuideMessage as Message, useShepherdGuide } from './ShepherdGuideProvider'
 
 export default function ShepherdGuideMessage({ message }: { message: Message }) {
+    const { submitFeedback } = useShepherdGuide()
+
     if (message.role === 'user') {
         return (
             <div className="ml-auto max-w-[85%]">
@@ -26,8 +28,16 @@ export default function ShepherdGuideMessage({ message }: { message: Message }) 
                     <div className="flex items-center gap-3">
                         <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Was this helpful?</span>
                         <div className="flex gap-2">
-                            {[ThumbsUp, ThumbsDown].map((Icon, index) => (
-                                <button key={index} className="flex h-5 w-5 rotate-45 items-center justify-center bg-surface-container-high text-on-surface-variant hover:bg-surface-bright hover:text-on-surface">
+                            {[
+                                { Icon: ThumbsUp, value: 'up' as const },
+                                { Icon: ThumbsDown, value: 'down' as const },
+                            ].map(({ Icon, value }) => (
+                                <button
+                                    key={value}
+                                    onClick={() => void submitFeedback(message.id, value)}
+                                    aria-pressed={message.feedback === value}
+                                    className={`flex h-5 w-5 rotate-45 items-center justify-center transition-colors ${message.feedback === value ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-bright hover:text-on-surface'}`}
+                                >
                                     <Icon size={11} className="-rotate-45" />
                                 </button>
                             ))}

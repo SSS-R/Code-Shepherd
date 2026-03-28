@@ -4,6 +4,11 @@ import type { CommandRecord, ConversationRecord, MessageRecord, MessageType } fr
 import { requireAuth, requireRole } from '../middleware/auth';
 import { broadcastRealtimeEvent } from '../realtime';
 import { requireConnectorAuth } from '../middleware/connectorAuth';
+import {
+    buildShepherdGuideReply,
+    getShepherdGuideWelcomeMessages,
+    SHEPHERD_GUIDE_AGENT_ID,
+} from '../guide/shepherdGuide';
 
 function createId(prefix: string): string {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -137,6 +142,24 @@ export function appendConversationMessage(db: Database, input: {
     return mapMessage(inserted);
 }
 
+function seedShepherdGuideConversation(db: Database, conversationId: string): void {
+    const existingCount = db.prepare('SELECT COUNT(*) as count FROM messages WHERE conversation_id = ?').get(conversationId) as { count: number };
+    if (existingCount.count > 0) {
+        return;
+    }
+
+    getShepherdGuideWelcomeMessages().forEach((message) => {
+        appendConversationMessage(db, {
+            conversationId,
+            senderType: 'agent',
+            senderId: SHEPHERD_GUIDE_AGENT_ID,
+            content: message.content,
+            messageType: 'text',
+            metadata: message.code ? { code: message.code, topic: 'welcome' } : { topic: 'welcome' },
+        });
+    });
+}
+
 export function createConversationRoutes(db: Database) {
     const router = require('express').Router();
     router.use(requireAuth);
@@ -258,11 +281,65 @@ export function createConversationRoutes(db: Database) {
                 teamId: req.auth?.teamId ?? null,
             });
 
+            let responseConversation = conversation;
+
+            if (agent_id === SHEPHERD_GUIDE_AGENT_ID) {
+                seedShepherdGuideConversation(db, conversation.id);
+                const refreshed = db.prepare('SELECT * FROM conversations WHERE id = ?').get(conversation.id) as any;
+                responseConversation = mapConversation(refreshed);
+            }
+
             broadcastRealtimeEvent('conversations.updated', { action: 'created', conversationId: conversation.id, agentId: agent_id });
-            return res.status(201).json({ conversation, created: true });
+            return res.status(201).json({ conversation: responseConversation, created: true });
         } catch (error) {
             console.error('Ensure conversation error:', error);
             return res.status(500).json({ error: 'Failed to ensure conversation' });
+        }
+    });
+
+    router.patch('/messages/:id/feedback', (req: Request, res: Response) => {
+        try {
+            const { feedback } = req.body as { feedback?: 'up' | 'down' | null };
+
+            if (feedback !== 'up' && feedback !== 'down' && feedback !== null) {
+                return res.status(400).json({ error: 'feedback must be up, down, or null' });
+            }
+
+            const existing = db.prepare(`
+                SELECT m.*, c.team_id
+                FROM messages m
+                INNER JOIN conversations c ON c.id = m.conversation_id
+                WHERE m.id = ? AND (c.team_id IS ? OR c.team_id = ?)
+            `).get(req.params.id, req.auth?.teamId ?? null, req.auth?.teamId ?? null) as any;
+
+            if (!existing) {
+                return res.status(404).json({ error: 'Message not found' });
+            }
+
+            const metadata = existing.metadata ? JSON.parse(existing.metadata) as Record<string, unknown> : {};
+            const nextMetadata = {
+                ...metadata,
+                guide_feedback: feedback,
+                feedback_by: req.auth?.userId ?? null,
+                feedback_at: new Date().toISOString(),
+            };
+
+            db.prepare('UPDATE messages SET metadata = ? WHERE id = ?').run(JSON.stringify(nextMetadata), req.params.id);
+
+            db.prepare(`
+                INSERT INTO audit_logs (event_type, event_details, agent_id, team_id)
+                VALUES ('guide_feedback_recorded', ?, ?, ?)
+            `).run(
+                JSON.stringify({ message_id: req.params.id, feedback }),
+                existing.sender_id,
+                req.auth?.teamId ?? null,
+            );
+
+            const updated = db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id) as any;
+            return res.json({ message: mapMessage(updated) });
+        } catch (error) {
+            console.error('Guide feedback error:', error);
+            return res.status(500).json({ error: 'Failed to store feedback' });
         }
     });
 
@@ -374,6 +451,48 @@ export function createConversationRoutes(db: Database) {
 
             if (!content || !target_agent_id) {
                 return res.status(400).json({ error: 'content and target_agent_id are required' });
+            }
+
+            if (target_agent_id === SHEPHERD_GUIDE_AGENT_ID) {
+                const userMessage = appendConversationMessage(db, {
+                    conversationId: req.params.id,
+                    senderType: 'user',
+                    senderId: req.auth?.userId ?? 'dashboard-user',
+                    content,
+                    messageType: message_type ?? 'text',
+                    metadata,
+                });
+
+                const guideReply = buildShepherdGuideReply(content);
+                const replyMessage = appendConversationMessage(db, {
+                    conversationId: req.params.id,
+                    senderType: 'agent',
+                    senderId: SHEPHERD_GUIDE_AGENT_ID,
+                    content: guideReply.content,
+                    messageType: 'text',
+                    metadata: {
+                        ...(guideReply.code ? { code: guideReply.code } : {}),
+                        topic: guideReply.topic,
+                        fallback: guideReply.fallback,
+                    },
+                });
+
+                db.prepare(`
+                    INSERT INTO audit_logs (event_type, event_details, agent_id, team_id)
+                    VALUES ('guide_reply_generated', ?, ?, ?)
+                `).run(
+                    JSON.stringify({ conversation_id: req.params.id, topic: guideReply.topic, fallback: guideReply.fallback }),
+                    SHEPHERD_GUIDE_AGENT_ID,
+                    req.auth?.teamId ?? null,
+                );
+
+                broadcastRealtimeEvent('conversations.updated', {
+                    action: 'guide.reply.generated',
+                    conversationId: req.params.id,
+                    agentId: SHEPHERD_GUIDE_AGENT_ID,
+                });
+
+                return res.status(201).json({ message: userMessage, reply: replyMessage });
             }
 
             const commandId = createId('command');

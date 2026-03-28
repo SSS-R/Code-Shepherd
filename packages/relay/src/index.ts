@@ -22,6 +22,7 @@ import { createConnectorRoutes } from './routes/connectors';
 import { getVapidKeys } from './utils/vapidKeys';
 import * as activities from './activities';
 import { initializeRealtime } from './realtime';
+import { ensureShepherdGuideAgent } from './guide/shepherdGuide';
 
 const app = express();
 const server = createServer(app);
@@ -123,6 +124,8 @@ app.use('/connectors', createConnectorRoutes(db));
 // Start server
 async function start() {
   await initializeTemporal();
+
+  ensureShepherdGuideAgent(db);
 
   initializeRealtime(server);
 

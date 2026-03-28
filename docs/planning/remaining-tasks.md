@@ -145,16 +145,16 @@ These screens exist as UI only — they render mock/hardcoded data. None are con
 
 ---
 
-### Priority 2 — Shepherd Guide Integration (Design done, backend not connected)
+### Priority 2 — Shepherd Guide Integration (Core path implemented)
 
-The Shepherd Guide UI is fully built and wired into the app shell. It is NOT yet connected to any backend.
+The Shepherd Guide UI is now connected to the relay through the conversation system, with a scripted backend responder and feedback persistence. Remaining work is optional model-forwarding / review tooling, not the base in-app guide loop.
 
-- [ ] Pre-register `shepherd-guide` agent in the relay (first-party, auto-registered on startup)
-- [ ] Create `POST /conversations` + `GET /conversations/:id/messages` routes for Shepherd Guide sessions (uses existing conversation endpoint with `agent_id = 'shepherd-guide'`)
-- [ ] Wire `ShepherdGuideProvider.tsx` to conversation endpoints — replace mock messages with real API calls
-- [ ] Implement Shepherd Guide response logic in relay (scripted Q&A about Code Shepherd features, or forward to an LLM endpoint)
-- [ ] Store feedback (thumbs up/down) on message records via `metadata` field
-- [ ] Add `ShepherdGuideHeader.tsx` component (missing from current build — design spec exists in `shepherd_guide_design.md`)
+- [x] Pre-register `shepherd-guide` agent in the relay (first-party, auto-registered on startup)
+- [x] Use existing conversation endpoints for Shepherd Guide sessions (`POST /conversations/ensure`, `GET /conversations/:id/messages`, `POST /conversations/:id/messages`)
+- [x] Wire `ShepherdGuideProvider.tsx` to conversation endpoints — replace mock messages with real API calls
+- [x] Implement Shepherd Guide response logic in relay (scripted Q&A about Code Shepherd features)
+- [x] Store feedback (thumbs up/down) on message records via `metadata` field
+- [x] Add `ShepherdGuideHeader.tsx` component
 
 ---
 
@@ -257,9 +257,9 @@ These require external integration work. None started.
 | Backend relay (routes + DB) | ✅ Done | ~90% |
 | Shared types + SDK | ✅ Done | ~90% |
 | UI screens (visual) | ✅ Done | ~95% |
-| Shepherd Guide UI components | ✅ Done | ~85% (Header component missing) |
+| Shepherd Guide UI components | ✅ Done | 100% |
 | UI ↔ Backend integration | ❌ Not started | 0% |
-| Shepherd Guide backend | ❌ Not started | 0% |
+| Shepherd Guide backend | ✅ Core loop done | ~85% |
 | Context Optimizer package | ❌ Not started | 0% |
 | Real auth / security hardening | ❌ Not started | 0% |
 | PWA assets | ❌ Not started | 0% |
