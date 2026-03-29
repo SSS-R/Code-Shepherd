@@ -3,6 +3,7 @@ import {
     Activity,
     Bot,
     Codesandbox,
+    Cpu,
     HelpCircle,
     History,
     Info,
@@ -15,7 +16,7 @@ import {
     Terminal,
 } from 'lucide-react'
 import { loadSession } from '../utils/authSession'
-import { AgentRecord, ConversationMessagesResponse, ConversationRecord, formatRelativeTime, MessageRecord, relayFetch } from '../utils/relay'
+import { AgentModelsResponse, AgentRecord, ConversationMessagesResponse, ConversationRecord, formatRelativeTime, MessageRecord, relayFetch } from '../utils/relay'
 
 interface InboxProps {
     initialAgentId?: string | null
@@ -50,8 +51,35 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
     const [composeOpen, setComposeOpen] = useState(false)
     const [composeAgentId, setComposeAgentId] = useState(initialAgentId ?? '')
     const [composeTitle, setComposeTitle] = useState('')
+    const [modelDrawerOpen, setModelDrawerOpen] = useState(false)
+    const [agentModels, setAgentModels] = useState<Record<string, AgentModelsResponse>>({})
+    const [selectedModelByAgent, setSelectedModelByAgent] = useState<Record<string, string>>({})
+    const [customModelByAgent, setCustomModelByAgent] = useState<Record<string, string>>({})
     const session = loadSession()
+    const messagesContainerRef = useRef<HTMLDivElement>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
+    const lastMessageIdRef = useRef<string | null>(null)
+
+    const isNearBottom = () => {
+        const container = messagesContainerRef.current
+        if (!container) {
+            return true
+        }
+
+        return container.scrollHeight - container.scrollTop - container.clientHeight < 140
+    }
+
+    const scrollMessagesToBottom = (behavior: ScrollBehavior = 'auto') => {
+        window.requestAnimationFrame(() => {
+            const container = messagesContainerRef.current
+            if (container) {
+                container.scrollTo({ top: container.scrollHeight, behavior })
+                return
+            }
+
+            messagesEndRef.current?.scrollIntoView({ behavior })
+        })
+    }
 
     const selectedConversation = useMemo(
         () => conversations.find((conversation) => conversation.id === selectedConversationId) ?? null,
@@ -70,6 +98,33 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
                 .includes(normalized),
         )
     }, [conversations, query])
+
+    const selectedAgent = useMemo(
+        () => agents.find((agent) => agent.id === selectedConversation?.agent_id) ?? null,
+        [agents, selectedConversation],
+    )
+
+    const selectedAgentModels = selectedConversation ? agentModels[selectedConversation.agent_id] : undefined
+    const selectedModelChoice = selectedConversation ? selectedModelByAgent[selectedConversation.agent_id] : undefined
+    const customModelValue = selectedConversation ? customModelByAgent[selectedConversation.agent_id] ?? '' : ''
+
+    const resolvedSelectedModel = useMemo(() => {
+        if (!selectedConversation) {
+            return undefined
+        }
+
+        const choice = selectedModelByAgent[selectedConversation.agent_id]
+        if (!choice || choice === 'default' || choice === 'workspace-default') {
+            return undefined
+        }
+
+        if (choice === 'custom') {
+            const customValue = customModelByAgent[selectedConversation.agent_id]?.trim()
+            return customValue || undefined
+        }
+
+        return choice
+    }, [customModelByAgent, selectedConversation, selectedModelByAgent])
 
     const loadConversations = async (preferredAgentId?: string | null) => {
         const [conversationData, agentData] = await Promise.all([
@@ -118,30 +173,41 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
     useEffect(() => {
         if (!selectedConversationId) {
             setMessages([])
+            lastMessageIdRef.current = null
             return
         }
 
         setMobileListOpen(false)
+        setModelDrawerOpen(false)
+        lastMessageIdRef.current = null
 
         let cancelled = false
 
-        const loadMessages = async () => {
+        const loadMessages = async (forceScroll = false) => {
             try {
+                const shouldStickToBottom = forceScroll || isNearBottom()
                 const data = await relayFetch<ConversationMessagesResponse>(`/conversations/${selectedConversationId}/messages`)
                 if (!cancelled) {
-                    setMessages(data.messages || [])
-                    window.setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+                    const nextMessages = data.messages || []
+                    const newestMessageId = nextMessages[nextMessages.length - 1]?.id ?? null
+
+                    setMessages(nextMessages)
+                    if (forceScroll || shouldStickToBottom) {
+                        scrollMessagesToBottom(forceScroll || newestMessageId !== lastMessageIdRef.current ? 'smooth' : 'auto')
+                    }
+                    lastMessageIdRef.current = newestMessageId
                 }
             } catch {
                 if (!cancelled) {
                     setMessages([])
+                    lastMessageIdRef.current = null
                 }
             }
         }
 
-        void loadMessages()
+        void loadMessages(true)
         const interval = window.setInterval(() => {
-            void loadMessages()
+            void loadMessages(false)
         }, 4000)
 
         return () => {
@@ -149,6 +215,48 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
             window.clearInterval(interval)
         }
     }, [selectedConversationId])
+
+    useEffect(() => {
+        const agentId = selectedConversation?.agent_id
+        if (!agentId || agentModels[agentId]) {
+            return
+        }
+
+        let cancelled = false
+
+        const loadModels = async () => {
+            try {
+                const response = await relayFetch<AgentModelsResponse>(`/agents/${agentId}/models`)
+                if (cancelled) return
+
+                setAgentModels((current) => ({ ...current, [agentId]: response }))
+                const defaultModel = response.models.find((model) => model.default)?.id ?? response.models[0]?.id ?? 'default'
+                setSelectedModelByAgent((current) => current[agentId] ? current : { ...current, [agentId]: defaultModel })
+            } catch {
+                if (!cancelled) {
+                    setAgentModels((current) => ({
+                        ...current,
+                        [agentId]: {
+                            agent_id: agentId,
+                            adapter_id: selectedAgent?.adapter_id ?? 'command-runner',
+                            adapter_label: selectedAgent?.name ?? agentId,
+                            description: 'Runtime options unavailable.',
+                            model_selection_mode: 'advisory',
+                            supports_custom_model: true,
+                            launch_behavior: 'roundtrip',
+                            models: [{ id: 'default', label: 'Runtime Default', default: true }],
+                        },
+                    }))
+                }
+            }
+        }
+
+        void loadModels()
+
+        return () => {
+            cancelled = true
+        }
+    }, [agentModels, selectedAgent, selectedConversation])
 
     const sendMessage = async () => {
         if (!selectedConversation || !draft.trim()) return
@@ -159,14 +267,20 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
                 content: draft.trim(),
                 target_agent_id: selectedConversation.agent_id,
                 message_type: 'command',
-                metadata: { issued_by_name: session?.name ?? session?.userId ?? 'dashboard-user' },
+                metadata: {
+                    issued_by_name: session?.name ?? session?.userId ?? 'dashboard-user',
+                    selected_model: resolvedSelectedModel,
+                    model_selection_mode: selectedAgentModels?.model_selection_mode,
+                },
             }),
         })
 
         setDraft('')
         const data = await relayFetch<ConversationMessagesResponse>(`/conversations/${selectedConversation.id}/messages`)
-        setMessages(data.messages || [])
-        window.setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+        const nextMessages = data.messages || []
+        setMessages(nextMessages)
+        lastMessageIdRef.current = nextMessages[nextMessages.length - 1]?.id ?? null
+        scrollMessagesToBottom('smooth')
         await loadConversations(selectedConversation.agent_id)
     }
 
@@ -196,8 +310,8 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
     }
 
     return (
-        <div className="grid min-h-[calc(100vh-8rem)] grid-cols-1 overflow-hidden xl:grid-cols-[280px_minmax(0,1fr)_72px]">
-            <section className={`${mobileListOpen ? 'flex' : 'hidden'} surface-card-alt border-r border-outline-variant/20 xl:flex xl:min-h-[calc(100vh-8rem)] xl:w-[280px] xl:flex-col`}>
+        <div className="grid h-[calc(100vh-8rem)] min-h-0 grid-cols-1 overflow-hidden xl:grid-cols-[280px_minmax(0,1fr)_72px]">
+            <section className={`${mobileListOpen ? 'flex' : 'hidden'} min-h-0 surface-card-alt border-r border-outline-variant/20 xl:flex xl:w-[280px] xl:flex-col`}>
                 <div className="flex min-h-0 w-full flex-col">
                     <div className="border-b border-outline-variant/20 px-4 py-5">
                         <div className="mb-4 flex items-center justify-between">
@@ -280,7 +394,7 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
                 </div>
             </section>
 
-            <section className={`${mobileListOpen ? 'hidden' : 'flex'} min-h-[70vh] flex-col bg-surface-container-lowest xl:flex`}>
+            <section className={`${mobileListOpen ? 'hidden' : 'flex'} min-h-0 flex-col overflow-hidden bg-surface-container-lowest xl:flex`}>
                 {selectedConversation ? (
                     <>
                         <div className="flex h-16 items-center justify-between border-b border-outline-variant/20 bg-surface px-4 sm:px-6">
@@ -296,17 +410,19 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
                                     <div className="mt-1 flex items-center gap-2">
                                         <span className="status-diamond success"></span>
                                         <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-success">{selectedConversation.status}</span>
+                                        {resolvedSelectedModel ? <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Model: {resolvedSelectedModel}</span> : null}
                                     </div>
                                 </div>
                             </div>
 
                             <div className="hidden items-center gap-3 sm:flex">
                                 <span className="text-xs text-on-surface-variant">{formatRelativeTime(selectedConversation.last_message_at)}</span>
+                                <button onClick={() => setModelDrawerOpen((value) => !value)} className="shell-button shell-button-secondary focus-ring min-h-10 px-4 py-2">Model</button>
                                 <button className="shell-button shell-button-secondary focus-ring min-h-10 px-4 py-2">Logs</button>
                             </div>
                         </div>
 
-                        <div className="custom-scrollbar flex-1 space-y-6 overflow-y-auto p-4 sm:p-6">
+                        <div ref={messagesContainerRef} className="custom-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto p-4 sm:p-6">
                             {messages.length === 0 ? (
                                 <div className="flex h-full flex-col items-center justify-center text-center text-on-surface-variant">
                                     <Terminal size={40} className="mb-4" />
@@ -383,6 +499,52 @@ export default function Inbox({ initialAgentId = null }: InboxProps) {
                                     <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">{selectedConversation.agent_id}</span>
                                     <span className="ml-auto font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-success">{agents.filter((agent) => agent.status === 'online').length} agents online</span>
                                 </div>
+
+                                {modelDrawerOpen ? (
+                                    <div className="border-b border-outline-variant/20 bg-surface-container px-4 py-4">
+                                        <div className="mb-3 flex items-center gap-2 font-headline text-[10px] font-semibold uppercase tracking-[0.16em] text-on-surface-variant">
+                                            <Cpu size={14} />
+                                            Runtime Model Routing
+                                        </div>
+                                        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                                            <div>
+                                                <label className="mb-2 block font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Model Target</label>
+                                                <select
+                                                    value={selectedModelChoice ?? selectedAgentModels?.models.find((model) => model.default)?.id ?? 'default'}
+                                                    onChange={(event) => setSelectedModelByAgent((current) => ({
+                                                        ...current,
+                                                        [selectedConversation.agent_id]: event.target.value,
+                                                    }))}
+                                                    className="focus-ring w-full bg-surface-container-lowest px-3 py-3 text-sm text-on-surface"
+                                                >
+                                                    {(selectedAgentModels?.models ?? [{ id: 'default', label: 'Runtime Default' }]).map((model) => (
+                                                        <option key={model.id} value={model.id}>{model.label}</option>
+                                                    ))}
+                                                    {selectedAgentModels?.supports_custom_model ? <option value="custom">Custom Model ID</option> : null}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="mb-2 block font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant">Custom Model</label>
+                                                <input
+                                                    value={customModelValue}
+                                                    onChange={(event) => setCustomModelByAgent((current) => ({
+                                                        ...current,
+                                                        [selectedConversation.agent_id]: event.target.value,
+                                                    }))}
+                                                    disabled={selectedModelChoice !== 'custom'}
+                                                    className="focus-ring w-full bg-surface-container-lowest px-3 py-3 text-sm text-on-surface disabled:opacity-50"
+                                                    placeholder="Enter model id when needed"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="mt-3 text-xs leading-5 text-on-surface-variant">
+                                            {selectedAgentModels?.description ?? 'Choose the model routing hint for this agent.'}{' '}
+                                            {selectedAgentModels?.model_selection_mode === 'advisory'
+                                                ? 'This runtime treats the chosen model as a handoff hint.'
+                                                : 'This runtime receives the selected model directly.'}
+                                        </div>
+                                    </div>
+                                ) : null}
 
                                 <div className="flex items-end gap-3 px-3 py-3 sm:px-4">
                                     <textarea

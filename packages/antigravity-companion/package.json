@@ -1,0 +1,77 @@
+{
+  "name": "code-shepherd-antigravity-companion",
+  "displayName": "Code Shepherd Antigravity Companion",
+  "publisher": "code-shepherd",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Antigravity companion extension for Code Shepherd round-trip task replies",
+  "main": "./extension.js",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "icon": "resources/shepherd.svg",
+  "extensionKind": [
+    "workspace"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onView:codeShepherdCompanion.tasks",
+    "onCommand:codeShepherdCompanion.pair",
+    "onCommand:codeShepherdCompanion.connect",
+    "onCommand:codeShepherdCompanion.disconnect",
+    "onCommand:codeShepherdCompanion.replyWithInput",
+    "onCommand:codeShepherdCompanion.replyWithSelection"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "codeShepherdCompanion.pair",
+        "title": "Code Shepherd: Pair Antigravity Companion"
+      },
+      {
+        "command": "codeShepherdCompanion.connect",
+        "title": "Code Shepherd: Connect Antigravity Companion"
+      },
+      {
+        "command": "codeShepherdCompanion.disconnect",
+        "title": "Code Shepherd: Disconnect Antigravity Companion"
+      },
+      {
+        "command": "codeShepherdCompanion.replyWithInput",
+        "title": "Code Shepherd: Reply to Task with Input"
+      },
+      {
+        "command": "codeShepherdCompanion.replyWithSelection",
+        "title": "Code Shepherd: Reply to Task with Active Selection"
+      },
+      {
+        "command": "codeShepherdCompanion.openTask",
+        "title": "Code Shepherd: Open Companion Task"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codeShepherdCompanion",
+          "title": "Shepherd",
+          "icon": "resources/shepherd.svg"
+        }
+      ]
+    },
+    "views": {
+      "codeShepherdCompanion": [
+        {
+          "id": "codeShepherdCompanion.tasks",
+          "name": "Companion Tasks"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "node -e \"console.log('Code Shepherd Antigravity Companion is plain JavaScript and ready to load.')\"",
+    "test": "node -e \"console.log('No automated tests yet.')\""
+  }
+}

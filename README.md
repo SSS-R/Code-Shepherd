@@ -6,6 +6,7 @@
 [![UI](https://img.shields.io/badge/ui-react%20pwa-61dafb)](./packages/ui)
 [![Relay](https://img.shields.io/badge/relay-express%20%2B%20temporal-111827)](./packages/relay)
 [![SDK](https://img.shields.io/badge/sdk-typescript-3178c6)](./packages/sdk)
+[![Gateway](https://img.shields.io/badge/gateway-universal%20mcp-10b981)](./packages/universal-mcp-gateway)
 
 ## What Code Shepherd is
 
@@ -62,6 +63,7 @@ This repository is still a **prototype**. It already includes meaningful buildin
 - task API and kanban-oriented UI surface
 - demo seed endpoint for local QA flows
 - TypeScript SDK for agent registration, heartbeats, approvals, and polling helpers
+- universal MCP gateway scaffold for Codex, OpenClaw, and custom bridge adapters
 - React and Vite PWA shell for mobile-first supervision
 
 ### Not implemented yet
@@ -174,6 +176,12 @@ npm run dev:relay
 npm run dev:ui
 ```
 
+### Optional Terminal 3: universal MCP gateway
+
+```bash
+npm run start:gateway
+```
+
 ### Health checks
 
 - relay health: `http://localhost:3000/health`
@@ -187,6 +195,19 @@ npm run dev:ui
 | [`CODE_SHEPHERD.md`](./CODE_SHEPHERD.md) | Product vision, revised architecture direction, phased roadmap |
 | [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Target system and prototype reality |
 | [`docs/planning/remaining-tasks.md`](./docs/planning/remaining-tasks.md) | Execution order for the next product-defining work |
+| [`docs/guides/connect-codex.md`](./docs/guides/connect-codex.md) | First-time user guide for connecting a Codex bridge |
+
+## First-time Codex connection
+
+If you want Code Shepherd to send tasks into a local Codex bridge:
+
+1. trust a connector in Settings
+2. deploy a new agent in Agents
+3. rotate the connector secret if it was exposed anywhere
+4. generate a pairing command in Settings
+5. run `npm run start:gateway -- --pairing-code <CODE> --relay-url <URL>` on the PC that hosts Codex
+
+The gateway is the reusable integration layer. It exchanges the one-time pairing code for a helper token, stores the local session, auto-detects the local Codex CLI, then polls Code Shepherd for commands and sends Codex replies back into the conversation thread.
 
 ## Reality check for contributors
 

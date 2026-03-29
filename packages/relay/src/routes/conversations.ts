@@ -162,7 +162,6 @@ function seedShepherdGuideConversation(db: Database, conversationId: string): vo
 
 export function createConversationRoutes(db: Database) {
     const router = require('express').Router();
-    router.use(requireAuth);
 
     db.exec(`
     CREATE TABLE IF NOT EXISTS conversations (
@@ -206,13 +205,20 @@ export function createConversationRoutes(db: Database) {
       content TEXT NOT NULL,
       status TEXT DEFAULT 'queued',
       metadata TEXT,
+      team_id TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (conversation_id) REFERENCES conversations(id)
     )
   `);
 
-    router.get('/', (req: Request, res: Response) => {
+    try {
+        db.exec('ALTER TABLE commands ADD COLUMN team_id TEXT');
+    } catch {
+        // column already exists
+    }
+
+    router.get('/', requireAuth, (req: Request, res: Response) => {
         try {
             const rows = db.prepare(`
         SELECT * FROM conversations
@@ -227,7 +233,7 @@ export function createConversationRoutes(db: Database) {
         }
     });
 
-    router.post('/', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
+    router.post('/', requireAuth, requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
         try {
             const { agent_id, title, task_id, participant_agent_ids } = req.body as {
                 agent_id?: string;
@@ -255,7 +261,7 @@ export function createConversationRoutes(db: Database) {
         }
     });
 
-    router.post('/ensure', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
+    router.post('/ensure', requireAuth, requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
         try {
             const { agent_id, title, task_id } = req.body as { agent_id?: string; title?: string; task_id?: string };
 
@@ -297,7 +303,7 @@ export function createConversationRoutes(db: Database) {
         }
     });
 
-    router.patch('/messages/:id/feedback', (req: Request, res: Response) => {
+    router.patch('/messages/:id/feedback', requireAuth, (req: Request, res: Response) => {
         try {
             const { feedback } = req.body as { feedback?: 'up' | 'down' | null };
 
@@ -343,7 +349,7 @@ export function createConversationRoutes(db: Database) {
         }
     });
 
-    router.get('/:id/messages', (req: Request, res: Response) => {
+    router.get('/:id/messages', requireAuth, (req: Request, res: Response) => {
         try {
             const conversation = db.prepare(`
         SELECT * FROM conversations WHERE id = ? AND (team_id IS ? OR team_id = ?)
@@ -364,7 +370,7 @@ export function createConversationRoutes(db: Database) {
         }
     });
 
-    router.get('/:id', (req: Request, res: Response) => {
+    router.get('/:id', requireAuth, (req: Request, res: Response) => {
         try {
             const conversation = db.prepare(`
                 SELECT * FROM conversations WHERE id = ? AND (team_id IS ? OR team_id = ?)
@@ -381,7 +387,7 @@ export function createConversationRoutes(db: Database) {
         }
     });
 
-    router.patch('/:id', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
+    router.patch('/:id', requireAuth, requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
         try {
             const existing = db.prepare(`
                 SELECT * FROM conversations WHERE id = ? AND (team_id IS ? OR team_id = ?)
@@ -412,7 +418,7 @@ export function createConversationRoutes(db: Database) {
         }
     });
 
-    router.delete('/:id', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
+    router.delete('/:id', requireAuth, requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
         try {
             const result = db.prepare(`
                 DELETE FROM conversations WHERE id = ? AND (team_id IS ? OR team_id = ?)
@@ -432,7 +438,7 @@ export function createConversationRoutes(db: Database) {
         }
     });
 
-    router.post('/:id/messages', requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
+    router.post('/:id/messages', requireAuth, requireRole(['Admin', 'Developer']), (req: Request, res: Response) => {
         try {
             const conversation = db.prepare(`
         SELECT * FROM conversations WHERE id = ? AND (team_id IS ? OR team_id = ?)
@@ -497,8 +503,8 @@ export function createConversationRoutes(db: Database) {
 
             const commandId = createId('command');
             db.prepare(`
-        INSERT INTO commands (id, conversation_id, target_agent_id, issued_by, content, status, metadata)
-        VALUES (?, ?, ?, ?, ?, 'queued', ?)
+        INSERT INTO commands (id, conversation_id, target_agent_id, issued_by, content, status, metadata, team_id)
+        VALUES (?, ?, ?, ?, ?, 'queued', ?, ?)
       `).run(
                 commandId,
                 req.params.id,
@@ -506,6 +512,7 @@ export function createConversationRoutes(db: Database) {
                 req.auth?.userId ?? 'dashboard-user',
                 content,
                 metadata ? JSON.stringify(metadata) : null,
+                req.auth?.teamId ?? null,
             );
 
             const message = appendConversationMessage(db, {
@@ -555,11 +562,12 @@ export function createConversationRoutes(db: Database) {
         }
     });
 
-    router.post('/:id/replies', (req: Request, res: Response) => {
+    router.post('/:id/replies', requireConnectorAuth(db, ['messages']), (req: Request, res: Response) => {
         try {
+            const teamId = req.connectorAuth?.teamId ?? null;
             const conversation = db.prepare(`
         SELECT * FROM conversations WHERE id = ? AND (team_id IS ? OR team_id = ?)
-      `).get(req.params.id, req.auth?.teamId ?? null, req.auth?.teamId ?? null) as any;
+      `).get(req.params.id, teamId, teamId) as any;
 
             if (!conversation) {
                 return res.status(404).json({ error: 'Conversation not found' });
@@ -598,7 +606,7 @@ export function createConversationRoutes(db: Database) {
             db.prepare(`
         INSERT INTO audit_logs (event_type, event_details, agent_id, team_id)
         VALUES ('agent_reply_received', ?, ?, ?)
-      `).run(JSON.stringify({ conversation_id: req.params.id, command_id: command_id ?? null, message_type: message.message_type }), agent_id, req.auth?.teamId ?? null);
+      `).run(JSON.stringify({ conversation_id: req.params.id, command_id: command_id ?? null, message_type: message.message_type }), agent_id, teamId);
 
             broadcastRealtimeEvent('conversations.updated', {
                 action: 'reply.received',
@@ -617,10 +625,13 @@ export function createConversationRoutes(db: Database) {
     router.get('/commands/poll', requireConnectorAuth(db, ['messages']), (req: Request, res: Response) => {
         try {
             const agentId = req.query.agent_id as string | undefined;
+            const teamId = req.connectorAuth?.teamId ?? null;
             const query = agentId
-                ? `SELECT * FROM commands WHERE status IN ('queued', 'sent') AND target_agent_id = ? ORDER BY created_at ASC LIMIT 20`
-                : `SELECT * FROM commands WHERE status IN ('queued', 'sent') ORDER BY created_at ASC LIMIT 20`;
-            const rows = (agentId ? db.prepare(query).all(agentId) : db.prepare(query).all()) as any[];
+                ? `SELECT * FROM commands WHERE status IN ('queued', 'sent') AND target_agent_id = ? AND (team_id IS ? OR team_id = ?) ORDER BY created_at ASC LIMIT 20`
+                : `SELECT * FROM commands WHERE status IN ('queued', 'sent') AND (team_id IS ? OR team_id = ?) ORDER BY created_at ASC LIMIT 20`;
+            const rows = (agentId
+                ? db.prepare(query).all(agentId, teamId, teamId)
+                : db.prepare(query).all(teamId, teamId)) as any[];
 
             rows.forEach((row) => {
                 db.prepare(`UPDATE commands SET status = 'sent', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(row.id);
@@ -643,11 +654,12 @@ export function createConversationRoutes(db: Database) {
     router.post('/commands/:id/ack', requireConnectorAuth(db, ['messages']), (req: Request, res: Response) => {
         try {
             const { id } = req.params as { id: string };
+            const teamId = req.connectorAuth?.teamId ?? null;
             const result = db.prepare(`
         UPDATE commands
         SET status = 'running', updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `).run(id);
+        WHERE id = ? AND (team_id IS ? OR team_id = ?)
+      `).run(id, teamId, teamId);
 
             if (result.changes === 0) {
                 return res.status(404).json({ error: 'Command not found' });

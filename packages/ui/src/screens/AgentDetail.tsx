@@ -9,10 +9,13 @@ interface AgentDetailProps {
 }
 
 function connectorLabel(agent: AgentRecord) {
-    const capabilityText = agent.capabilities.join(' ').toLowerCase()
-    if (capabilityText.includes('mcp')) return 'MCP Connector'
-    if (capabilityText.includes('github')) return 'GitHub Bridge'
-    if (capabilityText.includes('vscode')) return 'VS Code Connector'
+    const connectorHint = `${agent.adapter_id ?? ''} ${agent.runtime_transport ?? ''} ${agent.connector_id ?? ''} ${agent.capabilities.join(' ')}`.toLowerCase()
+    if (connectorHint.includes('codex')) return 'Codex Bridge'
+    if (connectorHint.includes('antigravity')) return 'Antigravity Bridge'
+    if (connectorHint.includes('openclaw')) return 'OpenClaw MCP'
+    if (connectorHint.includes('mcp')) return 'MCP Connector'
+    if (connectorHint.includes('github')) return 'GitHub Bridge'
+    if (connectorHint.includes('vscode')) return 'VS Code Connector'
     return 'Relay Connector'
 }
 
@@ -23,6 +26,8 @@ export default function AgentDetail({ agentId, onBack }: AgentDetailProps) {
     const [conversations, setConversations] = useState<ConversationRecord[]>([])
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState<'activity' | 'tasks' | 'configuration'>('activity')
+    const [terminating, setTerminating] = useState(false)
+    const [terminateError, setTerminateError] = useState<string | null>(null)
 
     useEffect(() => {
         let cancelled = false
@@ -78,6 +83,22 @@ export default function AgentDetail({ agentId, onBack }: AgentDetailProps) {
             taskCompletion: `${tasks.filter((task) => task.status === 'Done').length}/${tasks.length || 0}`,
         }
     }, [events, tasks])
+
+    const terminateSession = async () => {
+        if (!agent) return
+
+        setTerminateError(null)
+        setTerminating(true)
+
+        try {
+            await relayFetch(`/agents/${agent.id}`, { method: 'DELETE' })
+            onBack()
+        } catch (error) {
+            setTerminateError(error instanceof Error ? error.message : 'Failed to terminate agent session')
+        } finally {
+            setTerminating(false)
+        }
+    }
 
     if (loading) {
         return (
@@ -172,6 +193,11 @@ export default function AgentDetail({ agentId, onBack }: AgentDetailProps) {
                 ) : (
                     <section className="surface-card-alt p-6">
                         <div className="font-headline text-sm font-bold uppercase tracking-[0.14em] text-on-surface">Configuration Surface</div>
+                        <div className="mt-4 grid gap-4 md:grid-cols-2">
+                            <Meta label="Connector ID" value={agent.connector_id ?? 'Not linked'} />
+                            <Meta label="Adapter" value={agent.adapter_id ?? 'runtime-default'} />
+                            <Meta label="Transport" value={agent.runtime_transport ?? 'relay'} />
+                        </div>
                         <div className="mt-4 flex flex-wrap gap-2">
                             {agent.capabilities.map((capability) => (
                                 <span key={capability} className="bg-surface-container px-3 py-2 font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">{capability}</span>
@@ -216,9 +242,13 @@ export default function AgentDetail({ agentId, onBack }: AgentDetailProps) {
                     </div>
                 </section>
 
+                {terminateError ? (
+                    <div className="bg-error/10 px-4 py-3 text-sm text-error">{terminateError}</div>
+                ) : null}
+
                 <div className="space-y-3">
                     <button className="shell-button shell-button-primary focus-ring w-full">Manual Override</button>
-                    <button className="shell-button focus-ring w-full border border-outline-variant/30 bg-transparent text-on-surface-variant">Terminate Session</button>
+                    <button onClick={() => void terminateSession()} disabled={terminating} className="shell-button focus-ring w-full border border-outline-variant/30 bg-transparent text-on-surface-variant disabled:opacity-50">{terminating ? 'Terminating...' : 'Terminate Session'}</button>
                 </div>
             </aside>
         </div>

@@ -66,6 +66,7 @@ coverage/
 # Temporary files
 tmp/
 temp/
+%USERPROFILE%/
 
 # ===========================
 # Workspace Packages
@@ -81,6 +82,7 @@ packages/relay/*.sqlite
 packages/ui/node_modules/
 packages/ui/dist/
 packages/ui/build/
+packages/ui/vite.config.ts.timestamp-*.mjs
 
 # SDK (packages/sdk)
 packages/sdk/node_modules/
@@ -106,3 +108,10 @@ packages/ui/src/stitch_exports/
 docs/planning/ui-design.md
 docs/planning/stitch-designs/
 docs/stitch-designs/
+
+# Local helper/runtime artifacts
+commits/codex-bin
+commits/codex-command-runner.exe
+commits/codex-last-message.txt
+commits/codex.exe
+commits/input.txt

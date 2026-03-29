@@ -10,6 +10,7 @@
 import { Request, Response } from 'express';
 import type { Database } from 'better-sqlite3';
 import { broadcastRealtimeEvent } from '../realtime';
+import { getRuntimeCatalogEntry } from '../runtimeCatalog';
 
 export function createAgentRoutes(db: Database) {
   const router = require('express').Router();
@@ -20,11 +21,39 @@ export function createAgentRoutes(db: Database) {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       capabilities TEXT,
+      connector_id TEXT,
+      adapter_id TEXT,
+      runtime_transport TEXT,
       status TEXT DEFAULT 'online',
+      terminated_at DATETIME,
       last_heartbeat DATETIME DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  try {
+    db.exec('ALTER TABLE agents ADD COLUMN connector_id TEXT');
+  } catch {
+    // column already exists
+  }
+
+  try {
+    db.exec('ALTER TABLE agents ADD COLUMN runtime_transport TEXT');
+  } catch {
+    // column already exists
+  }
+
+  try {
+    db.exec('ALTER TABLE agents ADD COLUMN adapter_id TEXT');
+  } catch {
+    // column already exists
+  }
+
+  try {
+    db.exec('ALTER TABLE agents ADD COLUMN terminated_at DATETIME');
+  } catch {
+    // column already exists
+  }
 
   /**
    * POST /agents/register
@@ -32,7 +61,7 @@ export function createAgentRoutes(db: Database) {
    */
   router.post('/register', (req: Request, res: Response) => {
     try {
-      const { id, name, capabilities } = req.body;
+      const { id, name, capabilities, connector_id = null, adapter_id = null, runtime_transport = null } = req.body;
 
       if (!id || !name) {
         return res.status(400).json({ error: 'id and name are required' });
@@ -40,11 +69,11 @@ export function createAgentRoutes(db: Database) {
 
       // Insert or update agent record
       const stmt = db.prepare(`
-        INSERT OR REPLACE INTO agents (id, name, capabilities, status, last_heartbeat)
-        VALUES (?, ?, ?, 'online', CURRENT_TIMESTAMP)
+        INSERT OR REPLACE INTO agents (id, name, capabilities, connector_id, adapter_id, runtime_transport, status, last_heartbeat)
+        VALUES (?, ?, ?, ?, ?, ?, 'online', CURRENT_TIMESTAMP)
       `);
 
-      const result = stmt.run(id, name, JSON.stringify(capabilities || []));
+      stmt.run(id, name, JSON.stringify(capabilities || []), connector_id, adapter_id, runtime_transport);
 
       broadcastRealtimeEvent('agents.updated', { action: 'registered', agentId: id });
 
@@ -52,6 +81,9 @@ export function createAgentRoutes(db: Database) {
         id,
         name,
         capabilities: capabilities || [],
+        connector_id,
+        adapter_id,
+        runtime_transport,
         status: 'online',
         message: 'Agent registered successfully'
       });
@@ -63,16 +95,16 @@ export function createAgentRoutes(db: Database) {
 
   router.post('/', (req: Request, res: Response) => {
     try {
-      const { id, name, capabilities = [], status = 'online' } = req.body;
+      const { id, name, capabilities = [], connector_id = null, adapter_id = null, runtime_transport = null, status = 'online' } = req.body;
 
       if (!id || !name) {
         return res.status(400).json({ error: 'id and name are required' });
       }
 
       db.prepare(`
-        INSERT INTO agents (id, name, capabilities, status, last_heartbeat)
-        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-      `).run(id, name, JSON.stringify(capabilities), status);
+        INSERT INTO agents (id, name, capabilities, connector_id, adapter_id, runtime_transport, status, last_heartbeat)
+        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `).run(id, name, JSON.stringify(capabilities), connector_id, adapter_id, runtime_transport, status);
 
       const created = db.prepare('SELECT * FROM agents WHERE id = ?').get(id) as any;
       broadcastRealtimeEvent('agents.updated', { action: 'created', agentId: id });
@@ -127,7 +159,7 @@ export function createAgentRoutes(db: Database) {
    */
   router.get('/', (req: Request, res: Response) => {
     try {
-      const stmt = db.prepare('SELECT * FROM agents ORDER BY last_heartbeat DESC');
+      const stmt = db.prepare(`SELECT * FROM agents WHERE status != 'terminated' ORDER BY last_heartbeat DESC`);
       const agents = stmt.all().map((agent: any) => ({
         ...agent,
         capabilities: JSON.parse(agent.capabilities || '[]')
@@ -176,14 +208,17 @@ export function createAgentRoutes(db: Database) {
       const {
         name = existing.name,
         capabilities = JSON.parse(existing.capabilities || '[]'),
+        connector_id = existing.connector_id ?? null,
+        adapter_id = existing.adapter_id ?? null,
+        runtime_transport = existing.runtime_transport ?? null,
         status = existing.status,
-      } = req.body as { name?: string; capabilities?: string[]; status?: string };
+      } = req.body as { name?: string; capabilities?: string[]; connector_id?: string | null; adapter_id?: string | null; runtime_transport?: string | null; status?: string };
 
       db.prepare(`
         UPDATE agents
-        SET name = ?, capabilities = ?, status = ?, last_heartbeat = CURRENT_TIMESTAMP
+        SET name = ?, capabilities = ?, connector_id = ?, adapter_id = ?, runtime_transport = ?, status = ?, last_heartbeat = CURRENT_TIMESTAMP
         WHERE id = ?
-      `).run(name, JSON.stringify(capabilities), status, id);
+      `).run(name, JSON.stringify(capabilities), connector_id, adapter_id, runtime_transport, status, id);
 
       const updated = db.prepare('SELECT * FROM agents WHERE id = ?').get(id) as any;
       broadcastRealtimeEvent('agents.updated', { action: 'updated', agentId: id });
@@ -201,17 +236,48 @@ export function createAgentRoutes(db: Database) {
   router.delete('/:id', (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const result = db.prepare('DELETE FROM agents WHERE id = ?').run(id);
+      const result = db.prepare(`
+        UPDATE agents
+        SET status = 'terminated', terminated_at = CURRENT_TIMESTAMP, last_heartbeat = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(id);
 
       if (result.changes === 0) {
         return res.status(404).json({ error: 'Agent not found' });
       }
 
       broadcastRealtimeEvent('agents.updated', { action: 'deleted', agentId: id });
-      return res.json({ id, message: 'Agent deleted' });
+      return res.json({ id, message: 'Agent terminated' });
     } catch (error: any) {
       console.error('Delete agent error:', error);
       return res.status(500).json({ error: 'Failed to delete agent' });
+    }
+  });
+
+  router.get('/:id/models', (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(id) as any;
+
+      if (!agent) {
+        return res.status(404).json({ error: 'Agent not found' });
+      }
+
+      const runtime = getRuntimeCatalogEntry(agent.adapter_id ?? null);
+
+      return res.json({
+        agent_id: id,
+        adapter_id: runtime.adapterId,
+        adapter_label: runtime.label,
+        description: runtime.description,
+        model_selection_mode: runtime.modelSelectionMode,
+        supports_custom_model: runtime.supportsCustomModel,
+        launch_behavior: runtime.launchBehavior,
+        models: runtime.models,
+      });
+    } catch (error: any) {
+      console.error('Get agent models error:', error);
+      return res.status(500).json({ error: 'Failed to get agent models' });
     }
   });
 

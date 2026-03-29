@@ -93,6 +93,21 @@ export default function AppRouter({ route }: { route: ParsedRoute }) {
         setNotificationsOpen(false)
     }, [route.key])
 
+    useEffect(() => {
+        if (loading) {
+            return
+        }
+
+        if (!profile && route.key !== 'login') {
+            navigateTo('/login')
+            return
+        }
+
+        if (profile && route.key === 'login') {
+            navigateTo('/dashboard')
+        }
+    }, [loading, profile, route.key])
+
     const navItems = useMemo(
         () => [
             { key: 'dashboard' as const, path: '/dashboard', label: 'Command Center', icon: <Terminal size={20} /> },
@@ -115,7 +130,15 @@ export default function AppRouter({ route }: { route: ParsedRoute }) {
         )
     }
 
-    if (!profile || route.key === 'login') {
+    if ((!profile && route.key !== 'login') || (profile && route.key === 'login')) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-surface text-on-surface">
+                <div className="h-10 w-10 animate-spin border-2 border-outline-variant border-t-primary"></div>
+            </div>
+        )
+    }
+
+    if (!profile) {
         return <LoginPreview />
     }
 

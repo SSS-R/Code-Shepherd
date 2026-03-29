@@ -1,0 +1,20 @@
+{
+  "name": "@code-shepherd/universal-mcp-gateway",
+  "version": "1.0.0",
+  "description": "Universal MCP gateway for connecting Codex, OpenClaw, and custom agents to Code Shepherd",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "@code-shepherd/shared": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}

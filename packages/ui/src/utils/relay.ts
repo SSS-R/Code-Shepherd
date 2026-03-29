@@ -11,6 +11,9 @@ export interface AgentRecord {
     id: string
     name: string
     capabilities: string[]
+    connector_id?: string | null
+    adapter_id?: string | null
+    runtime_transport?: string | null
     status: 'online' | 'offline' | 'degraded' | 'connecting'
     last_heartbeat: string
     created_at?: string
@@ -92,6 +95,38 @@ export interface ConnectorRecord {
     last_verified_at?: string | null
     revoked_at?: string | null
     connector_secret?: string
+}
+
+export interface PairingSessionResponse {
+    pairing_code: string
+    relay_url: string
+    connector_id: string
+    connector_name: string
+    agent_id: string
+    agent_name: string
+    adapter_id: string
+    agent_capabilities: string[]
+    expires_at: string
+    session_file?: string
+    launch_command: string
+}
+
+export interface AgentModelOption {
+    id: string
+    label: string
+    provider?: string
+    default?: boolean
+}
+
+export interface AgentModelsResponse {
+    agent_id: string
+    adapter_id: string
+    adapter_label: string
+    description: string
+    model_selection_mode: 'direct' | 'advisory'
+    supports_custom_model: boolean
+    launch_behavior: 'roundtrip' | 'handoff'
+    models: AgentModelOption[]
 }
 
 export interface AuditEvent {
