@@ -61,27 +61,36 @@ The universal MCP gateway and pairing/onboarding flow now exist ([`packages/univ
 - [ ] Add Claude Code and VS Code connector implementations
 - [ ] Add connector verification and health checks beyond trust registration
 
-### Priority 3 - Context Optimizer
+### Priority 3 - Council Board (multi-agent coordination with a Commander)
+
+Full design: [`council-board.md`](./council-board.md). Decisions locked 2026-07-06: commander = a connected IDE agent; worktrees per subtask; fan-out first.
+
+- [ ] Phase 1: multi-agent fan-out (`target_agent_ids[]` on message send + UI multi-select)
+- [ ] Phase 2: council conversations (`kind='council'`, membership, budgets, reply lanes)
+- [ ] Phase 3: commander protocol (`CouncilPlan` types, validation, state machine, gateway prompt wrapper)
+- [ ] Phase 4: cross-review, results digest, real git worktrees, pause/resume, offline reassignment
+
+### Priority 4 - Context Optimizer
 
 - [ ] Create `packages/context-optimizer/`
 - [ ] Add optimizer middleware to relay command flow
 - [ ] Extend command and audit schemas for token savings
 - [ ] Surface optimizer stats in the UI
 
-### Priority 4 - Missing API surface
+### Priority 5 - Missing API surface
 
 - [ ] Policies CRUD (no policy route exists yet)
 - [x] Team invitations: create, list, and accept ([`routes/auth.ts`](../../packages/relay/src/routes/auth.ts))
 - [~] Team lifecycle: a team is created at signup only — still missing a standalone team-create endpoint, team detail, and member role update
 
-### Priority 5 - PWA and production assets
+### Priority 6 - PWA and production assets
 
 - [ ] Generate app icons and favicon set
 - [ ] Add SVG logo source and social share image
 - [ ] Wire `vite-plugin-pwa`
 - [ ] Test offline caching behavior
 
-### Priority 6 - State management upgrade
+### Priority 7 - State management upgrade
 
 - [ ] Introduce centralized client state (`zustand` and/or React Query)
 - [ ] Replace polling-heavy screen state with shared server-state caching
