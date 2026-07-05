@@ -142,24 +142,29 @@ Browser or phone UI
 
 ### Implemented now
 
-- agent registration and heartbeat
+- agent registration and heartbeat, with a normalized capability-tier model
+- conversation threads and message persistence, plus a queued-command model
+- command dispatch to agents: queue, poll, ack, and agent replies (connector-authenticated)
+- unified inbox UX for per-agent threads (single-agent today; multi-agent fan-out partial)
+- adapter/bridge runtime via the universal MCP gateway (Codex + Antigravity + mock adapters)
+- connector onboarding: trust registration, pairing-code exchange, secret rotation, launch command
 - approval creation and decision flow
 - approval summaries and diff preview
 - audit and timeline endpoints
-- realtime event broadcasting foundation
-- auth and team scaffolding
-- task and operations routes
+- realtime WebSocket broadcasting with an authenticated handshake
+- JWT auth (httpOnly cookies + refresh sessions), scrypt hashing, account lockout, rate limiting
+- teams, invitations, and role-aware routes
+- task and operations routes (including a parallel-session/worktree scaffold)
 - agent-side TypeScript SDK for registration, heartbeat, and approvals
 
 ### Not implemented yet
 
-- conversation threads and message persistence
-- unified inbox UX
-- adapter runtime for IDEs and custom bridges
-- capability-tier modeling
-- one-to-many multi-agent command dispatch
-- connector onboarding and installation flows
-- fully hardened workflow resume semantics
+- one-to-many multi-agent command dispatch (fan-out)
+- real OpenClaw MCP bridge and Claude Code / VS Code connectors (only Codex + Antigravity exist)
+- capability-tier enforcement in the routing/command layer (tiers are modeled, not yet gating)
+- connector health checks and verification beyond trust registration
+- policies CRUD and standalone team-create / member-role-update endpoints
+- fully hardened workflow resume and disconnected-recovery semantics
 
 ---
 
@@ -209,19 +214,26 @@ Security responsibilities include:
 
 ### Current prototype security reality
 
-Today the repo includes only a subset:
+The repo now implements a substantial security baseline:
 
-- basic risk scoring
-- approval gating
-- append-oriented audit logging
+- JWT (HS256) access tokens with short TTL, plus opaque refresh tokens hashed at rest
+- httpOnly, SameSite auth cookies (no browser-side token storage)
+- scrypt password hashing with automatic upgrade from legacy SHA-256 on next login
+- account lockout after repeated failures and per-IP/email auth rate limiting
+- authenticated WebSocket handshake for `/realtime`
+- CSP, strict CORS allowlist, and standard hardening headers
+- connector trust model with hashed, scoped, expiring connector tokens and secret rotation
+- risk scoring, approval gating, and append-oriented audit logging
 
 These remain future work:
 
-- connector trust model
-- scoped bridge credentials
-- outbound egress restrictions
-- bridge-level permission model
+- request validation across all relay endpoints (only auth inputs are validated today)
+- rotating the shared `AUTH_SECRET` off its insecure dev default for production
+- outbound egress restrictions and bridge-level permission scoping in the routing layer
 - hardened sandboxing for local execution helpers
+- moving from SQLite to PostgreSQL for multi-user hardening
+
+See [`SECURITY_AUDIT.md`](./SECURITY_AUDIT.md) for the detailed review.
 
 ---
 
@@ -242,16 +254,18 @@ The inbox should become the primary surface because the core job is active commu
 
 ### Current state
 
-The current UI is centered on:
+The current UI ships these surfaces (see [`packages/ui/src/routes/routeConfig.ts`](../packages/ui/src/routes/routeConfig.ts)):
 
-- Dashboard
+- Command Center (Dashboard)
+- Agents Overview and Agent Detail
+- Inbox (per-agent conversations)
 - Approval Queue
-- Agent Detail
+- Task Board (Kanban)
 - Timeline
-- Kanban
-- Settings
+- Settings and Operator Profile
+- Shepherd Guide assistant (modal + provider)
 
-This is a strong prototype base, but it still reflects the earlier approval-first framing.
+The Inbox surface now exists, moving the UI toward the inbox-first framing, though the Dashboard is still the default landing route.
 
 ---
 

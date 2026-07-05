@@ -54,26 +54,36 @@ This repository is still a **prototype**. It already includes meaningful buildin
 
 ### Implemented now
 
-- agent registration and heartbeat tracking
+- agent registration and heartbeat tracking, with a normalized capability-tier model (monitor / approval / chat / steering)
+- conversation threads, messages, and a queued-command model between the user and agents
+- command dispatch to connected agents: queue, poll, ack, and agent replies back into the thread
+- unified inbox surface for per-agent conversations (single-agent threads today; multi-agent fan-out is still partial)
+- connector trust, pairing-code onboarding, secret rotation, and a generated launch command for local helpers
+- universal MCP gateway that pairs, heartbeats, polls commands, and bridges to Codex and Antigravity adapters (plus a mock adapter)
+- Antigravity companion bridge and installer
 - approval request creation, listing, and decision handling
 - approval summaries and code diff previews
 - audit log and agent timeline endpoints
-- realtime event broadcasting foundation
-- local auth, teams, invitations, and role-aware routes
-- task API and kanban-oriented UI surface
+- realtime WebSocket event broadcasting with an authenticated handshake
+- JWT-based auth with httpOnly cookies, refresh sessions, scrypt password hashing, account lockout, and rate limiting
+- teams, invitations, and role-aware routes
+- task API and kanban-oriented UI surface, plus a parallel-session/worktree operations scaffold
 - demo seed endpoint for local QA flows
+- Shepherd Guide assistant loop (in-app guidance over conversations)
 - TypeScript SDK for agent registration, heartbeats, approvals, and polling helpers
-- universal MCP gateway scaffold for Codex, OpenClaw, and custom bridge adapters
 - React and Vite PWA shell for mobile-first supervision
 
 ### Not implemented yet
 
-- conversation threads between user and agents
-- message routing to connected agents
-- adapter layer for IDE-specific and custom-agent bridges
-- agent capability tiers such as monitor-only, approval-capable, and full chat control
-- unified inbox for simultaneous multi-agent communication
-- connector installation flow for bridges, plugins, and local helpers
+- multi-agent fan-out: sending one instruction to many agents at once
+- real OpenClaw MCP bridge, plus Claude Code and VS Code connector implementations (only Codex and Antigravity adapters exist today)
+- connector health checks and verification beyond trust registration
+- capability-tier enforcement at the routing layer (tiers are modeled and stored, not yet gating command flow)
+- policies CRUD and standalone team-create / member-role-update endpoints
+- context optimizer package for token-cost reduction
+- `vite-plugin-pwa` wiring, app manifest, and icon/asset set (a service worker and web push exist, but the installable PWA is not fully wired)
+- centralized client state (React Query / zustand); screens still poll directly
+- hardened Temporal pause/resume and disconnected-recovery semantics
 
 ## Target connection model
 

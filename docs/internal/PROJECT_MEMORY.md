@@ -1,32 +1,26 @@
 # Project Memory: Code Shepherd
 
-**Created:** 2026-03-17  
-**Type:** Monorepo — Agent Orchestration Platform  
-**Status:** Phase 1 Prototype In Progress  
-**Version:** 2.0 (Pre-Launch)
+**Created:** 2026-03-17
+**Reconciled:** 2026-07-06 (against code at commit 7eea5c7)
+**Type:** Monorepo — unified control plane for coding agents
+**Status:** Prototype — approval foundations plus conversations, connectors, and a security baseline
+
+> **Note:** The product vision was reset to v3.0 in [`CODE_SHEPHERD.md`](../../CODE_SHEPHERD.md).
+> The old "mobile approval dashboard" framing below is superseded by the multi-agent
+> communication and control-plane framing. This file now tracks build memory, not vision.
 
 ---
 
-## Vision
+## Vision (current)
 
-**The control plane for AI coding agents.**
+**One place to communicate with, supervise, and coordinate many coding agents.**
 
-Code Shepherd gives developers a mobile-first command surface to:
-- Monitor agents from anywhere
-- Approve risky actions with one tap
-- Recover interrupted workflows
-- Maintain searchable audit trails
+Connect existing agents (Claude Code, Antigravity, Codex, Copilot, OpenClaw, custom) into one
+interface to see presence, message them, approve risky actions, and keep an audit trail — from
+desktop or phone. See [`CODE_SHEPHERD.md`](../../CODE_SHEPHERD.md) for the full roadmap.
 
----
-
-## The Killer Loop
-
-```
-Agent hits risky action → Push notification → 
-Developer approves from phone → Workflow resumes → Logged to audit trail
-```
-
-**Every feature serves this loop.**
+The earlier "killer loop" (agent hits risky action → push → approve from phone → resume → audit)
+is now one flow inside the broader inbox-first communication model, not the whole product.
 
 ---
 
@@ -34,23 +28,12 @@ Developer approves from phone → Workflow resumes → Logged to audit trail
 
 | Package | Stack | Purpose |
 |---------|-------|---------|
-| **relay** | Express.js + TypeScript + Temporal.io + SQLite + web-push | Durable execution relay server |
-| **ui** | React 18 + Vite + TypeScript + Tailwind CSS + PWA | Mobile-first dashboard |
-| **sdk** | TypeScript (npm package) | Agent-side registration & heartbeats |
-| **shared** | TypeScript types | Shared types across packages |
-
----
-
-## Architecture Decisions
-
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| **Durable Execution** | Temporal.io | Persists workflow state through crashes. Supports human-in-the-loop pauses. |
-| **PWA First** | Progressive Web App | Ships to Android + Desktop immediately. No app store friction. |
-| **Centralized Relay** | Node.js + Express | Agents run behind NATs. Relay solves connectivity + policy enforcement. |
-| **MCP Protocol** | Model Context Protocol | Vendor-neutral. Supports Claude, Antigravity, Cline, custom agents. |
-| **SQLite → PostgreSQL** | Progressive | Zero-config for solo users. Postgres for teams. |
-| **Risk Policy Engine** | OWASP MCP Top 10 | Layered security: trusted registry, schema validation, risk scoring, approval gates. |
+| **relay** | Express + TypeScript + Temporal.io + better-sqlite3 + ws + web-push | Central relay server |
+| **ui** | React 18 + Vite + Tailwind + PWA shell | Mobile-first control surface |
+| **sdk** | TypeScript | Agent-side registration, heartbeat, approvals |
+| **shared** | TypeScript types | Cross-package contracts |
+| **universal-mcp-gateway** | TypeScript | Local helper: pairing + command polling + adapters |
+| **antigravity-companion** | JS | Antigravity IDE bridge |
 
 ---
 
@@ -59,82 +42,42 @@ Developer approves from phone → Workflow resumes → Logged to audit trail
 | Component | Status | Files |
 |-----------|--------|-------|
 | Monorepo scaffold | ✅ Complete | All packages configured |
-| Relay Server + SQLite | ✅ Complete | `packages/relay/src/` |
-| Temporal scaffold | 🟡 Partial | `packages/relay/src/workflows/` |
+| Relay server + SQLite | ✅ Complete | `packages/relay/src/` |
 | Agent Registry API | ✅ Complete | `routes/agents.ts` |
 | Approval Queue API | ✅ Complete | `routes/approvals.ts` |
-| Push Notifications | ✅ Complete | `routes/notifications.ts`, `utils/vapidKeys.ts` |
-| Mobile Dashboard PWA | ✅ Complete | `packages/ui/src/` |
 | Approval summaries & diff preview | ✅ Complete | `utils/summaryGenerator.ts`, `utils/diffGenerator.ts` |
+| Conversations, messages, commands | ✅ Complete | `routes/conversations.ts` |
+| Connector trust + pairing | ✅ Complete | `routes/connectors.ts` |
+| Universal MCP gateway + adapters | ✅ Codex + Antigravity + mock | `packages/universal-mcp-gateway/` |
+| Auth (JWT, scrypt, cookies, lockout) | ✅ Complete | `utils/authSecurity.ts`, `routes/auth.ts` |
+| Realtime WebSocket (authenticated) | ✅ Complete | `realtime.ts` |
+| Push Notifications | ✅ Complete | `routes/notifications.ts`, `utils/vapidKeys.ts` |
+| Mobile UI shell + screens | ✅ Complete | `packages/ui/src/` |
 | Agent-side SDK | ✅ Complete | `packages/sdk/src/` |
 | Risk enforcement | 🟡 Basic | `middleware/riskPolicy.ts` |
-| Audit Log | ✅ Complete | SQLite `audit_logs` table |
+| Temporal workflows | 🟡 Partial | `packages/relay/src/workflows/` |
+| Relay unit tests | ✅ Present | `packages/relay/src/__tests__/` |
 
 ---
 
-## Known Issues
+## Known Issues / Open Work
 
-- [ ] Temporal server not running (expected in dev)
-- [ ] No automated tests yet
-- [ ] VAPID keys need to be generated on first run
-- [ ] PWA manifest/icons not created
-- [ ] iOS PWA install friction (secondary target for v1)
-
----
-
-## Next Priorities
-
-### Phase 1: Make It Trustworthy (Weeks 4-6) 🟡 IN PROGRESS
-
-1. ✅ Approval-Ready Summaries — Human-readable summaries for all actions
-2. ✅ Diff Preview — Inline code diff viewer with syntax highlighting
-3. ✅ Approval Reason Capture — Required rejection reasons
-4. ✅ Session Timeline — Visual timeline of agent actions
-5. 🟡 Resumable Workflows — UI hook present, Temporal signal flow still needs hardening
-6. 🟡 Risk Enforcement — basic risk scoring present, not full policy system
-
-### Phase 2: Operational Excellence (Weeks 7-10) ⏳ NEXT
-
-1. ⏳ Kanban Task Board — Drag-and-drop task management
-2. ⏳ Git Worktree Isolation — Per-task git worktrees
-3. ⏳ Priority & Labels — Task prioritization system
-
----
-
-## Key Metrics (Phase 0 Targets)
-
-| Metric | Target | Current |
-|--------|--------|---------|
-| Registered users | 60 | 0 (pre-launch) |
-| Active agents connected | 100 | 0 (pre-launch) |
-| Approval response time (median) | < 3 min | N/A |
-| Push delivery rate (Android + Desktop) | > 95% | N/A |
-| Workflow recovery success rate | > 98% | N/A |
-
----
-
-## Git History
-
-| Commit | Description |
-|--------|-------------|
-| `25ddcd9` | Phase 0 complete - Agent Registry, Approval Queue, Push Notifications, Mobile PWA |
-| `4e84656` | docs: Update all markdown files based on CODE_SHEPHERD.md roadmap |
-| `a0b7ff0` | chore: Initialize monorepo with all bootstrap files (7/7) |
+- [ ] Multi-agent fan-out (one command → many agents) not implemented
+- [ ] Real OpenClaw MCP bridge, plus Claude Code / VS Code connectors, not implemented
+- [ ] Capability tiers modeled but not enforced at the routing layer
+- [ ] Policies CRUD and standalone team-create / role-update endpoints missing
+- [ ] Context optimizer package not started
+- [ ] `vite-plugin-pwa`, manifest, and icons not wired (service worker + push exist)
+- [ ] UI has no automated tests
+- [ ] Temporal pause/resume path needs hardening
+- [ ] `AUTH_SECRET` still defaults to an insecure dev value
 
 ---
 
 ## References
 
-- [Full Roadmap](CODE_SHEPHERD.md)
-- [Architecture Details](ARCHITECTURE.md)
+- [Full Roadmap](../../CODE_SHEPHERD.md)
+- [Architecture](../ARCHITECTURE.md)
 - [Codebase Map](CODEBASE_MAP.md)
-markdown files based on CODE_SHEPHERD.md roadmap |
-| `a0b7ff0` | chore: Initialize monorepo with all bootstrap files (7/7) |
-
----
-
-## References
-
-- [Full Roadmap](CODE_SHEPHERD.md)
-- [Architecture Details](ARCHITECTURE.md)
-- [Codebase Map](CODEBASE_MAP.md)
+- [Remaining Work Tracker](../planning/remaining-tasks.md)
+- [Security Audit](../SECURITY_AUDIT.md)

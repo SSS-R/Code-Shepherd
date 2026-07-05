@@ -1,5 +1,7 @@
 # Project Task Board
 
+> Reconciled to code at commit 7eea5c7 on 2026-07-06.
+
 ## Backlog
 
 ### Phase 1: Make It Trustworthy (Weeks 4-6)
@@ -10,25 +12,25 @@
 - [ ] Resumable Workflows hardening — complete Temporal signal/resume path
 
 ### Phase 2: Make It Operational (Weeks 7-10)
-- [ ] Kanban Task Board — Drag-and-drop board with states
-- [ ] Task Assignment — Assign tasks to specific agents
-- [ ] Git Worktree Isolation — Per-task git worktrees
-- [ ] Priority & Labels — P0-P3 priority, custom labels
+- [x] Kanban Task Board — statuses + board UI (`routes/tasks.ts`, `screens/KanbanBoard.tsx`)
+- [x] Task Assignment — `assigned_agent_id` on tasks
+- [x] Priority & Labels — P0-P3 priority + custom labels
+- [~] Git Worktree Isolation — operations scaffold computes a worktree path/terminal session, but does not yet create real git worktrees (`routes/operations.ts`)
 - [ ] WebAssembly Terminal — ghostty-web for mobile SSH fallback
 
 ### Phase 3: Team Features (Weeks 11+)
+- [x] RBAC — Admin/Developer/Viewer roles enforced via `requireRole`
+- [~] Multi-user support — multi-tenant via `team_id` scoping on SQLite; PostgreSQL migration still pending
 - [ ] Team Steering — Propose-and-Approve vs Supervised Remote Control
-- [ ] RBAC — Role-based access control
 - [ ] Compliance Dashboard — Review Drift analytics
-- [ ] Multi-user support — PostgreSQL migration
 
 ---
 
 ## Ready
 
-- [ ] Generate VAPID keys on first run
-- [ ] Create PWA manifest and icons
-- [ ] Write unit tests for relay server
+- [x] Generate VAPID keys on first run (`utils/vapidKeys.ts`)
+- [x] Write unit tests for relay server (`packages/relay/src/__tests__/`)
+- [ ] Create PWA manifest and icons (wire `vite-plugin-pwa`)
 - [ ] Write unit tests for UI components
 - [ ] Set up CI/CD pipeline
 - [ ] Add end-to-end SDK example / smoke test
@@ -73,7 +75,7 @@
 
 **Phase 0 Status:** ✅ **COMPLETE** — Base loop exists.
 
-**Current overall repo state:** 🟡 **EARLY PHASE 1 PROTOTYPE** — usable demo, not production-ready.
+**Current overall repo state:** 🟡 **PROTOTYPE** — approval loop, conversations, connector pairing, and a security baseline are in place; multi-agent fan-out, most connector implementations, and production hardening remain. Usable demo, not production-ready.
 
 ---
 
