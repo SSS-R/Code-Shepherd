@@ -24,6 +24,11 @@ export interface GatewayConfig {
     codexExtraArgs: string[]
     antigravityCliPath?: string
     antigravityMode?: string
+    claudeCliPath?: string
+    claudeModel?: string
+    claudePermissionMode?: 'default' | 'acceptEdits' | 'plan' | 'bypassPermissions'
+    claudeTimeoutMs?: number
+    claudeExtraArgs: string[]
 }
 
 export interface RelayCommandEnvelope {

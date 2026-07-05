@@ -43,6 +43,11 @@ export function writeGatewaySession(sessionFilePath: string, config: GatewayConf
         codexExtraArgs: config.codexExtraArgs,
         antigravityCliPath: config.antigravityCliPath,
         antigravityMode: config.antigravityMode,
+        claudeCliPath: config.claudeCliPath,
+        claudeModel: config.claudeModel,
+        claudePermissionMode: config.claudePermissionMode,
+        claudeTimeoutMs: config.claudeTimeoutMs,
+        claudeExtraArgs: config.claudeExtraArgs,
         sessionFilePath,
     }, null, 2), { mode: 0o600 })
 }

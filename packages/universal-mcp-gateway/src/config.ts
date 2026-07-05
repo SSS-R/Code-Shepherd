@@ -79,5 +79,10 @@ export function loadGatewayConfig(): GatewayConfig {
         codexExtraArgs: process.env.CODEX_EXTRA_ARGS ? parseJsonArray(process.env.CODEX_EXTRA_ARGS) : (savedSession?.codexExtraArgs ?? []),
         antigravityCliPath: cli['antigravity-path'] ?? process.env.ANTIGRAVITY_CLI_PATH?.trim() ?? savedSession?.antigravityCliPath ?? undefined,
         antigravityMode: cli['antigravity-mode'] ?? process.env.ANTIGRAVITY_MODE?.trim() ?? savedSession?.antigravityMode ?? 'agent',
+        claudeCliPath: cli['claude-path'] ?? process.env.CLAUDE_CLI_PATH?.trim() ?? savedSession?.claudeCliPath ?? undefined,
+        claudeModel: cli['claude-model'] ?? process.env.CLAUDE_MODEL?.trim() ?? savedSession?.claudeModel ?? undefined,
+        claudePermissionMode: (cli['claude-permission-mode'] ?? process.env.CLAUDE_PERMISSION_MODE?.trim() ?? savedSession?.claudePermissionMode ?? 'default') as GatewayConfig['claudePermissionMode'],
+        claudeTimeoutMs: parseNumber(process.env.CLAUDE_TIMEOUT_MS, savedSession?.claudeTimeoutMs ?? 10 * 60 * 1000),
+        claudeExtraArgs: process.env.CLAUDE_EXTRA_ARGS ? parseJsonArray(process.env.CLAUDE_EXTRA_ARGS) : (savedSession?.claudeExtraArgs ?? []),
     }
 }

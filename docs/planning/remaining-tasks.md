@@ -55,11 +55,12 @@ Most of this is now done (see [`utils/authSecurity.ts`](../../packages/relay/src
 The universal MCP gateway and pairing/onboarding flow now exist ([`packages/universal-mcp-gateway`](../../packages/universal-mcp-gateway), [`routes/connectors.ts`](../../packages/relay/src/routes/connectors.ts)).
 
 - [x] Build generic MCP connector onboarding flow (trust → pairing code → launch command → gateway session)
-- [x] Antigravity connector implementation (adapter + companion bridge + installer)
-- [x] Codex connector implementation (gateway `codexCli` adapter)
+- [x] Codex connector implementation (gateway `codexCli` adapter, real round-trip)
+- [x] Claude Code connector implementation (gateway `claudeCodeCli` adapter, real round-trip; guide: [`connect-claude-code.md`](../guides/connect-claude-code.md))
+- [!] **Antigravity connector is broken upstream** (verified 2026-07-06): current Antigravity builds removed the `bin/antigravity.cmd` CLI and the VS Code-fork architecture entirely (now a plain Electron app, no `extensionHost`/MCP strings in `app.asar`). Both the `antigravity-proxy` handoff adapter and likely the companion extension are dead. Needs a new integration surface investigation against the current app.
 - [ ] Implement a real OpenClaw MCP connector bridge
-- [ ] Add Claude Code and VS Code connector implementations
-- [ ] Add connector verification and health checks beyond trust registration
+- [ ] Add VS Code (Copilot) connector implementation
+- [ ] Add connector verification and health checks beyond trust registration (would have caught the Antigravity breakage)
 
 ### Priority 3 - Council Board (multi-agent coordination with a Commander)
 
