@@ -99,6 +99,31 @@ Full design: [`council-board.md`](./council-board.md). Decisions locked 2026-07-
 
 ---
 
+## Known UI/UX issues (deferred — logged 2026-07-06)
+
+Found during a live UI audit (relay + UI running, all 9 screens walked). Build-breaking
+and stale-text bugs were fixed in commit 3f4119d; the items below were intentionally
+deferred to focus on connector work next.
+
+- [ ] **Fabricated demo metrics shown as real data.** Replace with real values or honest empty states:
+  - Agents Overview: "93% success rate" and node-health bars (e.g. Connected Nodes 54%) with no execution history
+  - Timeline: "Signal Integrity" bar chart renders fake ascending bars even when "No Activity Logged"
+  - Dashboard stat deltas — re-verify which are computed vs hardcoded
+- [ ] **Light mode unverified.** A theme toggle exists but only dark mode was audited; needs a contrast/visibility pass (glass surfaces, borders, muted text) per the ui-ux-pro checklist.
+- [ ] **Readability of uppercase + wide letter-spacing.** Pervasive `uppercase` + `tracking-[0.16em]` on body/label text hurts legibility; consider dialing back on non-heading text.
+- [ ] **Dead Vite proxy config.** `packages/ui/vite.config.ts` proxies only 4 routes, but `relayFetch` uses an absolute `RELAY_BASE_URL`, so the proxy block is unused and incomplete — remove or make authoritative.
+- [ ] **Settings connector presets vs adapter catalog mismatch.** Settings offers OpenClaw / Universal / Local presets, but the runtime catalog is Codex / Claude Code / Antigravity / OpenClaw / command-runner — reconcile during connector work.
+- [ ] Timeline "Load More" stays enabled with 0 events (minor).
+
+### Fixed in this pass (commit 3f4119d)
+
+- [x] Build-breaking `Settings.tsx` preset-state type (broke `npm run build`)
+- [x] Removed orphaned `App.tsx` (dead duplicate of `AppRouter`; caused "edits do nothing" confusion) + scratch files
+- [x] Sidebar version wired to real package version (was hardcoded `V2.4.0-STABLE`)
+- [x] Profile "Current Auth Mode" corrected from "Header-based" to signed-JWT-in-HttpOnly-cookies
+
+---
+
 ## Status snapshot
 
 | Area | Status | Completion |
@@ -106,7 +131,7 @@ Full design: [`council-board.md`](./council-board.md). Decisions locked 2026-07-
 | Architecture and docs | Reconciled to code | ~95% |
 | Relay core routes | Done | ~92% |
 | Shared types and SDK | Done | ~90% |
-| UI shell and screens | Done | ~95% |
+| UI shell and screens | Done; build-breaker + dead code fixed (3f4119d); polish deferred | ~95% |
 | UI to relay integration | Core workflow done | ~85% |
 | Conversations, commands, connector pairing | Done | ~85% |
 | Shepherd Guide base loop | Done | ~90% |
