@@ -48,7 +48,7 @@ is now one flow inside the broader inbox-first communication model, not the whol
 | Approval summaries & diff preview | ✅ Complete | `utils/summaryGenerator.ts`, `utils/diffGenerator.ts` |
 | Conversations, messages, commands | ✅ Complete | `routes/conversations.ts` |
 | Connector trust + pairing | ✅ Complete | `routes/connectors.ts` |
-| Universal MCP gateway + adapters | ✅ Codex + Antigravity + mock | `packages/universal-mcp-gateway/` |
+| Universal MCP gateway + adapters | ✅ Codex + Claude Code + mock (Antigravity broken upstream) | `packages/universal-mcp-gateway/` |
 | Auth (JWT, scrypt, cookies, lockout) | ✅ Complete | `utils/authSecurity.ts`, `routes/auth.ts` |
 | Realtime WebSocket (authenticated) | ✅ Complete | `realtime.ts` |
 | Push Notifications | ✅ Complete | `routes/notifications.ts`, `utils/vapidKeys.ts` |
@@ -63,7 +63,8 @@ is now one flow inside the broader inbox-first communication model, not the whol
 ## Known Issues / Open Work
 
 - [ ] Multi-agent fan-out (one command → many agents) not implemented
-- [ ] Real OpenClaw MCP bridge, plus Claude Code / VS Code connectors, not implemented
+- [ ] Real OpenClaw MCP bridge and VS Code connector not implemented (Claude Code adapter done 2026-07-06)
+- [ ] Antigravity connector broken upstream (CLI + extension host removed in recent builds) — needs new integration surface
 - [ ] Capability tiers modeled but not enforced at the routing layer
 - [ ] Policies CRUD and standalone team-create / role-update endpoints missing
 - [ ] Context optimizer package not started

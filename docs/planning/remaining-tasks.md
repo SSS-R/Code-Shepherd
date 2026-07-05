@@ -111,7 +111,7 @@ Full design: [`council-board.md`](./council-board.md). Decisions locked 2026-07-
 | Conversations, commands, connector pairing | Done | ~85% |
 | Shepherd Guide base loop | Done | ~90% |
 | Security hardening | Baseline done, edges remain | ~85% |
-| Connector runtime implementations | Codex + Antigravity done; OpenClaw/Claude/VSCode pending | ~45% |
+| Connector runtime implementations | Codex + Claude Code done; Antigravity broken upstream; OpenClaw/VSCode pending | ~45% |
 | Multi-agent fan-out | Not started | 0% |
 | Context optimizer | Not started | 0% |
 | PWA polish and assets | Service worker + push only; plugin/manifest pending | ~25% |
