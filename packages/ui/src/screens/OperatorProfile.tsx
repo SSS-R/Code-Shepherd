@@ -93,9 +93,9 @@ export default function OperatorProfile() {
                         <div className="flex items-center justify-between bg-surface-container-low p-4">
                             <div>
                                 <div className="font-body text-sm font-semibold text-on-surface">Current Auth Mode</div>
-                                <div className="text-xs text-on-surface-variant">Header-based development session active</div>
+                                <div className="text-xs text-on-surface-variant">Signed JWT session in HttpOnly cookies</div>
                             </div>
-                            <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-warning">Prototype</span>
+                            <span className="font-headline text-[10px] font-semibold uppercase tracking-[0.14em] text-success">Secure</span>
                         </div>
                         <div className="flex items-center justify-between bg-surface-container-low p-4">
                             <div>

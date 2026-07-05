@@ -154,7 +154,7 @@ export default function AppRouter({ route }: { route: ParsedRoute }) {
                                 </div>
                                 <div className={sidebarCollapsed ? 'hidden' : 'block'}>
                                     <div className="font-headline text-sm font-bold uppercase tracking-[0.18em] text-primary">Code Shepherd</div>
-                                    <div className="mt-1 font-headline text-[10px] font-medium uppercase tracking-[0.18em] text-on-surface-variant">V2.4.0-STABLE</div>
+                                    <div className="mt-1 font-headline text-[10px] font-medium uppercase tracking-[0.18em] text-on-surface-variant">V{__APP_VERSION__} · PROTOTYPE</div>
                                 </div>
                             </div>
                         </div>

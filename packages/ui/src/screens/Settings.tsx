@@ -36,6 +36,8 @@ const connectorPresets = [
     },
 ] as const
 
+type ConnectorPreset = (typeof connectorPresets)[number]
+
 const openClawPreset = connectorPresets[0]
 
 export default function Settings() {
@@ -49,7 +51,7 @@ export default function Settings() {
     const [selectedPresetKey, setSelectedPresetKey] = useState<(typeof connectorPresets)[number]['key']>(openClawPreset.key)
     const [selectedConnectorId, setSelectedConnectorId] = useState<string | null>(null)
     const [selectedPairingAgentId, setSelectedPairingAgentId] = useState<string | null>(null)
-    const [form, setForm] = useState(openClawPreset)
+    const [form, setForm] = useState<ConnectorPreset>(openClawPreset)
     const { preferences, updatePreferences } = useOperator()
 
     useEffect(() => {
